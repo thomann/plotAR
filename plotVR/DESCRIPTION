@@ -1,0 +1,15 @@
+Package: plotVR
+Type: Package
+Title: Walk Through your Data in Cardboard VR
+Version: 0.5
+Date: 2017-03-14
+Author: Philipp Thomann <pht@gmx.ch>
+Maintainer: Philipp Thomann <pht@gmx.ch>
+Description: This is a prototype to get your data into a Google Cardboard and navigate using the computer keyboard. There is also an Android-client available.
+License: AGPL-3
+LazyData: TRUE
+Imports: httpuv
+Suggests: qrcode, R.utils,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
