@@ -168,15 +168,23 @@ getIP <- function(){
   os <- Sys.info()[['sysname']]
   if(os=='Windows'){
     # ???
-    warning('Do not know yet howto find out ip address on windows, using localhost ip address')
-    '127.0.0.1'
+    tmp <- system('ipconfig',intern=T)
+    res <- gsub(".*?: ([0-9.]+)[^0-9.]*", "\\1", tmp[grep('IPv4',tmp)])
+    res <- res[nchar(res)>0]
+    if(is.null(res)){
+      warning('No IP-addresses were found, using localhost ip address')
+      return('127.0.0.1')
+    }
+    if(length(res)>1)
+      warning('More than one IP-address was found, using the first one: ',res[1], 'others: ', paste(res[-1],collapse=', '))
+    res[1]
   }else if(os=='Darwin'){
     system("route -n get default|grep interface|sed 's/^.*: //' | xargs ifconfig | grep 'inet ' | sed 's/.*inet \\([0-9.]*\\) .*/\\1/'", intern=TRUE)
   }else if(os=='Linux'){
     strsplit(system('hostname -I',intern=TRUE)," ")[[1]][1]
   }else{
     # ???
-    warning('Did not recognize system, using localhost ip address')
+    warning('Did not recognize os, using localhost ip address')
     '127.0.0.1'
   }
 }
@@ -187,14 +195,25 @@ getHostInfo <- function(hostname=R.utils::System$getHostname()){
 }
 
 #' @export
-showQR <- function(host=R.utils::System$getHostname(),port=2908,useIP=TRUE,useFullName=FALSE){
+showQR <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE){
   require(qrcode)
   if(useIP){
     host <- getIP()
   }else if(useFullName){
-    info <- getHostInfo(host)
-    if(length(info)>=1)
-      host <- info[[1]][1]
+    if(is.null(host)){
+      if(requireNamespace('R.utils', quietly=TRUE)){
+        host <- R.utils::System$getHostname()
+        info <- getHostInfo(host)
+        if(length(info)>=1)
+          host <- info[[1]][1]
+      }else{
+        warning('no host provided and package R.utils not installed, therefore using localhost')
+        host <- 'localhost'
+      }
+    }else{
+      warning('did not find out host, using localhost')
+      host <- 'localhost'
+    }
   }
   url <- paste0("http://",host,":",port,"/plotVR.html")
   qrcode_gen(url)

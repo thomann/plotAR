@@ -4,7 +4,7 @@ This is a prototype to get your data into a Google Cardboard and navigate using 
 
 Install the R-package:
 ```bash
-R CMD INSTALL ./plotVR
+devtools::install_github('thomann/plotVR',subdir='plotVR')
 ```
 Then in R load and plot the first three dimensions of `iris` with `iris$Species` as color:
 ```r
@@ -12,7 +12,8 @@ library(plotVR)
 plotVR(iris[,1:3],iris$Species)
 ```
 When you load the library, it will start a server listening on port 2908
-and you have to direct your cardboard-smartphone to the corresponding address.
+(you might have to allow the port to be opened in your firewall)
+and then you have to direct your cardboard-smartphone to the corresponding address.
 ```
 http://<ip-address of the machine running your R>:2908/plotVR.html
 ```
@@ -20,15 +21,13 @@ This will look something like:
 
 ![VR view](screen-vr.png?raw=true "VR view")
 
+> Naturally, you also can visit the server page on your computer: <http://localhost:2908/plotVR.html>.
+
 Tap on the screen to bring it to full-screen!
 
 If you have a QR-reader installed on your device, you can get that quickly with:
 ```r
 showQR()
-```
-On Windows you have to find out the LAN IP address of the machine and use:
-```r
-showQR('<the ip address>')
 ```
 Then scan it with your smartphone and open the link with the browser.
 
@@ -51,9 +50,6 @@ This window also will get the keyboard focus when it opens. You now can use your
 | space |  toggle velocity |
 |   r   |  reload   |
 
-> Naturally, you also can visit the server page on your computer: <http://localhost:2908/plotVR.html>.
-> If your keyboard focus 
-
 Now if you plot something new it will be reloaded in your cardboard:
 ```r
 plotVR(trees)
@@ -62,6 +58,7 @@ plotVR(trees)
 ## Issues
 
 * This is not very stable at the moment!
+* On Windows: the TK-control window is shown but does not react, so the keyboard feature is broken.
 * There need to be better keyboard assignments, and maybe some more interface in the keyboard focus window.
 * The default values are not well set, e.g. the starting point of the virtual observer.
 * There is an Android App on the way for better on-device handling and performance.
