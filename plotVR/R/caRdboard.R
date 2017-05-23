@@ -194,9 +194,7 @@ getHostInfo <- function(hostname=R.utils::System$getHostname()){
   strsplit(out, " has address ")
 }
 
-#' @export
-showQR <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE){
-  require(qrcode)
+getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
   if(useIP){
     host <- getIP()
   }else if(useFullName){
@@ -216,6 +214,25 @@ showQR <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE){
     }
   }
   url <- paste0("http://",host,":",port,"/plotVR.html")
+  return(url)
+}
+
+#' @export
+showQR <- function(...){
+  require(qrcode)
+
+  url <- getUrl(...)
+  # viewer <- getOption('viewer')
+  # viewer()
   qrcode_gen(url)
-  url
+  invisible(url)
+}
+
+#' @export
+openViewer <- function(...){
+  url <- getUrl(...)
+  viewer <- getOption('viewer')
+  viewer(url)
+
+  invisible(url)
 }
