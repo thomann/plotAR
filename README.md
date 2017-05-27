@@ -17,7 +17,7 @@ and then you have to direct your cardboard-smartphone to the corresponding addre
 ```
 http://<ip-address of the machine running your R>:2908/plotVR.html
 ```
-This will look something like:
+This will look something like (see [live demo](https://thomann.github.io/plotVR/plotVR/inst/)):
 
 ![VR view](screen-vr.png?raw=true "VR view")
 
@@ -67,7 +67,10 @@ plotVR(trees)
 
 ## Acknowledgements
 
-* <http://threejs.org> for the WebGL-version
-* `httpuv` for the websocket-server implementation
+* For the WebVR-client: [`three.js`](http://threejs.org),
+  [`polyfill`](https://github.com/googlevr/webvr-polyfill), and
+  [`webvr-boilerplate`](https://github.com/borismus/webvr-boilerplate)
+  (all needed parts included in this repository under `plotVR/inst/js/third-party`)
+* [`httpuv`](https://github.com/rstudio/httpuv) for the websocket-server implementation in R
 * `tcltk` for the focus grabbing window
 * <https://vr.google.com/cardboard/> for the cardboard!
