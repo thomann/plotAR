@@ -1,18 +1,39 @@
-pkg.env <- new.env()
 
+# the state of the controller:
+pkg.env <- new.env()
+# list of all connected clients
 pkg.env$all_clients <- list()
+# the handle of the httpuv-server daemon
+pkg.env$server_handle <- NULL
+# the model to serve to devices
+pkg.env$vr_data_json <- NULL
+# the global keyboard of the controller
+pkg.env$keyboard <- NULL
+
+
+log.info <- function(...){
+  try({
+    if(getOption("plotVR.log.info", default=FALSE))
+      cat("plotVR info:",...,fill=T)
+  })
+  try({
+    filename <- getOption("plotVR.log.info.file")
+    if(!is.null(filename))
+      cat("plotVR info:",...,fill=T,file=filename)
+  })
+}
 
 
 process_request <- function(req, base="~/density/vr/") {
-  cat("Serving ",req$PATH_INFO, "\n")
+  log.info("Serving",req$PATH_INFO)
   if(req$REQUEST_METHOD=="POST"){
-    cat('Got POST Content-type; ',req$CONTENT_TYPE, fill=T)
+    log.info('Got POST Content-type;',req$CONTENT_TYPE)
     #print(ls.str(req))
     input_str <- req$rook.input$read_lines()
     if(substring(input_str,0,5)=="data=")
       input_str <- URLdecode(substring(input_str,6))
     pkg.env$vr_data_json <- input_str
-    #ws()cat(pkg.env$vr_data_json,fill=T)
+    #ws()log.info(pkg.env$vr_data_json,fill=T)
     broadcastRefresh()
     return(list(status = 200L,
                 headers = list('Content-Type' = 'text/plain'),
@@ -66,17 +87,17 @@ process_request <- function(req, base="~/density/vr/") {
                 headers = list('Content-Type' = 'application/json'),
                 body = pkg.env$vr_data_json ))
   }else{
-    cat("Trying: ",path)
+    log.info("Trying:",path)
     if(substring(path,2,2)=="_"){
       real_filename <- substring(path,3)
     }else{
       real_filename <- system.file(path,package="plotVR")
     }
     real_filename <- sub("../","", real_filename,fixed=T)
-    cat(" changed to ",real_filename,"\n")
+    log.info(" changed to ",real_filename)
 
     if(!file.exists(real_filename)){
-      cat("Does not exist!!\n")
+      log.info("Does not exist!!")
       return(list(status=404L,headers=list('Content-Type'="text/plain"),body="Nothing here."))
     }
     content_type <- 'text/html'
@@ -89,79 +110,115 @@ process_request <- function(req, base="~/density/vr/") {
 
 
 processWS <- function(thesock) {
-  cat("got WebSockt\n")
-  tt_handle <- tk_keyboard(thesock$send, wait=F, closeSock=thesock$close)
-  wsClient <<- thesock
-  pkg.env$all_clients <- list(wsClient) #c(pkg.env$all_clients,wsClient)
-  str(pkg.env$all_clients)
+  log.info("got WebSockt")
+  tt_handle <- if(getOption('plotVR.keyboard.individual',default=FALSE))
+    tk_keyboard(thesock$send, wait=F, closeSock=thesock$close)
+  else
+    NULL
+  pkg.env$all_clients <- c(pkg.env$all_clients, list(thesock) )
+  tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
+  #str(pkg.env$all_clients)
   thesock$onMessage(function(binary, message) {
-    cat("got WS message",message,"\n")
-    thesock$send(message)
-    #pkg.env$all_clients <- pkg.env$all_clients[pkg.env$all_clients != wsClient]
-    #str(pkg.env$all_clients)
+    log.info("got WS message",message)
+    # Before sending can we check that thesock$.handle is still alive?
+    # thesock$send(message)
   })
-  thesock$onClose(function(){tkdestroy(tt_handle)})
+  thesock$onClose(function(){
+    # remove that client from all_clients
+    pkg.env$all_clients <- pkg.env$all_clients[pkg.env$all_clients != thesock]
+    tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
+    # close keyboard for that client
+    if(!is.null(tt_handle))
+      tkdestroy(tt_handle)
+  })
 }
 
 app <- list(call=process_request, onWSOpen = processWS)
 
-#' Start the WebServer
-#' @export
-ws <- function(){
-
-cat('Now do: browseURL("http://localhost:2908/")\n')
-
-httpuv::runServer("0.0.0.0", 2908, app, 250)
-#server <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app)
+startGlobalKeyboard <- function(){
+  if(!getOption('plotVR.keyboard.individual',default=FALSE))
+    pkg.env$keyboard <- tk_keyboard(broadcastDevices, wait=F, closeSock=function(){}, link=getUrl())
 }
-#ws()
+
+
+#' Start the WebServer in a blocking version.
+#' @export
+startBlockingServer <- function(){
+
+  cat('Now do: browseURL("http://localhost:2908/")\n')
+
+  startGlobalKeyboard()
+  httpuv::runServer("0.0.0.0", 2908, app, 250)
+  #server <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app)
+}
 
 #' @export
 #' @import httpuv
-startTheDeamonServer <- function(){
+startDeamonServer <- function(){
   try(pkg.env$server_handle <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app))
   cat("Started deamon server: ",pkg.env$server_handle,"\n")
+  startGlobalKeyboard()
   invisible(pkg.env$server_handle)
 }
 
-broadcastRefresh <- function(){
+broadcastRefresh <- function(data){
+  if(!missing(data)){
+    pkg.env$vr_data_json <- data
+  }
+  broadcastDevices("reload_data")
+}
+
+broadcastDevices <- function(message){
+  # lazy start Server
+  if(is.null(pkg.env$server_handle))
+    startDeamonServer()
+  log.info('Broadcasting:',message)
   for(ws in pkg.env$all_clients){
-    cat("Sending reload_data to ")
-    try(ws$send("reload_data"))
+    log.info("Sending", message, "to") #,as.character(ws))
+    try(ws$send(message))
   }
 }
 
-pkg.env$server_handle <- NULL
-
 .onAttach <- function(libname, pkgname){
-  if(interactive()) startTheDeamonServer()
+  # if(interactive() && getOption('plotVR.startOnAttach', default=FALSE))
+    # startDeamonServer()
 }
 
 
 .onDetach <- function(libpath){
-  cat("Detaching!!!\n")
-  stopTheDeamonServer()
+  log.info("Detaching!!!\n")
+  stopDeamonServer()
 }
 .onUnload <- function(libpath){
-  cat("Unloading!!!\n")
-  stopTheDeamonServer()
+  log.info("Unloading!!!\n")
+  stopDeamonServer()
 }
 
 
 #' @export
 .Last.lib <- function(libpath){
-  cat("Detaching or Unloading via .Last.lib!!!\n")
+  log.info("Detaching or Unloading via .Last.lib!!!\n")
   stopTheDeamonServer()
 }
 
 #' @export
-stopTheDeamonServer <- function(){
-    if(is.null(pkg.env$server_handle))
+stopDeamonServer <- function(){
+  if(is.null(pkg.env$server_handle))
     return()
-  cat("Stopping Deamon Server ",pkg.env$server_handle,"... ")
+  log.info("Stopping Deamon Server ",pkg.env$server_handle,"... ")
   try(httpuv::stopDaemonizedServer(pkg.env$server_handle))
   pkg.env$server_handle <- NULL
-  cat("succeeded\n")
+
+  if(!is.null(pkg.env$keyboard)){
+    tkdestroy(pkg.env$keyboard)
+    pkg.env$keyboard <- null
+  }
+  log.info("succeeded\n")
+}
+
+restartDeamonServer <- function(){
+  stopDeamonServer()
+  startDeamonServer()
 }
 
 getIP <- function(){
@@ -213,7 +270,9 @@ getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
       host <- 'localhost'
     }
   }
-  url <- paste0("http://",host,":",port,"/plotVR.html")
+  # FIXME is this needed?
+  # url <- paste0("http://",host,":",port,"/plotVR.html")
+  url <- paste0("http://",host,":",port,"/")
   return(url)
 }
 

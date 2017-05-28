@@ -35,8 +35,8 @@ writeData <- function(data,col=NULL,speed=NULL,loc="./data.json",autoScale=T){
 
 #' Plot data into the Cardboard VR
 #' @export
-plotVR <- function(data,col=NULL){
-  pkg.env$vr_data_json <- writeData(data[,1:3],col=col,loc=NULL)
-  broadcastRefresh()
-  invisible(pkg.env$vr_data_json)
+plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast', broadcastRefresh)){
+  data_json <- writeData(data[,1:3],col=col,loc=NULL)
+  broadcast(data_json)
+  invisible(data_json)
 }
