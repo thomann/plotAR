@@ -4,8 +4,10 @@
 \alias{plotVR}
 \title{Plot data into the Cardboard VR}
 \usage{
-plotVR(data, col = NULL)
+plotVR(data, col = NULL, broadcast = getOption("plotVF.default.broadcast",
+  broadcastRefresh))
 }
 \description{
 Plot data into the Cardboard VR
 }
+

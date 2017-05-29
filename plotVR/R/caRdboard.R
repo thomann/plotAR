@@ -30,9 +30,11 @@ process_request <- function(req, base="~/density/vr/") {
     log.info('Got POST Content-type;',req$CONTENT_TYPE)
     #print(ls.str(req))
     input_str <- req$rook.input$read_lines()
+    input_str <- paste(input_str, collapse="\n")
     if(substring(input_str,0,5)=="data=")
       input_str <- URLdecode(substring(input_str,6))
     pkg.env$vr_data_json <- input_str
+    log.info('Having new data from POST -- nchar:',paste0(nchar(input_str),collapse=','),'data:',input_str)
     #ws()log.info(pkg.env$vr_data_json,fill=T)
     broadcastRefresh()
     return(list(status = 200L,

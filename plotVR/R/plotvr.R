@@ -40,3 +40,27 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
   broadcast(data_json)
   invisible(data_json)
 }
+
+#' Broadcast to a server via POST - hence this can run in another process or even on another host.
+#'
+#' @param data the JSON-model data to broadcast, from \link{writeData}
+#' @param server to which post to post the data, default is to \link{getURL} but also can be set
+#' using \code{options(plotVR.broadcast.server="http://example.com:2908")}.
+#' @param ... passed to \code{\link{httr::POST}}.
+#'
+#' @return invisible the response of the server
+#' @export
+#' @seealso \cod{\link{plotVR}}
+#'
+#' @examples
+#'
+#' \dontrun{
+#' options(plotVF.default.broadcast=broadcastPost)
+#' plotVR(iris)
+#'
+#' # or directly:
+#' plotVR(iris, broadcast=broadcastPost)
+#' }
+broadcastPost <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getURL()), ...){
+  invisible(httr::POST(server,body=data, ...))
+}
