@@ -38,7 +38,7 @@
   </head>
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
              this somehow backfires and httpuv in the R-session crashes with segfault -->
-  <body onkeydown="keyEvent(event)" onclose="websocket.close()">
+  <body onkeydown="keyEvent(event)" onclose="closeWebSocket()">
     <div id="ui">
       <div id="vr-button"></div>
       <a id="magic-window" href="#">Try it without a headset</a>
@@ -128,6 +128,10 @@
         handle_char(msg.data);
         //websocket.send("thanks");
       }
+      websocket.onclose = function(event){
+        console.log('websocket closed.')
+      }
+
     }catch(err){
       console.log(err);
     }
@@ -330,8 +334,12 @@
       if(msg == "r"){
         // we need to close the websocket, else on Chrome (Android/Linux/macOS)
         // this somehow backfires and httpuv in the R-session crashes with segfault
-        websocket.close();
-        location.reload(true);
+        if(websocket != null){
+          closeWebSocket();
+          location.reload(true);
+        }else{
+          location.reload(true);
+        }
         return;
       }else if(msg == "reload_data" || msg =="x" ){
         refreshData();
@@ -400,6 +408,14 @@
       vector.applyQuaternion( camera.quaternion );
       scene.position.add(vector);
       console.log(scene.position)
+    }
+    
+    function closeWebSocket(){
+      if(websocket != null){
+        websocket.send("byebye")
+        websocket.close();
+        websocket = null;
+      }
     }
 
     // and now from the boilerplate:

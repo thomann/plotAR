@@ -14,7 +14,7 @@ pkg.env$keyboard <- NULL
 log.info <- function(...){
   try({
     if(getOption("plotVR.log.info", default=FALSE))
-      cat("plotVR info:",...,fill=T)
+      cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), "plotVR info:",...,fill=T)
   })
   try({
     filename <- getOption("plotVR.log.info.file")
@@ -37,6 +37,7 @@ process_request <- function(req, base="~/density/vr/") {
     log.info('Having new data from POST -- nchar:',paste0(nchar(input_str),collapse=','),'data:',input_str)
     #ws()log.info(pkg.env$vr_data_json,fill=T)
     broadcastRefresh()
+    log.info('got data and broadcasted refresh')
     return(list(status = 200L,
                 headers = list('Content-Type' = 'text/plain'),
                 body = "OK"))
@@ -89,7 +90,6 @@ process_request <- function(req, base="~/density/vr/") {
                 headers = list('Content-Type' = 'application/json'),
                 body = pkg.env$vr_data_json ))
   }else{
-    log.info("Trying:",path)
     if(substring(path,2,2)=="_"){
       real_filename <- substring(path,3)
     }else{
@@ -112,7 +112,7 @@ process_request <- function(req, base="~/density/vr/") {
 
 
 processWS <- function(thesock) {
-  log.info("got WebSockt")
+  log.info("got WebSocket")
   tt_handle <- if(getOption('plotVR.keyboard.individual',default=FALSE))
     tk_keyboard(thesock$send, wait=F, closeSock=thesock$close)
   else
@@ -122,20 +122,44 @@ processWS <- function(thesock) {
   #str(pkg.env$all_clients)
   thesock$onMessage(function(binary, message) {
     log.info("got WS message",message)
-    # Before sending can we check that thesock$.handle is still alive?
-    # thesock$send(message)
+    if(message=="close"){
+      onClose(thesock, tt_handle)
+    }
+    thesock$send(paste0('got message: ',message))
   })
   thesock$onClose(function(){
-    # remove that client from all_clients
-    pkg.env$all_clients <- pkg.env$all_clients[pkg.env$all_clients != thesock]
-    tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
-    # close keyboard for that client
-    if(!is.null(tt_handle))
-      tkdestroy(tt_handle)
+    log.info("got WS close")
+    onClose(thesock)
+  })
+}
+
+onClose <- function(thesock, tt_handle){
+  log.info("Closing websocket: ",thesock$.handle)
+  # remove that client from all_clients
+  str(thesock)
+  handles <- sapply(pkg.env$all_clients, function(x) x$.handle)
+  pkg.env$all_clients <- pkg.env$all_clients[handles != thesock$.handle]
+  tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
+  # close keyboard for that client
+  if(!is.null(tt_handle))
+    tkdestroy(tt_handle)
+  log.info("Closed websocket: ",thesock$.handle)
+}
+
+easyWS <- function(ws) {
+  try({
+    log.info('open easy ws: ',ws$.handle)
+    pkg.env$all_clients <- c(pkg.env$all_clients, list(ws))
+    ws$onMessage(function(binary, message) {
+      log.info('easy ws ',ws$.handle,'message: ',message,'\n')
+      .lastMessage <<- message
+      ws$send(message)
+    })
   })
 }
 
 app <- list(call=process_request, onWSOpen = processWS)
+# app <- list(call=process_request, onWSOpen = easyWS)
 
 startGlobalKeyboard <- function(){
   if(!getOption('plotVR.keyboard.individual',default=FALSE))
