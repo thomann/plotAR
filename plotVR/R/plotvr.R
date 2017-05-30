@@ -50,7 +50,7 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #'
 #' @return invisible the response of the server
 #' @export
-#' @seealso \cod{\link{plotVR}}
+#' @seealso \code{\link{plotVR}}
 #'
 #' @examples
 #'

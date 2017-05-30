@@ -9,7 +9,12 @@ pkg.env$server_handle <- NULL
 pkg.env$vr_data_json <- NULL
 # the global keyboard of the controller
 pkg.env$keyboard <- NULL
-
+# indicates whether the server 'blocking' or 'daemon' (or 'none')
+pkg.env$server.type <- 'none'
+# indicates whether the server was stopped (used for the blocking server)
+pkg.env$stopped <- FALSE
+# interval for blocking server to serve at once
+pkg.env$interruptIntervalMs <- 250
 
 log.info <- function(...){
   try({
@@ -124,19 +129,23 @@ processWS <- function(thesock) {
     log.info("got WS message",message)
     if(message=="close"){
       onClose(thesock, tt_handle)
+    }else if(message == "shutdown"){
+      # FIXME broadcast it?
+      stopServer()
+    }else{
+      thesock$send(paste0('got message: ',message))
     }
-    thesock$send(paste0('got message: ',message))
   })
   thesock$onClose(function(){
     log.info("got WS close")
-    onClose(thesock)
+    onClose(thesock, tt_handle)
   })
 }
 
 onClose <- function(thesock, tt_handle){
   log.info("Closing websocket: ",thesock$.handle)
+  # str(thesock)
   # remove that client from all_clients
-  str(thesock)
   handles <- sapply(pkg.env$all_clients, function(x) x$.handle)
   pkg.env$all_clients <- pkg.env$all_clients[handles != thesock$.handle]
   tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
@@ -169,22 +178,88 @@ startGlobalKeyboard <- function(){
 
 #' Start the WebServer in a blocking version.
 #' @export
-startBlockingServer <- function(){
-
-  cat('Now do: browseURL("http://localhost:2908/")\n')
+startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=ifelse(interactive(), 100, 1000)){
 
   startGlobalKeyboard()
-  httpuv::runServer("0.0.0.0", 2908, app, 250)
-  #server <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app)
+
+  server <- httpuv::startServer(host, port, app)
+  pkg.env$server_handle <- server
+  pkg.env$server.type <- 'blocking'
+
+  on.exit(stopBlockingServer())
+  pkg.env$stopped <- FALSE
+  pkg.env$interruptIntervalMs <- interruptIntervalMs
+
+  cat('Now do: browseURL("http://",host,":",port,"/")\n')
+
+  while (!pkg.env$stopped) {
+    httpuv::service(interruptIntervalMs)
+    Sys.sleep(0.001)
+  }
+
+  log.info("Stopped blocking server")
 }
 
 #' @export
 #' @import httpuv
-startDeamonServer <- function(){
-  try(pkg.env$server_handle <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app))
-  cat("Started deamon server: ",pkg.env$server_handle,"\n")
+startDaemonServer <- function(){
+  pkg.env$server_handle <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app)
+  pkg.env$server.type <- 'daemon'
+  cat("Started Daemon server: ",pkg.env$server_handle,"\n")
   startGlobalKeyboard()
   invisible(pkg.env$server_handle)
+}
+
+#' @export
+stopServer <- function(){
+  if(pkg.env$server.type == 'blocking'){
+    stopBlockingServer()
+  }else if(pkg.env$server.type == 'daemon'){
+    stopDaemonServer()
+  }else{
+    warning('stopping unknown server', pkg.env$server.type)
+  }
+}
+
+#' @export
+stopBlockingServer <- function(server=pkg.env$server_handle){
+  if(is.null(server))
+    return()
+  log.info("Stopping Blocking Server ",pkg.env$server_handle,"... ")
+
+  if(server == pkg.env$server_handle){
+    pkg.env$server_handle <- NULL
+    pkg.env$server.type <- 'none'
+
+    # set stopped flag and give time
+    pkg.env$stopped <- TRUE
+    Sys.sleep(2*pkg.env$interruptIntervalMs/1000)
+    log.info("waited", 2*pkg.env$interruptIntervalMs/1000, 's')
+  }
+
+  try(httpuv::stopServer(server))
+
+  if(!is.null(pkg.env$keyboard)){
+    tkdestroy(pkg.env$keyboard)
+    pkg.env$keyboard <- NULL
+  }
+  # FIXME remove on.exit() handler??
+  log.info("succeeded\n")
+}
+
+#' @export
+stopDaemonServer <- function(){
+  if(is.null(pkg.env$server_handle))
+    return()
+  log.info("Stopping Daemon Server ",pkg.env$server_handle,"... ")
+  try(httpuv::stopDaemonizedServer(pkg.env$server_handle))
+  pkg.env$server_handle <- NULL
+
+  if(!is.null(pkg.env$keyboard)){
+    tkdestroy(pkg.env$keyboard)
+    pkg.env$keyboard <- null
+  }
+  log.info("succeeded\n")
 }
 
 broadcastRefresh <- function(data){
@@ -197,7 +272,7 @@ broadcastRefresh <- function(data){
 broadcastDevices <- function(message){
   # lazy start Server
   if(is.null(pkg.env$server_handle))
-    startDeamonServer()
+    startDaemonServer()
   log.info('Broadcasting:',message)
   for(ws in pkg.env$all_clients){
     log.info("Sending", message, "to") #,as.character(ws))
@@ -207,44 +282,29 @@ broadcastDevices <- function(message){
 
 .onAttach <- function(libname, pkgname){
   # if(interactive() && getOption('plotVR.startOnAttach', default=FALSE))
-    # startDeamonServer()
+    # startDaemonServer()
 }
 
 
 .onDetach <- function(libpath){
   log.info("Detaching!!!\n")
-  stopDeamonServer()
+  stopDaemonServer()
 }
 .onUnload <- function(libpath){
   log.info("Unloading!!!\n")
-  stopDeamonServer()
+  stopDaemonServer()
 }
 
 
 #' @export
 .Last.lib <- function(libpath){
   log.info("Detaching or Unloading via .Last.lib!!!\n")
-  stopTheDeamonServer()
+  stopTheDaemonServer()
 }
 
-#' @export
-stopDeamonServer <- function(){
-  if(is.null(pkg.env$server_handle))
-    return()
-  log.info("Stopping Deamon Server ",pkg.env$server_handle,"... ")
-  try(httpuv::stopDaemonizedServer(pkg.env$server_handle))
-  pkg.env$server_handle <- NULL
-
-  if(!is.null(pkg.env$keyboard)){
-    tkdestroy(pkg.env$keyboard)
-    pkg.env$keyboard <- null
-  }
-  log.info("succeeded\n")
-}
-
-restartDeamonServer <- function(){
-  stopDeamonServer()
-  startDeamonServer()
+restartDaemonServer <- function(){
+  stopDaemonServer()
+  startDaemonServer()
 }
 
 getIP <- function(){

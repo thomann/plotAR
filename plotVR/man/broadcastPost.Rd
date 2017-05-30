@@ -4,14 +4,14 @@
 \alias{broadcastPost}
 \title{Broadcast to a server via POST - hence this can run in another process or even on another host.}
 \usage{
-broadcastPost(data, server = getOption("plotVR.broadcast.server", getURL()),
-  ...)
+broadcastPost(data, server = getOption("plotVR.broadcast.server",
+  plotVR:::getURL()), ...)
 }
 \arguments{
 \item{data}{the JSON-model data to broadcast, from \link{writeData}}
 
 \item{server}{to which post to post the data, default is to \link{getURL} but also can be set
-using \code{option(plotVR.broadcast.server="http://example.com:2908")}.}
+using \code{options(plotVR.broadcast.server="http://example.com:2908")}.}
 
 \item{...}{passed to \code{\link{httr::POST}}.}
 }
@@ -24,7 +24,7 @@ Broadcast to a server via POST - hence this can run in another process or even o
 \examples{
 
 \dontrun{
-option(plotVF.default.broadcast=broadcastPost)
+options(plotVF.default.broadcast=broadcastPost)
 plotVR(iris)
 
 # or directly:
@@ -32,6 +32,6 @@ plotVR(iris, broadcast=broadcastPost)
 }
 }
 \seealso{
-\cod{\link{plotVR}}
+\code{\link{plotVR}}
 }
 

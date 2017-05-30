@@ -8,8 +8,8 @@ Maintainer: Philipp Thomann <pht@gmx.ch>
 Description: This is a prototype to get your data into a Google Cardboard and navigate using the computer keyboard. There is also an Android-client available.
 License: AGPL-3
 LazyData: TRUE
-Imports: httpuv
-Suggests: qrcode, R.utils,
+Depends: httpuv
+Suggests: qrcode, tcltk, R.utils,
     knitr,
     rmarkdown
 VignetteBuilder: knitr

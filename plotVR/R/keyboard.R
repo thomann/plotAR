@@ -126,7 +126,7 @@ tk_keyboard <- function(callback=cat,wait=F,closeSock=NULL, link=NULL){
   tcl("wm", "protocol", tt, "WM_DELETE_WINDOW", function(...){
     cat('User is closing window\n')
     str(list(...))
-    stopDeamonServer()
+    stopServer()
   })
 
   if(wait) tkwait.window(tt)
