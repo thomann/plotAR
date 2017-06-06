@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>plotVR -keyboard</title>
+    <meta charset="utf-8">
+    <!-- <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> -->
+    <style>
+    body {
+      /*width: 100%;
+      height: 100%;
+      background-color: #000;
+      color: #fff;
+      margin: 0px;
+      padding: 0;
+      overflow: hidden;*/
+    }
+
+    /* Position the button on the bottom of the page. */
+    #keyboard td {
+      width: 2cm;
+      border: solid
+      /*position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-family: 'Karla', sans-serif;
+      z-index: 1;*/
+    }
+
+    a#magic-window {
+      /*display: block;
+      color: white;
+      margin-top: 1em;*/
+    }
+
+    td.keysRowHead {
+      font-style: italic;
+      border: 0;
+    }
+    </style>
+  </head>
+        <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
+             this somehow backfires and httpuv in the R-session crashes with segfault -->
+  <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
+    <div id="keyboard">
+      <table>
+        <tr>
+        </tr>
+        <tr>
+          <td rowspan="2" class="keysRowHead">move</td>
+          <td colspan="2">down (q)</td>
+          <td colspan="2">forward (w)</td>
+          <td colspan="2">up (e)</td>
+          <td colspan="2">reload (r)</td>
+        </tr>
+        <tr>
+          <td colspan="2">left (a)</td>
+          <td colspan="2">back (s)</td>
+          <td colspan="2">right (d)</td>
+        </tr>
+        <tr>
+          <td rowspan="1" class="keysRowHead">rotate</td>
+          <td colspan="2">up (up)</td>
+          <td colspan="2">down (down)</td>
+          <td colspan="2">left (left)</td>
+          <td colspan="2">right (right)</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td colspan="6">toggle flying mode (space)</td>
+        </tr>
+      </table>
+      <div id="focusWidget"></div>
+      <form id='theForm'><input id="hostInput" type="text" value="http://localhost:2908"/></form>
+    </div>
+  </body>
+  <script>
+    // the websocket to home to get keyboard input
+    try{
+      var wsProtocol = (location.protocol=="https:") ? "wss:" : "ws:";
+      var websocket = new WebSocket(wsProtocol+"//"+location.host);
+
+      websocket.onmessage = function(msg) {
+        if(msg.data.length == 0)
+          return;
+        console.log("Got message: "+msg.data);
+        handle_char(msg.data);
+        //websocket.send("thanks");
+      }
+      websocket.onclose = function(event){
+        console.log('websocket closed.')
+      }
+
+    }catch(err){
+      console.log(err);
+    }
+
+    var connected = false;
+
+    function handle_char(msg){
+      if(msg == "r"){
+        // we need to close the websocket, else on Chrome (Android/Linux/macOS)
+        // this somehow backfires and httpuv in the R-session crashes with segfault
+        if(websocket != null){
+          closeWebSocket();
+          location.reload(true);
+        }else{
+          location.reload(true);
+        }
+        return;
+      }else if(msg == "reload_data" || msg =="x" ){
+        refreshData();
+      // }else if(msg === "c"){
+      //   websocket.close();
+      //   return;
+      }else if(msg === "space"){
+        speed = (speed==0) ? 1 : 0;
+        console.log("New speed: "+speed);
+/*      }else if(msg === "f"){
+        toggleFullscreen();
+      }else if(msg === "c"){
+        if(connected){
+          device_controls.disconnect();
+        }else{
+          device_controls.connect();
+        }
+        connected = !connected;*/
+      }else{
+        var ALPHA_ROT = 0.1;
+        if(msg === "a"){
+          go(-1, 0, 0);
+        }else if(msg === "d"){
+          go(1, 0, 0);
+        }else if(msg === "s"){
+          go(0, 0, 1);
+        }else if(msg === "w"){
+          go(0, 0, -1);
+        }else if(msg === "q"){
+          go(0, 1, 0);
+        }else if(msg === "e"){
+          go(0, -1, 0);
+        }else if(msg === "Left"){
+          camera.rotateY(ALPHA_ROT);
+        }else if(msg === "Right"){
+          camera.rotateY(-ALPHA_ROT);
+        }else if(msg === "Up"){
+          camera.rotateX(ALPHA_ROT);
+        }else if(msg === "Down"){
+          camera.rotateX(-ALPHA_ROT);
+        }
+      }
+    }
+
+    function keyEvent(event){
+      var key = event.keyCode || event.which;
+      var keychar = String.fromCharCode(key).toLowerCase();
+      if(key==32){
+        keychar = "space";
+      }else if(key==37){
+        keychar = "Left";
+      }else if(key==38){
+        keychar = "Up";
+      }else if(key==39){
+        keychar = "Right";
+      }else if(key==40){
+        keychar = "Down";
+      }
+      console.log("Keyboard: keyCode "+key+", keychar "+keychar);
+      sendMessage("broadcast key "+keychar)
+      //handle_char(keychar);
+    }
+
+    function updateFocus(event){
+      console.log("Update Focus upon: " + event);
+      focusWidget = document.getElementById("focusWidget");
+      focusWidget.focus();
+      if(document.hasFocus()){
+        focusWidget.innerHTML = "has focus";
+        sendMessage('focus: 1');
+      }else{
+        focusWidget.innerHTML = "has not focus";
+        sendMessage('focus: 0');
+      }
+    }
+
+    function sendMessage(message){
+      if(websocket != null){
+        websocket.send(message);
+        console.log('sent message: ' + message);
+      }else{
+        console.log('no websocket - would have sent message: ' + message);
+      }
+    }
+
+    function closeWebSocket(){
+      if(websocket != null){
+        // sendMessage("byebye")
+        websocket.close();
+        websocket = null;
+      }
+    }
+
+    function myOnLoad(event){
+      updateFocus(event);
+      document.getElementById('hostInput').value = location.host+'/index.html';
+      document.getElementById('hostInput').focus();
+    }
+  </script>
+</html>

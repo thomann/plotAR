@@ -61,6 +61,14 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #' # or directly:
 #' plotVR(iris, broadcast=broadcastPost)
 #' }
-broadcastPost <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getURL()), ...){
-  invisible(httr::POST(server,body=data, ...))
+broadcastPost <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getUrl()), ...){
+  ret <- httr::POST(server,body=data, ...)
+  openKeyboard()
+  invisible(ret)
+}
+
+startExternalServerProcess <- function(){
+  R <- '"options(plotVR.log.info=T); plotVR::startBlockingServer()"'
+  cmd <- paste0(R.home('bin'),'/Rscript -e ', R)
+  system(cmd, wait=FALSE)
 }

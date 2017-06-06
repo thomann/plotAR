@@ -1,9 +1,11 @@
 # plotVR - Architecture and protocols
 
-For an active plotVR session there are three realms: 
+For an active plotVR session there are four realms: 
 
 * The data source from which you want to visualize some data:
-  -  Currently an R/Python/MATLAB-session
+  - Currently an R/Python/MATLAB-session
+* A controller that captures keyboard events (usually paired with a data source)
+  - Currently a HTML/JavaScript page
 * The VR-device, for which there are two independent implementations:
   - WebVR: included in the R-package, works in any Browser, both on
     Android/iOS and on the desktop.
@@ -23,17 +25,22 @@ VR-devices open a WebSocket connection to the server and if
 new data is available they download it via a simple GET from the server.
 Currently the server only has one model.
 
-The data source communicates with the server and that again with the VR-device:
+The data source(s) and controller(s) communicate to the server and that on in turn
+broadcasts to the VR-device(s):
 ```
-data source 1 ----> server -----> VR-device 1
-                 /          \
-data source 2 ---            ---> VR-device 2
+data source 1 ---               ---> VR-device 1
+                  \            /
+data source 2 ------> server ------> VR-device 2
+                       ^  ^
+                       |  |
+         controller 1 -   |
+         controller 2 ----
 ```
 The usual setup actually looks like this
 ```
 [ data source ----> server ]   ----->   VR-device
 ```
-Therefore the critical communication is between the server and the VR-device and
+The critical communication is between the server and the VR-device and
 can lead to problems, e.g. if the endpoints are on different networks.
 
 Eventually there might also be a communication from the server to the data source
@@ -48,7 +55,7 @@ A JSON file:
     [-0.897673879196766,1.01560199071363,-1.33575163424152,1],
     [-1.13920048346495,-0.13153881205026,-1.33575163424152,1],
     [-1.38072708773314,0.327317509055298,-1.39239928624498,1],
-    ....,
+    ...,
     [0.0684325378759866,-0.13153881205026,0.760211489886395,3 ]
   ],
   "speed":  0 
@@ -59,6 +66,6 @@ This consists of
 - `speed` the speed at which the avatar should fly (deprecated?)
 
 
-## Controller-Protocol: WebSocket
+## Live-Protocol: WebSocket
 
 The communication from the server to the VR-device are quite simple commands:

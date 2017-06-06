@@ -123,7 +123,7 @@ processWS <- function(thesock) {
   else
     NULL
   pkg.env$all_clients <- c(pkg.env$all_clients, list(thesock) )
-  tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
+  setNumberDevices(length(pkg.env$all_clients))
   #str(pkg.env$all_clients)
   thesock$onMessage(function(binary, message) {
     log.info("got WS message",message)
@@ -132,6 +132,9 @@ processWS <- function(thesock) {
     }else if(message == "shutdown"){
       # FIXME broadcast it?
       stopServer()
+    }else if(startsWith(message, prefix="broadcast key ")){
+      key <- substring(message, nchar("broadcast key ")+1)
+      broadcastDevices(key)
     }else{
       thesock$send(paste0('got message: ',message))
     }
@@ -148,7 +151,7 @@ onClose <- function(thesock, tt_handle){
   # remove that client from all_clients
   handles <- sapply(pkg.env$all_clients, function(x) x$.handle)
   pkg.env$all_clients <- pkg.env$all_clients[handles != thesock$.handle]
-  tclvalue(pkg.env$connectedText) <- length(pkg.env$all_clients)
+  setNumberDevices(length(pkg.env$all_clients))
   # close keyboard for that client
   if(!is.null(tt_handle))
     tkdestroy(tt_handle)
@@ -171,10 +174,18 @@ app <- list(call=process_request, onWSOpen = processWS)
 # app <- list(call=process_request, onWSOpen = easyWS)
 
 startGlobalKeyboard <- function(){
-  if(!getOption('plotVR.keyboard.individual',default=FALSE))
-    pkg.env$keyboard <- tk_keyboard(broadcastDevices, wait=F, closeSock=function(){}, link=getUrl())
+  # if(!getOption('plotVR.keyboard.individual',default=FALSE))
+  #   pkg.env$keyboard <- tk_keyboard(broadcastDevices, wait=F, closeSock=function(){}, link=getUrl())
 }
 
+#' Open Keyboard (in the viewer pane if in RStudio).
+#' @export
+openKeyboard <- function(){
+  viewer <- getOption("viewer")
+  if(is.null(viewer))
+    viewer <- utils::browseURL
+  viewer(paste0(getUrl(), 'keyboard.html'))
+}
 
 #' Start the WebServer in a blocking version.
 #' @export
@@ -260,6 +271,10 @@ stopDaemonServer <- function(){
     pkg.env$keyboard <- null
   }
   log.info("succeeded\n")
+}
+
+setNumberDevices <- function(num){
+  # tclvalue(pkg.env$connectedText) <- num
 }
 
 broadcastRefresh <- function(data){
