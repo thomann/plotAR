@@ -16,6 +16,11 @@ pkg.env$stopped <- FALSE
 # interval for blocking server to serve at once
 pkg.env$interruptIntervalMs <- 250
 
+# list of controllers
+pkg.env$controller <- list()
+# list of focus
+pkg.env$focus <- list()
+
 log.info <- function(...){
   try({
     if(getOption("plotVR.log.info", default=FALSE))
@@ -31,6 +36,7 @@ log.info <- function(...){
 
 process_request <- function(req, base="~/density/vr/") {
   log.info("Serving",req$PATH_INFO)
+  # print(ls.str(req))
   if(req$REQUEST_METHOD=="POST"){
     log.info('Got POST Content-type;',req$CONTENT_TYPE)
     #print(ls.str(req))
@@ -38,7 +44,11 @@ process_request <- function(req, base="~/density/vr/") {
     input_str <- paste(input_str, collapse="\n")
     if(substring(input_str,0,5)=="data=")
       input_str <- URLdecode(substring(input_str,6))
-    pkg.env$vr_data_json <- input_str
+    if(req$QUERY_STRING == "?add=TRUE"){
+      warning('Adding not yet implemented')
+    }else{
+      pkg.env$vr_data_json <- input_str
+    }
     log.info('Having new data from POST -- nchar:',paste0(nchar(input_str),collapse=','),'data:',input_str)
     #ws()log.info(pkg.env$vr_data_json,fill=T)
     broadcastRefresh()
@@ -88,6 +98,14 @@ process_request <- function(req, base="~/density/vr/") {
                   "</html>"
                 )
     ))
+  }else if(path == "/qr.json"){
+    url <- getUrl()
+    qr <- qrcode::qrcode_gen(url, dataOutput=TRUE, plotQRcode=FALSE)
+    data_frag <- paste(apply(qr,1,paste, collapse=','),collapse="],\n[")
+    qr_json <- paste('{ qr: [[ ',data_frag,']]\n}\n')
+    return(list(status = 200L,
+                headers = list('Content-Type' = 'application/json'),
+                body = qr_json ))
   }else if(path == "/data.json"){
     if(is.null(pkg.env$vr_data_json))
       pkg.env$vr_data_json <- writeData(iris[,1:3],col=iris$Species,loc=NULL)
@@ -135,6 +153,12 @@ processWS <- function(thesock) {
     }else if(startsWith(message, prefix="broadcast key ")){
       key <- substring(message, nchar("broadcast key ")+1)
       broadcastDevices(key)
+    }else if(message == "controller: 1"){
+      pkg.env$controller[[thesock$.handle]] <- 1
+    }else if(message == "focus: 1"){
+      pkg.env$focus[[thesock$.handle]] <- 1
+    }else if(message == "focus: 0"){
+      pkg.env$focus[[thesock$.handle]] <- 0
     }else{
       thesock$send(paste0('got message: ',message))
     }
@@ -146,16 +170,21 @@ processWS <- function(thesock) {
 }
 
 onClose <- function(thesock, tt_handle){
-  log.info("Closing websocket: ",thesock$.handle)
+  handle <- thesock$.handle
+  log.info("Closing websocket: ",handle)
   # str(thesock)
   # remove that client from all_clients
   handles <- sapply(pkg.env$all_clients, function(x) x$.handle)
-  pkg.env$all_clients <- pkg.env$all_clients[handles != thesock$.handle]
+  pkg.env$all_clients <- pkg.env$all_clients[handles != handle]
   setNumberDevices(length(pkg.env$all_clients))
   # close keyboard for that client
   if(!is.null(tt_handle))
     tkdestroy(tt_handle)
-  log.info("Closed websocket: ",thesock$.handle)
+  if(handle %in% pkg.env$controller)
+    pkg.env[[controller]] <- -1
+  if(handle %in% pkg.env$focus)
+    pkg.env[[focus]] <- -1
+  log.info("Closed websocket: ",handle)
 }
 
 easyWS <- function(ws) {
@@ -275,6 +304,7 @@ stopDaemonServer <- function(){
 
 setNumberDevices <- function(num){
   # tclvalue(pkg.env$connectedText) <- num
+  broadcastDevices(paste0('number devices: ',num))
 }
 
 broadcastRefresh <- function(data){
@@ -337,7 +367,12 @@ getIP <- function(){
       warning('More than one IP-address was found, using the first one: ',res[1], 'others: ', paste(res[-1],collapse=', '))
     res[1]
   }else if(os=='Darwin'){
-    system("route -n get default|grep interface|sed 's/^.*: //' | xargs ifconfig | grep 'inet ' | sed 's/.*inet \\([0-9.]*\\) .*/\\1/'", intern=TRUE)
+    suppressWarnings(
+      ret <- system("route -n get default 2>/dev/null |grep interface|sed 's/^.*: //' | xargs ifconfig | grep 'inet ' | sed 's/.*inet \\([0-9.]*\\) .*/\\1/'", intern=TRUE)
+    )
+    if(length(ret)==0 || nchar(ret)==0)
+      ret <- '127.0.0.1'
+    ret
   }else if(os=='Linux'){
     strsplit(system('hostname -I',intern=TRUE)," ")[[1]][1]
   }else{
@@ -384,13 +419,22 @@ showQR <- function(...){
   url <- getUrl(...)
   # viewer <- getOption('viewer')
   # viewer()
-  qrcode_gen(url)
+  qrcode::qrcode_gen(url)
   invisible(url)
 }
 
 #' @export
 openViewer <- function(...){
   url <- getUrl(...)
+  viewer <- getOption('viewer')
+  viewer(url)
+
+  invisible(url)
+}
+
+#' @export
+openController <- function(...){
+  url <- paste0(getUrl(...),'keyboard.html')
   viewer <- getOption('viewer')
   viewer(url)
 

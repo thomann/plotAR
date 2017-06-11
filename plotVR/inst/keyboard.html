@@ -31,6 +31,18 @@
       z-index: 1;*/
     }
 
+    .focused {
+      background-color: white;
+    }
+
+    .blured {
+      background-color: orange;
+    }
+
+    .disconnected {
+      background-color: gray;
+    }
+
     a#magic-window {
       /*display: block;
       color: white;
@@ -41,66 +53,159 @@
       font-style: italic;
       border: 0;
     }
+
+    #debug {
+      display: none;
+    }
     </style>
   </head>
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
              this somehow backfires and httpuv in the R-session crashes with segfault -->
   <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
+    <canvas id="canvasQR" width="100" height="100">
+    </canvas>
     <div id="keyboard">
       <table>
         <tr>
         </tr>
         <tr>
           <td rowspan="2" class="keysRowHead">move</td>
-          <td colspan="2">down (q)</td>
-          <td colspan="2">forward (w)</td>
-          <td colspan="2">up (e)</td>
-          <td colspan="2">reload (r)</td>
+          <td colspan="2" onclick="sendKey('q')">down (q)</td>
+          <td colspan="2" onclick="sendKey('w')">forward (w)</td>
+          <td colspan="2" onclick="sendKey('e')">up (e)</td>
+          <td colspan="2" onclick="sendKey('r')">reload (r)</td>
         </tr>
         <tr>
-          <td colspan="2">left (a)</td>
-          <td colspan="2">back (s)</td>
-          <td colspan="2">right (d)</td>
+          <td colspan="2" onclick="sendKey('a')">left (a)</td>
+          <td colspan="2" onclick="sendKey('s')">back (s)</td>
+          <td colspan="2" onclick="sendKey('d')">right (d)</td>
         </tr>
         <tr>
           <td rowspan="1" class="keysRowHead">rotate</td>
-          <td colspan="2">up (up)</td>
-          <td colspan="2">down (down)</td>
-          <td colspan="2">left (left)</td>
-          <td colspan="2">right (right)</td>
+          <td colspan="2" onclick="sendKey('Up')">up (up)</td>
+          <td colspan="2" onclick="sendKey('Down')">down (down)</td>
+          <td colspan="2" onclick="sendKey('Left')">left (left)</td>
+          <td colspan="2" onclick="sendKey('Right')">right (right)</td>
         </tr>
         <tr>
           <td></td>
-          <td colspan="6">toggle flying mode (space)</td>
+          <td colspan="6" onclick="sendKey('space')">toggle flying mode (space)</td>
         </tr>
       </table>
       <div id="focusWidget"></div>
-      <form id='theForm'><input id="hostInput" type="text" value="http://localhost:2908"/></form>
+      <div id="devicesWidget"></div>
+      <form id='theForm'><input id="hostInput" type="text" value="http://localhost:2908/index.html" size="120"/></form>
+      <pre id='debug'></pre>
     </div>
   </body>
+  <!-- the qr_data variable from home -->
   <script>
-    // the websocket to home to get keyboard input
-    try{
-      var wsProtocol = (location.protocol=="https:") ? "wss:" : "ws:";
-      var websocket = new WebSocket(wsProtocol+"//"+location.host);
 
-      websocket.onmessage = function(msg) {
-        if(msg.data.length == 0)
-          return;
-        console.log("Got message: "+msg.data);
-        handle_char(msg.data);
-        //websocket.send("thanks");
-      }
-      websocket.onclose = function(event){
-        console.log('websocket closed.')
-      }
+    var queryParams = null;
 
-    }catch(err){
-      console.log(err);
+    function getQueryParams(){
+      if(queryParams == null){
+        queryParams = {};
+        if(location.search.length==0){
+          return queryParams;
+        }
+        var vars = location.search.substring(1).split("&");
+        for(var i=0; i<vars.length; i++){
+          var index = vars[i].indexOf("=")
+          if(index > 0){
+            var name = vars[i].substring(0,index).split("+").join(" ");
+            var value = vars[i].substring(index+1).split("+").join(" ");
+            queryParams[decodeURIComponent(name)] = decodeURIComponent(value);
+          }
+        }
+        log(queryParams)
+      }
+      return queryParams;
+    }
+    function findServer(){
+      var ret = getQueryParams().server;
+      if(ret != null)
+        return ret;
+      // if we got here from a server, use it:
+      return location.origin;
+    }
+    function findWsUrl(){
+      var ret = getQueryParams().wsUrl;
+      if(ret != null)
+        return ret;
+      ret = findServer();
+      // if we got here from a server, use it:
+      if(ret.startsWith("http")){
+        var wsProtocol = (ret.startsWith("https:")) ? "wss" : "ws";
+        var hostAndPort = ret.substring(ret.indexOf("://"));
+        ret = wsProtocol+hostAndPort;
+      }else{
+        ret = null;
+      }
+      return ret;
     }
 
     var connected = false;
+    var wsUrl = findWsUrl();
+    var websocket = null;
 
+    var DEFAULT_QR_DATA = [[  1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,0,1,0,1,1,1,1,1,1,1],
+[1,0,0,0,0,0,1,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1],
+[1,0,1,1,1,0,1,0,0,1,0,0,0,1,1,0,1,0,1,0,1,1,1,0,1],
+[1,0,1,1,1,0,1,0,0,0,0,1,1,1,0,1,1,0,1,0,1,1,1,0,1],
+[1,0,1,1,1,0,1,0,1,0,0,1,1,0,0,0,1,0,1,0,1,1,1,0,1],
+[1,0,0,0,0,0,1,0,1,1,1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+[1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0],
+[1,1,1,0,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,1,1,0,0,1,1],
+[0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1],
+[0,0,0,0,1,0,1,1,0,1,1,0,1,1,1,1,0,1,1,0,0,1,1,0,1],
+[0,1,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,0],
+[0,0,0,0,0,1,1,1,0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,0,1],
+[0,0,1,1,0,0,0,0,1,0,1,0,0,1,1,1,1,0,1,1,0,0,0,1,1],
+[1,1,0,0,0,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1,1,1,1,0,1],
+[0,0,0,1,0,1,0,1,1,0,1,0,0,0,0,1,1,1,0,1,1,0,0,0,0],
+[1,1,0,0,0,1,1,1,0,1,0,1,1,1,1,0,1,1,1,1,1,0,0,1,0],
+[0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,1],
+[1,1,1,1,1,1,1,0,0,1,0,0,1,1,1,0,1,0,1,0,1,1,0,0,1],
+[1,0,0,0,0,0,1,0,1,0,1,1,1,0,0,1,1,0,0,0,1,0,0,1,0],
+[1,0,1,1,1,0,1,0,0,1,0,0,0,1,1,1,1,1,1,1,1,1,0,0,1],
+[1,0,1,1,1,0,1,0,0,1,1,0,0,1,0,0,0,1,0,0,1,1,1,1,0],
+[1,0,1,1,1,0,1,0,1,1,1,1,0,0,0,1,0,1,0,0,1,0,0,1,1],
+[1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,0,1,1,1,1,1,0,0,0,0],
+[1,1,1,1,1,1,1,0,1,0,0,1,1,1,0,0,1,1,1,0,0,1,0,0,1 ]];
+
+    var qr_data = DEFAULT_QR_DATA;
+
+    function openTheWebsocket(url){
+      if(url == null)
+        return;
+      try{
+        websocket = new WebSocket(url);
+
+        websocket.onopen = function() {
+          sendMessage('controller: 1')
+          updateFocus();
+        }
+        websocket.onmessage = function(msg) {
+          if(msg.data.length == 0)
+            return;
+          log("Got message: "+msg.data);
+          if(msg.data.startsWith('number devices: ')){
+            document.getElementById("devicesWidget").innerHTML = msg.data;
+          }
+          //handle_char(msg.data);
+          //websocket.send("thanks");
+        }
+        websocket.onclose = function(event){
+          log('websocket closed.')
+        }
+
+        connected = true;
+      }catch(err){
+        log(err);
+      }
+    }
     function handle_char(msg){
       if(msg == "r"){
         // we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -119,7 +224,7 @@
       //   return;
       }else if(msg === "space"){
         speed = (speed==0) ? 1 : 0;
-        console.log("New speed: "+speed);
+        log("New speed: "+speed);
 /*      }else if(msg === "f"){
         toggleFullscreen();
       }else if(msg === "c"){
@@ -169,30 +274,80 @@
       }else if(key==40){
         keychar = "Down";
       }
-      console.log("Keyboard: keyCode "+key+", keychar "+keychar);
+      log("Keyboard: keyCode "+key+", keychar "+keychar);
+      sendKey(keychar)
+    }
+
+    function sendKey(keychar){
       sendMessage("broadcast key "+keychar)
       //handle_char(keychar);
     }
 
     function updateFocus(event){
-      console.log("Update Focus upon: " + event);
+      log("Update Focus upon: " + event);
       focusWidget = document.getElementById("focusWidget");
-      focusWidget.focus();
+      keyboard = document.getElementById("keyboard");
       if(document.hasFocus()){
         focusWidget.innerHTML = "has focus";
+        keyboard.className = "focused";
         sendMessage('focus: 1');
       }else{
         focusWidget.innerHTML = "has not focus";
+        keyboard.className = "blured";
         sendMessage('focus: 0');
+      }
+      if(websocket==null || websocket.readyState != WebSocket.OPEN)
+        keyboard.className = "disconnected";
+      log(keyboard.className)
+    }
+
+    function getQR_data(){
+      if(!location.protocol.startsWith('http')){
+        // cannot connect to the server :-|
+        return;
+      }
+      var http_request = new XMLHttpRequest();
+      http_request.onreadystatechange  = function(){
+        if (http_request.readyState == 4){
+          var responseText = http_request.responseText;
+          if(responseText.length == 0 || http_request.status == 404){
+            qr_data = DEFAULT_QR_DATA;
+          }else{
+            response = JSON.parse(responseText);
+            qr_data = response.qr;
+          }
+          plotQR()
+        }
+        //setTimeout(refreshData, 4000);
+      }
+      http_request.open("GET", "qr.json", true);
+      http_request.send();
+    }
+
+    function plotQR(){
+      canvas = document.getElementById('canvasQR');
+      if(canvas.getContext){
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgb(255,255,255)";
+        ctx.fillRect(0,0,100,100);
+        ctx.fillStyle = "rgb(0,0,0)";
+        var n = qr_data.length
+        for(var i=0; i<n; i++){
+          for(var j=0; j<n; j++){
+            if(qr_data[i][j]==1){
+              ctx.fillRect(4*i, 4*j, 4, 4);
+            }
+          }
+        }
       }
     }
 
     function sendMessage(message){
-      if(websocket != null){
+      if(websocket != null && websocket.readyState == WebSocket.OPEN){
         websocket.send(message);
-        console.log('sent message: ' + message);
+        log('sent message: ' + message);
       }else{
-        console.log('no websocket - would have sent message: ' + message);
+        log('no websocket - would have sent message: ' + message);
       }
     }
 
@@ -205,9 +360,22 @@
     }
 
     function myOnLoad(event){
+      openTheWebsocket(wsUrl);
+
       updateFocus(event);
-      document.getElementById('hostInput').value = location.host+'/index.html';
+      document.getElementById('hostInput').value = findServer()+'/index.html';
       document.getElementById('hostInput').focus();
+
+      plotQR();
+      getQR_data();
     }
+
+    function log(msg){
+      console.log(msg)
+      focusWidget = document.getElementById("debug");
+      focusWidget.innerHTML += msg+"\n";
+    }
+
+    //log = console.log;
   </script>
 </html>

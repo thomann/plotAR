@@ -34,10 +34,26 @@ writeData <- function(data,col=NULL,speed=NULL,loc="./data.json",autoScale=T){
 #writeData(iris[,1:3],col=iris$Species)
 
 #' Plot data into the Cardboard VR
+#'
+#' This is the main function for usage of plotVR.
+#' If necessary it starts a deamonized server and posts the data on that server.
+#' If no controller is open one also will be opened.
+#' All connected devices will be informed of the new data and should reload the data.
+#'
+#' @param data data frame of which the first three columns will be used in the scatter.
+#' @param col the color for all the points
+#' @param broadcast can specify another server to use.
+#'
 #' @export
+#' @seealso \code{\link{open}}
+#' @examples
+#' \dontrun{
+#' plotVR(iris, col=iris$Species)
+#' }
 plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast', broadcastRefresh)){
   data_json <- writeData(data[,1:3],col=col,loc=NULL)
   broadcast(data_json)
+  openKeyboard()
   invisible(data_json)
 }
 
@@ -50,7 +66,7 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #'
 #' @return invisible the response of the server
 #' @export
-#' @seealso \code{\link{plotVR}}
+#' @seealso \code{\link{openKeyboard}}
 #'
 #' @examples
 #'
