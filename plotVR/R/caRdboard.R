@@ -207,15 +207,6 @@ startGlobalKeyboard <- function(){
   #   pkg.env$keyboard <- tk_keyboard(broadcastDevices, wait=F, closeSock=function(){}, link=getUrl())
 }
 
-#' Open Keyboard (in the viewer pane if in RStudio).
-#' @export
-openKeyboard <- function(){
-  viewer <- getOption("viewer")
-  if(is.null(viewer))
-    viewer <- utils::browseURL
-  viewer(paste0(getUrl(), 'keyboard.html'))
-}
-
 #' Start the WebServer in a blocking version.
 #' @export
 startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=ifelse(interactive(), 100, 1000)){
@@ -350,93 +341,4 @@ broadcastDevices <- function(message){
 restartDaemonServer <- function(){
   stopDaemonServer()
   startDaemonServer()
-}
-
-getIP <- function(){
-  os <- Sys.info()[['sysname']]
-  if(os=='Windows'){
-    # ???
-    tmp <- system('ipconfig',intern=T)
-    res <- gsub(".*?: ([0-9.]+)[^0-9.]*", "\\1", tmp[grep('IPv4',tmp)])
-    res <- res[nchar(res)>0]
-    if(is.null(res)){
-      warning('No IP-addresses were found, using localhost ip address')
-      return('127.0.0.1')
-    }
-    if(length(res)>1)
-      warning('More than one IP-address was found, using the first one: ',res[1], 'others: ', paste(res[-1],collapse=', '))
-    res[1]
-  }else if(os=='Darwin'){
-    suppressWarnings(
-      ret <- system("route -n get default 2>/dev/null |grep interface|sed 's/^.*: //' | xargs ifconfig | grep 'inet ' | sed 's/.*inet \\([0-9.]*\\) .*/\\1/'", intern=TRUE)
-    )
-    if(length(ret)==0 || nchar(ret)==0)
-      ret <- '127.0.0.1'
-    ret
-  }else if(os=='Linux'){
-    strsplit(system('hostname -I',intern=TRUE)," ")[[1]][1]
-  }else{
-    # ???
-    warning('Did not recognize os, using localhost ip address')
-    '127.0.0.1'
-  }
-}
-getHostInfo <- function(hostname=R.utils::System$getHostname()){
-  out <- system(paste('host',hostname),intern=TRUE)
-  out <- out[grep('has address',out)]
-  strsplit(out, " has address ")
-}
-
-getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
-  if(useIP){
-    host <- getIP()
-  }else if(useFullName){
-    if(is.null(host)){
-      if(requireNamespace('R.utils', quietly=TRUE)){
-        host <- R.utils::System$getHostname()
-        info <- getHostInfo(host)
-        if(length(info)>=1)
-          host <- info[[1]][1]
-      }else{
-        warning('no host provided and package R.utils not installed, therefore using localhost')
-        host <- 'localhost'
-      }
-    }else{
-      warning('did not find out host, using localhost')
-      host <- 'localhost'
-    }
-  }
-  # FIXME is this needed?
-  # url <- paste0("http://",host,":",port,"/plotVR.html")
-  url <- paste0("http://",host,":",port,"/")
-  return(url)
-}
-
-#' @export
-showQR <- function(...){
-  require(qrcode)
-
-  url <- getUrl(...)
-  # viewer <- getOption('viewer')
-  # viewer()
-  qrcode::qrcode_gen(url)
-  invisible(url)
-}
-
-#' @export
-openViewer <- function(...){
-  url <- getUrl(...)
-  viewer <- getOption('viewer')
-  viewer(url)
-
-  invisible(url)
-}
-
-#' @export
-openController <- function(...){
-  url <- paste0(getUrl(...),'keyboard.html')
-  viewer <- getOption('viewer')
-  viewer(url)
-
-  invisible(url)
 }

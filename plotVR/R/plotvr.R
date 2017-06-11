@@ -53,7 +53,7 @@ writeData <- function(data,col=NULL,speed=NULL,loc="./data.json",autoScale=T){
 plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast', broadcastRefresh)){
   data_json <- writeData(data[,1:3],col=col,loc=NULL)
   broadcast(data_json)
-  openKeyboard()
+  openController()
   invisible(data_json)
 }
 
@@ -66,7 +66,7 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #'
 #' @return invisible the response of the server
 #' @export
-#' @seealso \code{\link{openKeyboard}}
+#' @seealso \code{\link{openController}}
 #'
 #' @examples
 #'
@@ -79,7 +79,7 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #' }
 broadcastPost <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getUrl()), ...){
   ret <- httr::POST(server,body=data, ...)
-  openKeyboard()
+  openController()
   invisible(ret)
 }
 

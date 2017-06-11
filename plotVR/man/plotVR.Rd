@@ -7,7 +7,24 @@
 plotVR(data, col = NULL, broadcast = getOption("plotVF.default.broadcast",
   broadcastRefresh))
 }
-\description{
-Plot data into the Cardboard VR
-}
+\arguments{
+\item{data}{data frame of which the first three columns will be used in the scatter.}
 
+\item{col}{the color for all the points}
+
+\item{broadcast}{can specify another server to use.}
+}
+\description{
+This is the main function for usage of plotVR.
+If necessary it starts a deamonized server and posts the data on that server.
+If no controller is open one also will be opened.
+All connected devices will be informed of the new data and should reload the data.
+}
+\examples{
+\dontrun{
+plotVR(iris, col=iris$Species)
+}
+}
+\seealso{
+\code{\link{open}}
+}

@@ -2,9 +2,8 @@
 
 export(.Last.lib)
 export(broadcastPost)
-export(openViewer)
+export(openController)
 export(plotVR)
-export(showQR)
 export(startBlockingServer)
 export(startDaemonServer)
 export(stopBlockingServer)

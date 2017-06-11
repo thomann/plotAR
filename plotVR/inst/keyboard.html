@@ -364,7 +364,10 @@
 
       updateFocus(event);
       document.getElementById('hostInput').value = findServer()+'/index.html';
-      document.getElementById('hostInput').focus();
+      document.getElementById('hostInput').onfocus = function(){
+        document.getElementById('keyboard').focus();
+      };
+//      document.getElementById('hostInput').focus();
 
       plotQR();
       getQR_data();

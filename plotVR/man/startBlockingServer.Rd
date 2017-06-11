@@ -10,4 +10,3 @@ startBlockingServer(host = "0.0.0.0", port = 2908,
 \description{
 Start the WebServer in a blocking version.
 }
-

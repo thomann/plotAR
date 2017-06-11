@@ -5,7 +5,7 @@
 \title{Broadcast to a server via POST - hence this can run in another process or even on another host.}
 \usage{
 broadcastPost(data, server = getOption("plotVR.broadcast.server",
-  plotVR:::getURL()), ...)
+  plotVR:::getUrl()), ...)
 }
 \arguments{
 \item{data}{the JSON-model data to broadcast, from \link{writeData}}
@@ -32,6 +32,5 @@ plotVR(iris, broadcast=broadcastPost)
 }
 }
 \seealso{
-\code{\link{plotVR}}
+\code{\link{openController}}
 }
-
