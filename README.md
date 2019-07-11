@@ -58,6 +58,7 @@ plotVR(trees)
 ## Issues
 
 * This is not very stable at the moment!
+* This repo uses symlinks which for Windows explicitely need to be activated, see <https://github.com/git-for-windows/git/wiki/Symbolic-Links>.
 * On Windows: the TK-control window is shown but does not react, so the keyboard feature is broken.
 * There need to be better keyboard assignments, and maybe some more interface in the keyboard focus window.
 * The default values are not well set, e.g. the starting point of the virtual observer.

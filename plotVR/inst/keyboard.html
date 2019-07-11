@@ -18,17 +18,24 @@
       overflow: hidden;*/
     }
 
-    /* Position the button on the bottom of the page. */
+    #keyboard table {
+      width: 60%;
+    }
+
     #keyboard td {
-      width: 2cm;
-      border: solid
-      /*position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      /* width: 2cm; */
+      border: solid;
       text-align: center;
-      font-family: 'Karla', sans-serif;
-      z-index: 1;*/
+      border-radius: 10px;
+      margin: 15px;
+    }
+
+    #keyboard td.empty {
+      border: none;
+    }
+
+    td:active, td.active {
+      background-color: lightblue
     }
 
     .focused {
@@ -49,56 +56,110 @@
       margin-top: 1em;*/
     }
 
-    td.keysRowHead {
+    #keyboard td.keysRowHead {
       font-style: italic;
-      border: 0;
+      border: none;
     }
 
     #debug {
       display: none;
     }
+
+    #hostLink {
+      float: right
+    }
+
+    #hostLink div {
+      margin: 0 auto;
+    }
+
+    #focusWidget {
+      display: none
+    }
+
+    #hostInput_TF{
+      position: absolute;
+      left: -9999px;
+    }
+
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgb(0,0,0); /* Fallback color */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    .modal-content {
+      background-color: rgba(255,255,255,0.9);
+      text-align: center;
+      border-radius: 10px;
+      margin: 5% auto; /* 15% from the top and centered */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 50%; /* Could be more or less, depending on screen size */
+    }
     </style>
   </head>
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
              this somehow backfires and httpuv in the R-session crashes with segfault -->
-  <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
-    <canvas id="canvasQR" width="100" height="100">
-    </canvas>
+  <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onkeyup="keyUp(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
+    <div id='hostLink'>
+      <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
+      <div>
+        <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
+        <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
+        <button onclick="copyUrl()" id="hostInput_copy">Copy</button>
+      </div>
+    </div>
+        
     <div id="keyboard">
       <table>
         <tr>
-        </tr>
-        <tr>
           <td rowspan="2" class="keysRowHead">move</td>
-          <td colspan="2" onclick="sendKey('q')">down (q)</td>
-          <td colspan="2" onclick="sendKey('w')">forward (w)</td>
-          <td colspan="2" onclick="sendKey('e')">up (e)</td>
-          <td colspan="2" onclick="sendKey('r')">reload (r)</td>
+          <td colspan="1" onclick="sendKey('q')" id='key.q'>down (q)</td>
+          <td colspan="1" onclick="sendKey('w')" id='key.w'>forward (w)</td>
+          <td colspan="1" onclick="sendKey('e')" id='key.e'>up (e)</td>
         </tr>
         <tr>
-          <td colspan="2" onclick="sendKey('a')">left (a)</td>
-          <td colspan="2" onclick="sendKey('s')">back (s)</td>
-          <td colspan="2" onclick="sendKey('d')">right (d)</td>
+          <td colspan="1" onclick="sendKey('a')" id='key.a'>left (a)</td>
+          <td colspan="1" onclick="sendKey('s')" id='key.s'>back (s)</td>
+          <td colspan="1" onclick="sendKey('d')" id='key.d'>right (d)</td>
         </tr>
         <tr>
-          <td rowspan="1" class="keysRowHead">rotate</td>
-          <td colspan="2" onclick="sendKey('Up')">up (up)</td>
-          <td colspan="2" onclick="sendKey('Down')">down (down)</td>
-          <td colspan="2" onclick="sendKey('Left')">left (left)</td>
-          <td colspan="2" onclick="sendKey('Right')">right (right)</td>
+          <td rowspan="2" class="keysRowHead">look</td>
+          <td colspan="1" class="empty"></td>
+          <td colspan="1" onclick="sendKey('Up')" id='key.Up'>up (up)</td>
         </tr>
         <tr>
-          <td></td>
-          <td colspan="6" onclick="sendKey('space')">toggle flying mode (space)</td>
+          <td colspan="1" onclick="sendKey('Left')" id='key.Left'>left (left)</td>
+          <td colspan="1" onclick="sendKey('Down')" id='key.Down'>down (down)</td>
+          <td colspan="1" onclick="sendKey('Right')" id='key.Right'>right (right)</td>
+        </tr>
+        <tr>
+            <td rowspan="2" class="keysRowHead">other</td>
+            <td colspan="1" onclick="sendKey('r')" id='key.r'>reload (r)</td>
+          <td colspan="6" onclick="sendKey('space')" id='key.space'>toggle flying mode (space)</td>
         </tr>
       </table>
-      <div id="focusWidget"></div>
-      <div id="devicesWidget"></div>
-      <form id='theForm'><input id="hostInput" type="text" value="http://localhost:2908/index.html" size="120"/></form>
-      <pre id='debug'></pre>
     </div>
+    <div id="status">
+      <span id="focusWidget"></span>
+      Devices <span id="status_numDevices">0</span>,
+      Controllers <span id="status_numControllers">0</span>,
+      having focus: <span id="status_numFocus">0</span>
+    </div>
+    <div class="modal" id="focusBox"><div class="modal-content">No keyboard focus</div></div>
+    
+    <pre id='debug'></pre>
   </body>
-  <!-- the qr_data variable from home -->
+
+
   <script>
 
     var queryParams = null;
@@ -181,18 +242,24 @@
       if(url == null)
         return;
       try{
-        websocket = new WebSocket(url);
+        websocket = new WebSocket(url + "/ws");
 
         websocket.onopen = function() {
-          sendMessage('controller: 1')
+          sendMessage({'controller': true})
           updateFocus();
         }
         websocket.onmessage = function(msg) {
           if(msg.data.length == 0)
             return;
           log("Got message: "+msg.data);
-          if(msg.data.startsWith('number devices: ')){
-            document.getElementById("devicesWidget").innerHTML = msg.data;
+          body = JSON.parse(msg.data)
+          if('status' in body){
+            state = body['status']
+            for(key in state){
+              el = document.getElementById("status_"+key)
+              if(el)
+                el.innerHTML = state[key];
+            }
           }
           //handle_char(msg.data);
           //websocket.send("thanks");
@@ -260,8 +327,7 @@
       }
     }
 
-    function keyEvent(event){
-      var key = event.keyCode || event.which;
+    function getKeyChar(key){
       var keychar = String.fromCharCode(key).toLowerCase();
       if(key==32){
         keychar = "space";
@@ -274,12 +340,30 @@
       }else if(key==40){
         keychar = "Down";
       }
+      console.log(keychar)
+      return keychar
+    }
+
+    function keyEvent(event){
+      var key = event.keyCode || event.which;
+      var keychar = getKeyChar(key)
       log("Keyboard: keyCode "+key+", keychar "+keychar);
+      console.log("key."+keychar)
+      document.getElementById("key."+keychar).classList.add('active');
       sendKey(keychar)
     }
 
+    function keyUp(event){
+      var key = event.keyCode || event.which;
+      var keychar = getKeyChar(key)
+      var el = document.getElementById("key."+keychar)
+      if(el)
+        el.classList.remove('active');
+
+    }
+
     function sendKey(keychar){
-      sendMessage("broadcast key "+keychar)
+      sendMessage({"key":keychar})
       //handle_char(keychar);
     }
 
@@ -290,11 +374,13 @@
       if(document.hasFocus()){
         focusWidget.innerHTML = "has focus";
         keyboard.className = "focused";
-        sendMessage('focus: 1');
+        document.getElementById("focusBox").style.display = 'none'
+        sendMessage({'focus': true});
       }else{
         focusWidget.innerHTML = "has not focus";
         keyboard.className = "blured";
-        sendMessage('focus: 0');
+        document.getElementById("focusBox").style.display = 'block'
+        sendMessage({'focus': false});
       }
       if(websocket==null || websocket.readyState != WebSocket.OPEN)
         keyboard.className = "disconnected";
@@ -315,6 +401,7 @@
           }else{
             response = JSON.parse(responseText);
             qr_data = response.qr;
+            setURL(response.url)
           }
           plotQR()
         }
@@ -326,16 +413,17 @@
 
     function plotQR(){
       canvas = document.getElementById('canvasQR');
+      canvas.height = canvas.width = (qr_data.length + 1)*4
       if(canvas.getContext){
         var ctx = canvas.getContext("2d");
         ctx.fillStyle = "rgb(255,255,255)";
-        ctx.fillRect(0,0,100,100);
+        ctx.fillRect(0,0,canvas.height, canvas.width);
         ctx.fillStyle = "rgb(0,0,0)";
         var n = qr_data.length
         for(var i=0; i<n; i++){
           for(var j=0; j<n; j++){
             if(qr_data[i][j]==1){
-              ctx.fillRect(4*i, 4*j, 4, 4);
+              ctx.fillRect(4*i+2, 4*j+2, 4, 4);
             }
           }
         }
@@ -343,6 +431,10 @@
     }
 
     function sendMessage(message){
+      if(typeof(message) === 'string' || message instanceof String){
+        message = { "message": message }
+      }
+      message = JSON.stringify(message)
       if(websocket != null && websocket.readyState == WebSocket.OPEN){
         websocket.send(message);
         log('sent message: ' + message);
@@ -363,20 +455,31 @@
       openTheWebsocket(wsUrl);
 
       updateFocus(event);
-      document.getElementById('hostInput').value = findServer()+'/index.html';
-      document.getElementById('hostInput').onfocus = function(){
-        document.getElementById('keyboard').focus();
-      };
-//      document.getElementById('hostInput').focus();
+      setURL(findServer()+'/index.html')
 
       plotQR();
       getQR_data();
     }
 
+    function setURL(url) {
+      console.log("Setting URL: "+url)
+      var link = document.getElementById('hostInput');
+      link.href = url;
+      link.textContent = url;
+      document.getElementById('hostInput_TF').value = url;
+    }
+
+    function copyUrl(){
+      var copyText = document.getElementById("hostInput_TF");
+      copyText.select();
+      document.execCommand("copy");
+      console.log("copied text "+ copyText.value)
+    }
+
     function log(msg){
       console.log(msg)
-      focusWidget = document.getElementById("debug");
-      focusWidget.innerHTML += msg+"\n";
+      debugWidget = document.getElementById("debug");
+      debugWidget.innerHTML += msg+"\n";
     }
 
     //log = console.log;
