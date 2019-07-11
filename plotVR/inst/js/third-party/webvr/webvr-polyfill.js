@@ -1,2136 +1,686 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.WebVRPolyfill = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-'use strict';
-
-var has = Object.prototype.hasOwnProperty
-  , prefix = '~';
+/**
+ * @license
+ * webvr-polyfill
+ * Copyright (c) 2015-2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
- * Constructor to create a storage for our `EE` objects.
- * An `Events` instance is a plain object whose properties are event names.
+ * @license
+ * cardboard-vr-display
+ * Copyright (c) 2015-2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * @constructor
- * @api private
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-function Events() {}
 
-//
-// We try to not inherit from `Object.prototype`. In some engines creating an
-// instance in this way is faster than calling `Object.create(null)` directly.
-// If `Object.create(null)` is not supported we prefix the event names with a
-// character to make sure that the built-in object properties are not
-// overridden or used as an attack vector.
-//
-if (Object.create) {
-  Events.prototype = Object.create(null);
+/**
+ * @license
+ * webvr-polyfill-dpdb 
+ * Copyright (c) 2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-  //
-  // This hack is needed because the `__proto__` property is still inherited in
-  // some old browsers like Android 4, iPhone 5.1, Opera 11 and Safari 5.
-  //
-  if (!new Events().__proto__) prefix = false;
+/**
+ * @license
+ * wglu-preserve-state
+ * Copyright (c) 2016, Brandon Jones.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @license
+ * nosleep.js
+ * Copyright (c) 2017, Rich Tibbett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(global.WebVRPolyfill = factory());
+}(this, (function () { 'use strict';
+
+var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+
+
+function unwrapExports (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
 
-/**
- * Representation of a single event listener.
- *
- * @param {Function} fn The listener function.
- * @param {Mixed} context The context to invoke the listener with.
- * @param {Boolean} [once=false] Specify if the listener is a one-time listener.
- * @constructor
- * @api private
- */
-function EE(fn, context, once) {
-  this.fn = fn;
-  this.context = context;
-  this.once = once || false;
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-/**
- * Minimal `EventEmitter` interface that is molded against the Node.js
- * `EventEmitter` interface.
- *
- * @constructor
- * @api public
- */
-function EventEmitter() {
-  this._events = new Events();
-  this._eventsCount = 0;
-}
-
-/**
- * Return an array listing the events for which the emitter has registered
- * listeners.
- *
- * @returns {Array}
- * @api public
- */
-EventEmitter.prototype.eventNames = function eventNames() {
-  var names = []
-    , events
-    , name;
-
-  if (this._eventsCount === 0) return names;
-
-  for (name in (events = this._events)) {
-    if (has.call(events, name)) names.push(prefix ? name.slice(1) : name);
+var isMobile = function isMobile() {
+  return (/Android/i.test(navigator.userAgent) || /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  );
+};
+var copyArray = function copyArray(source, dest) {
+  for (var i = 0, n = source.length; i < n; i++) {
+    dest[i] = source[i];
   }
-
-  if (Object.getOwnPropertySymbols) {
-    return names.concat(Object.getOwnPropertySymbols(events));
+};
+var extend = function extend(dest, src) {
+  for (var key in src) {
+    if (src.hasOwnProperty(key)) {
+      dest[key] = src[key];
+    }
   }
-
-  return names;
+  return dest;
 };
 
+var cardboardVrDisplay = createCommonjsModule(function (module, exports) {
 /**
- * Return the listeners registered for a given event.
+ * @license
+ * cardboard-vr-display
+ * Copyright (c) 2015-2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * @param {String|Symbol} event The event name.
- * @param {Boolean} exists Only check if there are listeners.
- * @returns {Array|Boolean}
- * @api public
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-EventEmitter.prototype.listeners = function listeners(event, exists) {
-  var evt = prefix ? prefix + event : event
-    , available = this._events[evt];
-
-  if (exists) return !!available;
-  if (!available) return [];
-  if (available.fn) return [available.fn];
-
-  for (var i = 0, l = available.length, ee = new Array(l); i < l; i++) {
-    ee[i] = available[i].fn;
+/**
+ * @license
+ * gl-preserve-state
+ * Copyright (c) 2016, Brandon Jones.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/**
+ * @license
+ * webvr-polyfill-dpdb
+ * Copyright (c) 2015-2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * @license
+ * nosleep.js
+ * Copyright (c) 2017, Rich Tibbett
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+(function (global, factory) {
+	module.exports = factory();
+}(commonjsGlobal, (function () { var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
   }
-
-  return ee;
 };
-
-/**
- * Calls each of the listeners registered for a given event.
- *
- * @param {String|Symbol} event The event name.
- * @returns {Boolean} `true` if the event had listeners, else `false`.
- * @api public
- */
-EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
-  var evt = prefix ? prefix + event : event;
-
-  if (!this._events[evt]) return false;
-
-  var listeners = this._events[evt]
-    , len = arguments.length
-    , args
-    , i;
-
-  if (listeners.fn) {
-    if (listeners.once) this.removeListener(event, listeners.fn, undefined, true);
-
-    switch (len) {
-      case 1: return listeners.fn.call(listeners.context), true;
-      case 2: return listeners.fn.call(listeners.context, a1), true;
-      case 3: return listeners.fn.call(listeners.context, a1, a2), true;
-      case 4: return listeners.fn.call(listeners.context, a1, a2, a3), true;
-      case 5: return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
-      case 6: return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
     }
-
-    for (i = 1, args = new Array(len -1); i < len; i++) {
-      args[i - 1] = arguments[i];
-    }
-
-    listeners.fn.apply(listeners.context, args);
-  } else {
-    var length = listeners.length
-      , j;
-
-    for (i = 0; i < length; i++) {
-      if (listeners[i].once) this.removeListener(event, listeners[i].fn, undefined, true);
-
-      switch (len) {
-        case 1: listeners[i].fn.call(listeners[i].context); break;
-        case 2: listeners[i].fn.call(listeners[i].context, a1); break;
-        case 3: listeners[i].fn.call(listeners[i].context, a1, a2); break;
-        case 4: listeners[i].fn.call(listeners[i].context, a1, a2, a3); break;
-        default:
-          if (!args) for (j = 1, args = new Array(len -1); j < len; j++) {
-            args[j - 1] = arguments[j];
-          }
-
-          listeners[i].fn.apply(listeners[i].context, args);
+  }
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+var slicedToArray = function () {
+  function sliceIterator(arr, i) {
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"]) _i["return"]();
+      } finally {
+        if (_d) throw _e;
       }
     }
+    return _arr;
   }
-
+  return function (arr, i) {
+    if (Array.isArray(arr)) {
+      return arr;
+    } else if (Symbol.iterator in Object(arr)) {
+      return sliceIterator(arr, i);
+    } else {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+  };
+}();
+var MIN_TIMESTEP = 0.001;
+var MAX_TIMESTEP = 1;
+var dataUri = function dataUri(mimeType, svg) {
+  return 'data:' + mimeType + ',' + encodeURIComponent(svg);
+};
+var lerp = function lerp(a, b, t) {
+  return a + (b - a) * t;
+};
+var isIOS = function () {
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.platform);
+  return function () {
+    return isIOS;
+  };
+}();
+var isWebViewAndroid = function () {
+  var isWebViewAndroid = navigator.userAgent.indexOf('Version') !== -1 && navigator.userAgent.indexOf('Android') !== -1 && navigator.userAgent.indexOf('Chrome') !== -1;
+  return function () {
+    return isWebViewAndroid;
+  };
+}();
+var isSafari = function () {
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  return function () {
+    return isSafari;
+  };
+}();
+var isFirefoxAndroid = function () {
+  var isFirefoxAndroid = navigator.userAgent.indexOf('Firefox') !== -1 && navigator.userAgent.indexOf('Android') !== -1;
+  return function () {
+    return isFirefoxAndroid;
+  };
+}();
+var getChromeVersion = function () {
+  var match = navigator.userAgent.match(/.*Chrome\/([0-9]+)/);
+  var value = match ? parseInt(match[1], 10) : null;
+  return function () {
+    return value;
+  };
+}();
+var isChromeWithoutDeviceMotion = function () {
+  var value = false;
+  if (getChromeVersion() === 65) {
+    var match = navigator.userAgent.match(/.*Chrome\/([0-9\.]*)/);
+    if (match) {
+      var _match$1$split = match[1].split('.'),
+          _match$1$split2 = slicedToArray(_match$1$split, 4),
+          major = _match$1$split2[0],
+          minor = _match$1$split2[1],
+          branch = _match$1$split2[2],
+          build = _match$1$split2[3];
+      value = parseInt(branch, 10) === 3325 && parseInt(build, 10) < 148;
+    }
+  }
+  return function () {
+    return value;
+  };
+}();
+var isR7 = function () {
+  var isR7 = navigator.userAgent.indexOf('R7 Build') !== -1;
+  return function () {
+    return isR7;
+  };
+}();
+var isLandscapeMode = function isLandscapeMode() {
+  var rtn = window.orientation == 90 || window.orientation == -90;
+  return isR7() ? !rtn : rtn;
+};
+var isTimestampDeltaValid = function isTimestampDeltaValid(timestampDeltaS) {
+  if (isNaN(timestampDeltaS)) {
+    return false;
+  }
+  if (timestampDeltaS <= MIN_TIMESTEP) {
+    return false;
+  }
+  if (timestampDeltaS > MAX_TIMESTEP) {
+    return false;
+  }
   return true;
 };
-
-/**
- * Add a listener for a given event.
- *
- * @param {String|Symbol} event The event name.
- * @param {Function} fn The listener function.
- * @param {Mixed} [context=this] The context to invoke the listener with.
- * @returns {EventEmitter} `this`.
- * @api public
- */
-EventEmitter.prototype.on = function on(event, fn, context) {
-  var listener = new EE(fn, context || this)
-    , evt = prefix ? prefix + event : event;
-
-  if (!this._events[evt]) this._events[evt] = listener, this._eventsCount++;
-  else if (!this._events[evt].fn) this._events[evt].push(listener);
-  else this._events[evt] = [this._events[evt], listener];
-
-  return this;
+var getScreenWidth = function getScreenWidth() {
+  return Math.max(window.screen.width, window.screen.height) * window.devicePixelRatio;
 };
-
-/**
- * Add a one-time listener for a given event.
- *
- * @param {String|Symbol} event The event name.
- * @param {Function} fn The listener function.
- * @param {Mixed} [context=this] The context to invoke the listener with.
- * @returns {EventEmitter} `this`.
- * @api public
- */
-EventEmitter.prototype.once = function once(event, fn, context) {
-  var listener = new EE(fn, context || this, true)
-    , evt = prefix ? prefix + event : event;
-
-  if (!this._events[evt]) this._events[evt] = listener, this._eventsCount++;
-  else if (!this._events[evt].fn) this._events[evt].push(listener);
-  else this._events[evt] = [this._events[evt], listener];
-
-  return this;
+var getScreenHeight = function getScreenHeight() {
+  return Math.min(window.screen.width, window.screen.height) * window.devicePixelRatio;
 };
-
-/**
- * Remove the listeners of a given event.
- *
- * @param {String|Symbol} event The event name.
- * @param {Function} fn Only remove the listeners that match this function.
- * @param {Mixed} context Only remove the listeners that have this context.
- * @param {Boolean} once Only remove one-time listeners.
- * @returns {EventEmitter} `this`.
- * @api public
- */
-EventEmitter.prototype.removeListener = function removeListener(event, fn, context, once) {
-  var evt = prefix ? prefix + event : event;
-
-  if (!this._events[evt]) return this;
-  if (!fn) {
-    if (--this._eventsCount === 0) this._events = new Events();
-    else delete this._events[evt];
-    return this;
+var requestFullscreen = function requestFullscreen(element) {
+  if (isWebViewAndroid()) {
+    return false;
   }
-
-  var listeners = this._events[evt];
-
-  if (listeners.fn) {
-    if (
-         listeners.fn === fn
-      && (!once || listeners.once)
-      && (!context || listeners.context === context)
-    ) {
-      if (--this._eventsCount === 0) this._events = new Events();
-      else delete this._events[evt];
-    }
+  if (element.requestFullscreen) {
+    element.requestFullscreen();
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else if (element.mozRequestFullScreen) {
+    element.mozRequestFullScreen();
+  } else if (element.msRequestFullscreen) {
+    element.msRequestFullscreen();
   } else {
-    for (var i = 0, events = [], length = listeners.length; i < length; i++) {
-      if (
-           listeners[i].fn !== fn
-        || (once && !listeners[i].once)
-        || (context && listeners[i].context !== context)
-      ) {
-        events.push(listeners[i]);
-      }
-    }
-
-    //
-    // Reset the array, or remove it completely if we have no more listeners.
-    //
-    if (events.length) this._events[evt] = events.length === 1 ? events[0] : events;
-    else if (--this._eventsCount === 0) this._events = new Events();
-    else delete this._events[evt];
+    return false;
   }
-
-  return this;
+  return true;
 };
-
-/**
- * Remove all listeners, or those of the specified event.
- *
- * @param {String|Symbol} [event] The event name.
- * @returns {EventEmitter} `this`.
- * @api public
- */
-EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
-  var evt;
-
-  if (event) {
-    evt = prefix ? prefix + event : event;
-    if (this._events[evt]) {
-      if (--this._eventsCount === 0) this._events = new Events();
-      else delete this._events[evt];
-    }
+var exitFullscreen = function exitFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
   } else {
-    this._events = new Events();
-    this._eventsCount = 0;
+    return false;
   }
-
-  return this;
+  return true;
 };
-
-//
-// Alias methods names because people roll like that.
-//
-EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
-EventEmitter.prototype.addListener = EventEmitter.prototype.on;
-
-//
-// This function doesn't apply anymore.
-//
-EventEmitter.prototype.setMaxListeners = function setMaxListeners() {
-  return this;
+var getFullscreenElement = function getFullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
 };
-
-//
-// Expose the prefix.
-//
-EventEmitter.prefixed = prefix;
-
-//
-// Allow `EventEmitter` to be imported as module namespace.
-//
-EventEmitter.EventEmitter = EventEmitter;
-
-//
-// Expose the module.
-//
-if ('undefined' !== typeof module) {
-  module.exports = EventEmitter;
-}
-
-},{}],2:[function(_dereq_,module,exports){
-'use strict';
-/* eslint-disable no-unused-vars */
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-var propIsEnumerable = Object.prototype.propertyIsEnumerable;
-
-function toObject(val) {
-	if (val === null || val === undefined) {
-		throw new TypeError('Object.assign cannot be called with null or undefined');
-	}
-
-	return Object(val);
-}
-
-function shouldUseNative() {
-	try {
-		if (!Object.assign) {
-			return false;
-		}
-
-		// Detect buggy property enumeration order in older V8 versions.
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=4118
-		var test1 = new String('abc');  // eslint-disable-line
-		test1[5] = 'de';
-		if (Object.getOwnPropertyNames(test1)[0] === '5') {
-			return false;
-		}
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test2 = {};
-		for (var i = 0; i < 10; i++) {
-			test2['_' + String.fromCharCode(i)] = i;
-		}
-		var order2 = Object.getOwnPropertyNames(test2).map(function (n) {
-			return test2[n];
-		});
-		if (order2.join('') !== '0123456789') {
-			return false;
-		}
-
-		// https://bugs.chromium.org/p/v8/issues/detail?id=3056
-		var test3 = {};
-		'abcdefghijklmnopqrst'.split('').forEach(function (letter) {
-			test3[letter] = letter;
-		});
-		if (Object.keys(Object.assign({}, test3)).join('') !==
-				'abcdefghijklmnopqrst') {
-			return false;
-		}
-
-		return true;
-	} catch (e) {
-		// We don't expect any of the above to throw, but better to be safe.
-		return false;
-	}
-}
-
-module.exports = shouldUseNative() ? Object.assign : function (target, source) {
-	var from;
-	var to = toObject(target);
-	var symbols;
-
-	for (var s = 1; s < arguments.length; s++) {
-		from = Object(arguments[s]);
-
-		for (var key in from) {
-			if (hasOwnProperty.call(from, key)) {
-				to[key] = from[key];
-			}
-		}
-
-		if (Object.getOwnPropertySymbols) {
-			symbols = Object.getOwnPropertySymbols(from);
-			for (var i = 0; i < symbols.length; i++) {
-				if (propIsEnumerable.call(from, symbols[i])) {
-					to[symbols[i]] = from[symbols[i]];
-				}
-			}
-		}
-	}
-
-	return to;
+var linkProgram = function linkProgram(gl, vertexSource, fragmentSource, attribLocationMap) {
+  var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertexShader, vertexSource);
+  gl.compileShader(vertexShader);
+  var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragmentShader, fragmentSource);
+  gl.compileShader(fragmentShader);
+  var program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  for (var attribName in attribLocationMap) {
+    gl.bindAttribLocation(program, attribLocationMap[attribName], attribName);
+  }gl.linkProgram(program);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+  return program;
 };
-
-},{}],3:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Util = _dereq_('./util.js');
-var WakeLock = _dereq_('./wakelock.js');
-
-// Start at a higher number to reduce chance of conflict.
-var nextDisplayId = 1000;
-var hasShowDeprecationWarning = false;
-
-var defaultLeftBounds = [0, 0, 0.5, 1];
-var defaultRightBounds = [0.5, 0, 0.5, 1];
-
-/**
- * The base class for all VR frame data.
- */
-
-function VRFrameData() {
-  this.leftProjectionMatrix = new Float32Array(16);
-  this.leftViewMatrix = new Float32Array(16);
-  this.rightProjectionMatrix = new Float32Array(16);
-  this.rightViewMatrix = new Float32Array(16);
-  this.pose = null;
-};
-
-/**
- * The base class for all VR displays.
- */
-function VRDisplay() {
-  this.isPolyfilled = true;
-  this.displayId = nextDisplayId++;
-  this.displayName = 'webvr-polyfill displayName';
-
-  this.depthNear = 0.01;
-  this.depthFar = 10000.0;
-
-  this.isConnected = true;
-  this.isPresenting = false;
-  this.capabilities = {
-    hasPosition: false,
-    hasOrientation: false,
-    hasExternalDisplay: false,
-    canPresent: false,
-    maxLayers: 1
-  };
-  this.stageParameters = null;
-
-  // "Private" members.
-  this.waitingForPresent_ = false;
-  this.layer_ = null;
-
-  this.fullscreenElement_ = null;
-  this.fullscreenWrapper_ = null;
-  this.fullscreenElementCachedStyle_ = null;
-
-  this.fullscreenEventTarget_ = null;
-  this.fullscreenChangeHandler_ = null;
-  this.fullscreenErrorHandler_ = null;
-
-  this.wakelock_ = new WakeLock();
-}
-
-VRDisplay.prototype.getFrameData = function(frameData) {
-  // TODO: Technically this should retain it's value for the duration of a frame
-  // but I doubt that's practical to do in javascript.
-  return Util.frameDataFromPose(frameData, this.getPose(), this);
-};
-
-VRDisplay.prototype.getPose = function() {
-  // TODO: Technically this should retain it's value for the duration of a frame
-  // but I doubt that's practical to do in javascript.
-  return this.getImmediatePose();
-};
-
-VRDisplay.prototype.requestAnimationFrame = function(callback) {
-  return window.requestAnimationFrame(callback);
-};
-
-VRDisplay.prototype.cancelAnimationFrame = function(id) {
-  return window.cancelAnimationFrame(id);
-};
-
-VRDisplay.prototype.wrapForFullscreen = function(element) {
-  // Don't wrap in iOS.
-  if (Util.isIOS()) {
-    return element;
+var getProgramUniforms = function getProgramUniforms(gl, program) {
+  var uniforms = {};
+  var uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+  var uniformName = '';
+  for (var i = 0; i < uniformCount; i++) {
+    var uniformInfo = gl.getActiveUniform(program, i);
+    uniformName = uniformInfo.name.replace('[0]', '');
+    uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
   }
-  if (!this.fullscreenWrapper_) {
-    this.fullscreenWrapper_ = document.createElement('div');
-    var cssProperties = [
-      'height: ' + Math.min(screen.height, screen.width) + 'px !important',
-      'top: 0 !important',
-      'left: 0 !important',
-      'right: 0 !important',
-      'border: 0',
-      'margin: 0',
-      'padding: 0',
-      'z-index: 999999 !important',
-      'position: fixed',
-    ];
-    this.fullscreenWrapper_.setAttribute('style', cssProperties.join('; ') + ';');
-    this.fullscreenWrapper_.classList.add('webvr-polyfill-fullscreen-wrapper');
-  }
-
-  if (this.fullscreenElement_ == element) {
-    return this.fullscreenWrapper_;
-  }
-
-  // Remove any previously applied wrappers
-  this.removeFullscreenWrapper();
-
-  this.fullscreenElement_ = element;
-  var parent = this.fullscreenElement_.parentElement;
-  parent.insertBefore(this.fullscreenWrapper_, this.fullscreenElement_);
-  parent.removeChild(this.fullscreenElement_);
-  this.fullscreenWrapper_.insertBefore(this.fullscreenElement_, this.fullscreenWrapper_.firstChild);
-  this.fullscreenElementCachedStyle_ = this.fullscreenElement_.getAttribute('style');
-
-  var self = this;
-  function applyFullscreenElementStyle() {
-    if (!self.fullscreenElement_) {
-      return;
-    }
-
-    var cssProperties = [
-      'position: absolute',
-      'top: 0',
-      'left: 0',
-      'width: ' + Math.max(screen.width, screen.height) + 'px',
-      'height: ' + Math.min(screen.height, screen.width) + 'px',
-      'border: 0',
-      'margin: 0',
-      'padding: 0',
-    ];
-    self.fullscreenElement_.setAttribute('style', cssProperties.join('; ') + ';');
-  }
-
-  applyFullscreenElementStyle();
-
-  return this.fullscreenWrapper_;
+  return uniforms;
 };
-
-VRDisplay.prototype.removeFullscreenWrapper = function() {
-  if (!this.fullscreenElement_) {
-    return;
-  }
-
-  var element = this.fullscreenElement_;
-  if (this.fullscreenElementCachedStyle_) {
-    element.setAttribute('style', this.fullscreenElementCachedStyle_);
-  } else {
-    element.removeAttribute('style');
-  }
-  this.fullscreenElement_ = null;
-  this.fullscreenElementCachedStyle_ = null;
-
-  var parent = this.fullscreenWrapper_.parentElement;
-  this.fullscreenWrapper_.removeChild(element);
-  parent.insertBefore(element, this.fullscreenWrapper_);
-  parent.removeChild(this.fullscreenWrapper_);
-
-  return element;
+var orthoMatrix = function orthoMatrix(out, left, right, bottom, top, near, far) {
+  var lr = 1 / (left - right),
+      bt = 1 / (bottom - top),
+      nf = 1 / (near - far);
+  out[0] = -2 * lr;
+  out[1] = 0;
+  out[2] = 0;
+  out[3] = 0;
+  out[4] = 0;
+  out[5] = -2 * bt;
+  out[6] = 0;
+  out[7] = 0;
+  out[8] = 0;
+  out[9] = 0;
+  out[10] = 2 * nf;
+  out[11] = 0;
+  out[12] = (left + right) * lr;
+  out[13] = (top + bottom) * bt;
+  out[14] = (far + near) * nf;
+  out[15] = 1;
+  return out;
 };
-
-VRDisplay.prototype.requestPresent = function(layers) {
-  var wasPresenting = this.isPresenting;
-  var self = this;
-
-  if (!(layers instanceof Array)) {
-    if (!hasShowDeprecationWarning) {
-      console.warn("Using a deprecated form of requestPresent. Should pass in an array of VRLayers.");
-      hasShowDeprecationWarning = true;
-    }
-    layers = [layers];
-  }
-
-  return new Promise(function(resolve, reject) {
-    if (!self.capabilities.canPresent) {
-      reject(new Error('VRDisplay is not capable of presenting.'));
-      return;
-    }
-
-    if (layers.length == 0 || layers.length > self.capabilities.maxLayers) {
-      reject(new Error('Invalid number of layers.'));
-      return;
-    }
-
-    var incomingLayer = layers[0];
-    if (!incomingLayer.source) {
-      /*
-      todo: figure out the correct behavior if the source is not provided.
-      see https://github.com/w3c/webvr/issues/58
-      */
-      resolve();
-      return;
-    }
-
-    var leftBounds = incomingLayer.leftBounds || defaultLeftBounds;
-    var rightBounds = incomingLayer.rightBounds || defaultRightBounds;
-    if (wasPresenting) {
-      // Already presenting, just changing configuration
-      var layer = self.layer_;
-      if (layer.source !== incomingLayer.source) {
-        layer.source = incomingLayer.source;
-      }
-
-      for (var i = 0; i < 4; i++) {
-        if (layer.leftBounds[i] !== leftBounds[i]) {
-          layer.leftBounds[i] = leftBounds[i];
-        }
-        if (layer.rightBounds[i] !== rightBounds[i]) {
-          layer.rightBounds[i] = rightBounds[i];
-        }
-      }
-
-      resolve();
-      return;
-    }
-
-    // Was not already presenting.
-    self.layer_ = {
-      predistorted: incomingLayer.predistorted,
-      source: incomingLayer.source,
-      leftBounds: leftBounds.slice(0),
-      rightBounds: rightBounds.slice(0)
-    };
-
-    self.waitingForPresent_ = false;
-    if (self.layer_ && self.layer_.source) {
-      var fullscreenElement = self.wrapForFullscreen(self.layer_.source);
-
-      function onFullscreenChange() {
-        var actualFullscreenElement = Util.getFullscreenElement();
-
-        self.isPresenting = (fullscreenElement === actualFullscreenElement);
-        if (self.isPresenting) {
-          if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape-primary').catch(function(error){
-                    console.error('screen.orientation.lock() failed due to', error.message)
-            });
-          }
-          self.waitingForPresent_ = false;
-          self.beginPresent_();
-          resolve();
-        } else {
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-          }
-          self.removeFullscreenWrapper();
-          self.wakelock_.release();
-          self.endPresent_();
-          self.removeFullscreenListeners_();
-        }
-        self.fireVRDisplayPresentChange_();
-      }
-      function onFullscreenError() {
-        if (!self.waitingForPresent_) {
-          return;
-        }
-
-        self.removeFullscreenWrapper();
-        self.removeFullscreenListeners_();
-
-        self.wakelock_.release();
-        self.waitingForPresent_ = false;
-        self.isPresenting = false;
-
-        reject(new Error('Unable to present.'));
-      }
-
-      self.addFullscreenListeners_(fullscreenElement,
-          onFullscreenChange, onFullscreenError);
-
-      if (Util.requestFullscreen(fullscreenElement)) {
-        self.wakelock_.request();
-        self.waitingForPresent_ = true;
-      } else if (Util.isIOS()) {
-        // *sigh* Just fake it.
-        self.wakelock_.request();
-        self.isPresenting = true;
-        self.beginPresent_();
-        self.fireVRDisplayPresentChange_();
-        resolve();
-      }
-    }
-
-    if (!self.waitingForPresent_ && !Util.isIOS()) {
-      Util.exitFullscreen();
-      reject(new Error('Unable to present.'));
-    }
-  });
+var isMobile = function isMobile() {
+  var check = false;
+  (function (a) {
+    if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4))) check = true;
+  })(navigator.userAgent || navigator.vendor || window.opera);
+  return check;
 };
-
-VRDisplay.prototype.exitPresent = function() {
-  var wasPresenting = this.isPresenting;
-  var self = this;
-  this.isPresenting = false;
-  this.layer_ = null;
-  this.wakelock_.release();
-
-  return new Promise(function(resolve, reject) {
-    if (wasPresenting) {
-      if (!Util.exitFullscreen() && Util.isIOS()) {
-        self.endPresent_();
-        self.fireVRDisplayPresentChange_();
-      }
-
-      resolve();
+var extend = function extend(dest, src) {
+  for (var key in src) {
+    if (src.hasOwnProperty(key)) {
+      dest[key] = src[key];
+    }
+  }
+  return dest;
+};
+var safariCssSizeWorkaround = function safariCssSizeWorkaround(canvas) {
+  if (isIOS()) {
+    var width = canvas.style.width;
+    var height = canvas.style.height;
+    canvas.style.width = parseInt(width) + 1 + 'px';
+    canvas.style.height = parseInt(height) + 'px';
+    setTimeout(function () {
+      canvas.style.width = width;
+      canvas.style.height = height;
+    }, 100);
+  }
+  window.canvas = canvas;
+};
+var frameDataFromPose = function () {
+  var piOver180 = Math.PI / 180.0;
+  var rad45 = Math.PI * 0.25;
+  function mat4_perspectiveFromFieldOfView(out, fov, near, far) {
+    var upTan = Math.tan(fov ? fov.upDegrees * piOver180 : rad45),
+        downTan = Math.tan(fov ? fov.downDegrees * piOver180 : rad45),
+        leftTan = Math.tan(fov ? fov.leftDegrees * piOver180 : rad45),
+        rightTan = Math.tan(fov ? fov.rightDegrees * piOver180 : rad45),
+        xScale = 2.0 / (leftTan + rightTan),
+        yScale = 2.0 / (upTan + downTan);
+    out[0] = xScale;
+    out[1] = 0.0;
+    out[2] = 0.0;
+    out[3] = 0.0;
+    out[4] = 0.0;
+    out[5] = yScale;
+    out[6] = 0.0;
+    out[7] = 0.0;
+    out[8] = -((leftTan - rightTan) * xScale * 0.5);
+    out[9] = (upTan - downTan) * yScale * 0.5;
+    out[10] = far / (near - far);
+    out[11] = -1.0;
+    out[12] = 0.0;
+    out[13] = 0.0;
+    out[14] = far * near / (near - far);
+    out[15] = 0.0;
+    return out;
+  }
+  function mat4_fromRotationTranslation(out, q, v) {
+    var x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3],
+        x2 = x + x,
+        y2 = y + y,
+        z2 = z + z,
+        xx = x * x2,
+        xy = x * y2,
+        xz = x * z2,
+        yy = y * y2,
+        yz = y * z2,
+        zz = z * z2,
+        wx = w * x2,
+        wy = w * y2,
+        wz = w * z2;
+    out[0] = 1 - (yy + zz);
+    out[1] = xy + wz;
+    out[2] = xz - wy;
+    out[3] = 0;
+    out[4] = xy - wz;
+    out[5] = 1 - (xx + zz);
+    out[6] = yz + wx;
+    out[7] = 0;
+    out[8] = xz + wy;
+    out[9] = yz - wx;
+    out[10] = 1 - (xx + yy);
+    out[11] = 0;
+    out[12] = v[0];
+    out[13] = v[1];
+    out[14] = v[2];
+    out[15] = 1;
+    return out;
+  }
+  function mat4_translate(out, a, v) {
+    var x = v[0],
+        y = v[1],
+        z = v[2],
+        a00,
+        a01,
+        a02,
+        a03,
+        a10,
+        a11,
+        a12,
+        a13,
+        a20,
+        a21,
+        a22,
+        a23;
+    if (a === out) {
+      out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
+      out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
+      out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
+      out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
     } else {
-      reject(new Error('Was not presenting to VRDisplay.'));
+      a00 = a[0];a01 = a[1];a02 = a[2];a03 = a[3];
+      a10 = a[4];a11 = a[5];a12 = a[6];a13 = a[7];
+      a20 = a[8];a21 = a[9];a22 = a[10];a23 = a[11];
+      out[0] = a00;out[1] = a01;out[2] = a02;out[3] = a03;
+      out[4] = a10;out[5] = a11;out[6] = a12;out[7] = a13;
+      out[8] = a20;out[9] = a21;out[10] = a22;out[11] = a23;
+      out[12] = a00 * x + a10 * y + a20 * z + a[12];
+      out[13] = a01 * x + a11 * y + a21 * z + a[13];
+      out[14] = a02 * x + a12 * y + a22 * z + a[14];
+      out[15] = a03 * x + a13 * y + a23 * z + a[15];
     }
-  });
-};
-
-VRDisplay.prototype.getLayers = function() {
-  if (this.layer_) {
-    return [this.layer_];
+    return out;
   }
-  return [];
-};
-
-VRDisplay.prototype.fireVRDisplayPresentChange_ = function() {
-  var event = new CustomEvent('vrdisplaypresentchange', {detail: {display: this}});
-  window.dispatchEvent(event);
-};
-
-VRDisplay.prototype.addFullscreenListeners_ = function(element, changeHandler, errorHandler) {
-  this.removeFullscreenListeners_();
-
-  this.fullscreenEventTarget_ = element;
-  this.fullscreenChangeHandler_ = changeHandler;
-  this.fullscreenErrorHandler_ = errorHandler;
-
-  if (changeHandler) {
-    if (document.fullscreenEnabled) {
-      element.addEventListener('fullscreenchange', changeHandler, false);
-    } else if (document.webkitFullscreenEnabled) {
-      element.addEventListener('webkitfullscreenchange', changeHandler, false);
-    } else if (document.mozFullScreenEnabled) {
-      document.addEventListener('mozfullscreenchange', changeHandler, false);
-    } else if (document.msFullscreenEnabled) {
-      element.addEventListener('msfullscreenchange', changeHandler, false);
+  function mat4_invert(out, a) {
+    var a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3],
+        a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7],
+        a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11],
+        a30 = a[12],
+        a31 = a[13],
+        a32 = a[14],
+        a33 = a[15],
+        b00 = a00 * a11 - a01 * a10,
+        b01 = a00 * a12 - a02 * a10,
+        b02 = a00 * a13 - a03 * a10,
+        b03 = a01 * a12 - a02 * a11,
+        b04 = a01 * a13 - a03 * a11,
+        b05 = a02 * a13 - a03 * a12,
+        b06 = a20 * a31 - a21 * a30,
+        b07 = a20 * a32 - a22 * a30,
+        b08 = a20 * a33 - a23 * a30,
+        b09 = a21 * a32 - a22 * a31,
+        b10 = a21 * a33 - a23 * a31,
+        b11 = a22 * a33 - a23 * a32,
+    det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+    if (!det) {
+      return null;
     }
+    det = 1.0 / det;
+    out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
+    out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
+    out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
+    out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det;
+    out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
+    out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
+    out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
+    out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det;
+    out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
+    out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
+    out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
+    out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det;
+    out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det;
+    out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det;
+    out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det;
+    out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det;
+    return out;
   }
-
-  if (errorHandler) {
-    if (document.fullscreenEnabled) {
-      element.addEventListener('fullscreenerror', errorHandler, false);
-    } else if (document.webkitFullscreenEnabled) {
-      element.addEventListener('webkitfullscreenerror', errorHandler, false);
-    } else if (document.mozFullScreenEnabled) {
-      document.addEventListener('mozfullscreenerror', errorHandler, false);
-    } else if (document.msFullscreenEnabled) {
-      element.addEventListener('msfullscreenerror', errorHandler, false);
-    }
+  var defaultOrientation = new Float32Array([0, 0, 0, 1]);
+  var defaultPosition = new Float32Array([0, 0, 0]);
+  function updateEyeMatrices(projection, view, pose, fov, offset, vrDisplay) {
+    mat4_perspectiveFromFieldOfView(projection, fov || null, vrDisplay.depthNear, vrDisplay.depthFar);
+    var orientation = pose.orientation || defaultOrientation;
+    var position = pose.position || defaultPosition;
+    mat4_fromRotationTranslation(view, orientation, position);
+    if (offset) mat4_translate(view, view, offset);
+    mat4_invert(view, view);
   }
-};
-
-VRDisplay.prototype.removeFullscreenListeners_ = function() {
-  if (!this.fullscreenEventTarget_)
-    return;
-
-  var element = this.fullscreenEventTarget_;
-
-  if (this.fullscreenChangeHandler_) {
-    var changeHandler = this.fullscreenChangeHandler_;
-    element.removeEventListener('fullscreenchange', changeHandler, false);
-    element.removeEventListener('webkitfullscreenchange', changeHandler, false);
-    document.removeEventListener('mozfullscreenchange', changeHandler, false);
-    element.removeEventListener('msfullscreenchange', changeHandler, false);
-  }
-
-  if (this.fullscreenErrorHandler_) {
-    var errorHandler = this.fullscreenErrorHandler_;
-    element.removeEventListener('fullscreenerror', errorHandler, false);
-    element.removeEventListener('webkitfullscreenerror', errorHandler, false);
-    document.removeEventListener('mozfullscreenerror', errorHandler, false);
-    element.removeEventListener('msfullscreenerror', errorHandler, false);
-  }
-
-  this.fullscreenEventTarget_ = null;
-  this.fullscreenChangeHandler_ = null;
-  this.fullscreenErrorHandler_ = null;
-};
-
-VRDisplay.prototype.beginPresent_ = function() {
-  // Override to add custom behavior when presentation begins.
-};
-
-VRDisplay.prototype.endPresent_ = function() {
-  // Override to add custom behavior when presentation ends.
-};
-
-VRDisplay.prototype.submitFrame = function(pose) {
-  // Override to add custom behavior for frame submission.
-};
-
-VRDisplay.prototype.getEyeParameters = function(whichEye) {
-  // Override to return accurate eye parameters if canPresent is true.
-  return null;
-};
-
-/*
- * Deprecated classes
- */
-
-/**
- * The base class for all VR devices. (Deprecated)
- */
-function VRDevice() {
-  this.isPolyfilled = true;
-  this.hardwareUnitId = 'webvr-polyfill hardwareUnitId';
-  this.deviceId = 'webvr-polyfill deviceId';
-  this.deviceName = 'webvr-polyfill deviceName';
-}
-
-/**
- * The base class for all VR HMD devices. (Deprecated)
- */
-function HMDVRDevice() {
-}
-HMDVRDevice.prototype = new VRDevice();
-
-/**
- * The base class for all VR position sensor devices. (Deprecated)
- */
-function PositionSensorVRDevice() {
-}
-PositionSensorVRDevice.prototype = new VRDevice();
-
-module.exports.VRFrameData = VRFrameData;
-module.exports.VRDisplay = VRDisplay;
-module.exports.VRDevice = VRDevice;
-module.exports.HMDVRDevice = HMDVRDevice;
-module.exports.PositionSensorVRDevice = PositionSensorVRDevice;
-
-},{"./util.js":22,"./wakelock.js":24}],4:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var CardboardUI = _dereq_('./cardboard-ui.js');
-var Util = _dereq_('./util.js');
-var WGLUPreserveGLState = _dereq_('./deps/wglu-preserve-state.js');
-
-var distortionVS = [
-  'attribute vec2 position;',
-  'attribute vec3 texCoord;',
-
-  'varying vec2 vTexCoord;',
-
-  'uniform vec4 viewportOffsetScale[2];',
-
-  'void main() {',
-  '  vec4 viewport = viewportOffsetScale[int(texCoord.z)];',
-  '  vTexCoord = (texCoord.xy * viewport.zw) + viewport.xy;',
-  '  gl_Position = vec4( position, 1.0, 1.0 );',
-  '}',
-].join('\n');
-
-var distortionFS = [
-  'precision mediump float;',
-  'uniform sampler2D diffuse;',
-
-  'varying vec2 vTexCoord;',
-
-  'void main() {',
-  '  gl_FragColor = texture2D(diffuse, vTexCoord);',
-  '}',
-].join('\n');
-
-/**
- * A mesh-based distorter.
- */
-function CardboardDistorter(gl) {
-  this.gl = gl;
-  this.ctxAttribs = gl.getContextAttributes();
-
-  this.meshWidth = 20;
-  this.meshHeight = 20;
-
-  this.bufferScale = WebVRConfig.BUFFER_SCALE;
-
-  this.bufferWidth = gl.drawingBufferWidth;
-  this.bufferHeight = gl.drawingBufferHeight;
-
-  // Patching support
-  this.realBindFramebuffer = gl.bindFramebuffer;
-  this.realEnable = gl.enable;
-  this.realDisable = gl.disable;
-  this.realColorMask = gl.colorMask;
-  this.realClearColor = gl.clearColor;
-  this.realViewport = gl.viewport;
-
-  if (!Util.isIOS()) {
-    this.realCanvasWidth = Object.getOwnPropertyDescriptor(gl.canvas.__proto__, 'width');
-    this.realCanvasHeight = Object.getOwnPropertyDescriptor(gl.canvas.__proto__, 'height');
-  }
-
-  this.isPatched = false;
-
-  // State tracking
-  this.lastBoundFramebuffer = null;
-  this.cullFace = false;
-  this.depthTest = false;
-  this.blend = false;
-  this.scissorTest = false;
-  this.stencilTest = false;
-  this.viewport = [0, 0, 0, 0];
-  this.colorMask = [true, true, true, true];
-  this.clearColor = [0, 0, 0, 0];
-
-  this.attribs = {
-    position: 0,
-    texCoord: 1
+  return function (frameData, pose, vrDisplay) {
+    if (!frameData || !pose) return false;
+    frameData.pose = pose;
+    frameData.timestamp = pose.timestamp;
+    updateEyeMatrices(frameData.leftProjectionMatrix, frameData.leftViewMatrix, pose, vrDisplay._getFieldOfView("left"), vrDisplay._getEyeOffset("left"), vrDisplay);
+    updateEyeMatrices(frameData.rightProjectionMatrix, frameData.rightViewMatrix, pose, vrDisplay._getFieldOfView("right"), vrDisplay._getEyeOffset("right"), vrDisplay);
+    return true;
   };
-  this.program = Util.linkProgram(gl, distortionVS, distortionFS, this.attribs);
-  this.uniforms = Util.getProgramUniforms(gl, this.program);
-
-  this.viewportOffsetScale = new Float32Array(8);
-  this.setTextureBounds();
-
-  this.vertexBuffer = gl.createBuffer();
-  this.indexBuffer = gl.createBuffer();
-  this.indexCount = 0;
-
-  this.renderTarget = gl.createTexture();
-  this.framebuffer = gl.createFramebuffer();
-
-  this.depthStencilBuffer = null;
-  this.depthBuffer = null;
-  this.stencilBuffer = null;
-
-  if (this.ctxAttribs.depth && this.ctxAttribs.stencil) {
-    this.depthStencilBuffer = gl.createRenderbuffer();
-  } else if (this.ctxAttribs.depth) {
-    this.depthBuffer = gl.createRenderbuffer();
-  } else if (this.ctxAttribs.stencil) {
-    this.stencilBuffer = gl.createRenderbuffer();
-  }
-
-  this.patch();
-
-  this.onResize();
-
-  if (!WebVRConfig.CARDBOARD_UI_DISABLED) {
-    this.cardboardUI = new CardboardUI(gl);
-  }
+}();
+var isInsideCrossOriginIFrame = function isInsideCrossOriginIFrame() {
+  var isFramed = window.self !== window.top;
+  var refOrigin = getOriginFromUrl(document.referrer);
+  var thisOrigin = getOriginFromUrl(window.location.href);
+  return isFramed && refOrigin !== thisOrigin;
 };
-
-/**
- * Tears down all the resources created by the distorter and removes any
- * patches.
- */
-CardboardDistorter.prototype.destroy = function() {
-  var gl = this.gl;
-
-  this.unpatch();
-
-  gl.deleteProgram(this.program);
-  gl.deleteBuffer(this.vertexBuffer);
-  gl.deleteBuffer(this.indexBuffer);
-  gl.deleteTexture(this.renderTarget);
-  gl.deleteFramebuffer(this.framebuffer);
-  if (this.depthStencilBuffer) {
-    gl.deleteRenderbuffer(this.depthStencilBuffer);
-  }
-  if (this.depthBuffer) {
-    gl.deleteRenderbuffer(this.depthBuffer);
-  }
-  if (this.stencilBuffer) {
-    gl.deleteRenderbuffer(this.stencilBuffer);
-  }
-
-  if (this.cardboardUI) {
-    this.cardboardUI.destroy();
-  }
-};
-
-
-/**
- * Resizes the backbuffer to match the canvas width and height.
- */
-CardboardDistorter.prototype.onResize = function() {
-  var gl = this.gl;
-  var self = this;
-
-  var glState = [
-    gl.RENDERBUFFER_BINDING,
-    gl.TEXTURE_BINDING_2D, gl.TEXTURE0
-  ];
-
-  WGLUPreserveGLState(gl, glState, function(gl) {
-    // Bind real backbuffer and clear it once. We don't need to clear it again
-    // after that because we're overwriting the same area every frame.
-    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, null);
-
-    // Put things in a good state
-    if (self.scissorTest) { self.realDisable.call(gl, gl.SCISSOR_TEST); }
-    self.realColorMask.call(gl, true, true, true, true);
-    self.realViewport.call(gl, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-    self.realClearColor.call(gl, 0, 0, 0, 1);
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    // Now bind and resize the fake backbuffer
-    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.framebuffer);
-
-    gl.bindTexture(gl.TEXTURE_2D, self.renderTarget);
-    gl.texImage2D(gl.TEXTURE_2D, 0, self.ctxAttribs.alpha ? gl.RGBA : gl.RGB,
-        self.bufferWidth, self.bufferHeight, 0,
-        self.ctxAttribs.alpha ? gl.RGBA : gl.RGB, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.renderTarget, 0);
-
-    if (self.ctxAttribs.depth && self.ctxAttribs.stencil) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, self.depthStencilBuffer);
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL,
-          self.bufferWidth, self.bufferHeight);
-      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT,
-          gl.RENDERBUFFER, self.depthStencilBuffer);
-    } else if (self.ctxAttribs.depth) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, self.depthBuffer);
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16,
-          self.bufferWidth, self.bufferHeight);
-      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT,
-          gl.RENDERBUFFER, self.depthBuffer);
-    } else if (self.ctxAttribs.stencil) {
-      gl.bindRenderbuffer(gl.RENDERBUFFER, self.stencilBuffer);
-      gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8,
-          self.bufferWidth, self.bufferHeight);
-      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT,
-          gl.RENDERBUFFER, self.stencilBuffer);
-    }
-
-    if (!gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
-      console.error('Framebuffer incomplete!');
-    }
-
-    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.lastBoundFramebuffer);
-
-    if (self.scissorTest) { self.realEnable.call(gl, gl.SCISSOR_TEST); }
-
-    self.realColorMask.apply(gl, self.colorMask);
-    self.realViewport.apply(gl, self.viewport);
-    self.realClearColor.apply(gl, self.clearColor);
-  });
-
-  if (this.cardboardUI) {
-    this.cardboardUI.onResize();
-  }
-};
-
-CardboardDistorter.prototype.patch = function() {
-  if (this.isPatched) {
-    return;
-  }
-
-  var self = this;
-  var canvas = this.gl.canvas;
-  var gl = this.gl;
-
-  if (!Util.isIOS()) {
-    canvas.width = Util.getScreenWidth() * this.bufferScale;
-    canvas.height = Util.getScreenHeight() * this.bufferScale;
-
-    Object.defineProperty(canvas, 'width', {
-      configurable: true,
-      enumerable: true,
-      get: function() {
-        return self.bufferWidth;
-      },
-      set: function(value) {
-        self.bufferWidth = value;
-        self.realCanvasWidth.set.call(canvas, value);
-        self.onResize();
-      }
-    });
-
-    Object.defineProperty(canvas, 'height', {
-      configurable: true,
-      enumerable: true,
-      get: function() {
-        return self.bufferHeight;
-      },
-      set: function(value) {
-        self.bufferHeight = value;
-        self.realCanvasHeight.set.call(canvas, value);
-        self.onResize();
-      }
-    });
-  }
-
-  this.lastBoundFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-
-  if (this.lastBoundFramebuffer == null) {
-    this.lastBoundFramebuffer = this.framebuffer;
-    this.gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-  }
-
-  this.gl.bindFramebuffer = function(target, framebuffer) {
-    self.lastBoundFramebuffer = framebuffer ? framebuffer : self.framebuffer;
-    // Silently make calls to bind the default framebuffer bind ours instead.
-    self.realBindFramebuffer.call(gl, target, self.lastBoundFramebuffer);
-  };
-
-  this.cullFace = gl.getParameter(gl.CULL_FACE);
-  this.depthTest = gl.getParameter(gl.DEPTH_TEST);
-  this.blend = gl.getParameter(gl.BLEND);
-  this.scissorTest = gl.getParameter(gl.SCISSOR_TEST);
-  this.stencilTest = gl.getParameter(gl.STENCIL_TEST);
-
-  gl.enable = function(pname) {
-    switch (pname) {
-      case gl.CULL_FACE: self.cullFace = true; break;
-      case gl.DEPTH_TEST: self.depthTest = true; break;
-      case gl.BLEND: self.blend = true; break;
-      case gl.SCISSOR_TEST: self.scissorTest = true; break;
-      case gl.STENCIL_TEST: self.stencilTest = true; break;
-    }
-    self.realEnable.call(gl, pname);
-  };
-
-  gl.disable = function(pname) {
-    switch (pname) {
-      case gl.CULL_FACE: self.cullFace = false; break;
-      case gl.DEPTH_TEST: self.depthTest = false; break;
-      case gl.BLEND: self.blend = false; break;
-      case gl.SCISSOR_TEST: self.scissorTest = false; break;
-      case gl.STENCIL_TEST: self.stencilTest = false; break;
-    }
-    self.realDisable.call(gl, pname);
-  };
-
-  this.colorMask = gl.getParameter(gl.COLOR_WRITEMASK);
-  gl.colorMask = function(r, g, b, a) {
-    self.colorMask[0] = r;
-    self.colorMask[1] = g;
-    self.colorMask[2] = b;
-    self.colorMask[3] = a;
-    self.realColorMask.call(gl, r, g, b, a);
-  };
-
-  this.clearColor = gl.getParameter(gl.COLOR_CLEAR_VALUE);
-  gl.clearColor = function(r, g, b, a) {
-    self.clearColor[0] = r;
-    self.clearColor[1] = g;
-    self.clearColor[2] = b;
-    self.clearColor[3] = a;
-    self.realClearColor.call(gl, r, g, b, a);
-  };
-
-  this.viewport = gl.getParameter(gl.VIEWPORT);
-  gl.viewport = function(x, y, w, h) {
-    self.viewport[0] = x;
-    self.viewport[1] = y;
-    self.viewport[2] = w;
-    self.viewport[3] = h;
-    self.realViewport.call(gl, x, y, w, h);
-  };
-
-  this.isPatched = true;
-  Util.safariCssSizeWorkaround(canvas);
-};
-
-CardboardDistorter.prototype.unpatch = function() {
-  if (!this.isPatched) {
-    return;
-  }
-
-  var gl = this.gl;
-  var canvas = this.gl.canvas;
-
-  if (!Util.isIOS()) {
-    Object.defineProperty(canvas, 'width', this.realCanvasWidth);
-    Object.defineProperty(canvas, 'height', this.realCanvasHeight);
-  }
-  canvas.width = this.bufferWidth;
-  canvas.height = this.bufferHeight;
-
-  gl.bindFramebuffer = this.realBindFramebuffer;
-  gl.enable = this.realEnable;
-  gl.disable = this.realDisable;
-  gl.colorMask = this.realColorMask;
-  gl.clearColor = this.realClearColor;
-  gl.viewport = this.realViewport;
-
-  // Check to see if our fake backbuffer is bound and bind the real backbuffer
-  // if that's the case.
-  if (this.lastBoundFramebuffer == this.framebuffer) {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  }
-
-  this.isPatched = false;
-
-  setTimeout(function() {
-    Util.safariCssSizeWorkaround(canvas);
-  }, 1);
-};
-
-CardboardDistorter.prototype.setTextureBounds = function(leftBounds, rightBounds) {
-  if (!leftBounds) {
-    leftBounds = [0, 0, 0.5, 1];
-  }
-
-  if (!rightBounds) {
-    rightBounds = [0.5, 0, 0.5, 1];
-  }
-
-  // Left eye
-  this.viewportOffsetScale[0] = leftBounds[0]; // X
-  this.viewportOffsetScale[1] = leftBounds[1]; // Y
-  this.viewportOffsetScale[2] = leftBounds[2]; // Width
-  this.viewportOffsetScale[3] = leftBounds[3]; // Height
-
-  // Right eye
-  this.viewportOffsetScale[4] = rightBounds[0]; // X
-  this.viewportOffsetScale[5] = rightBounds[1]; // Y
-  this.viewportOffsetScale[6] = rightBounds[2]; // Width
-  this.viewportOffsetScale[7] = rightBounds[3]; // Height
-};
-
-/**
- * Performs distortion pass on the injected backbuffer, rendering it to the real
- * backbuffer.
- */
-CardboardDistorter.prototype.submitFrame = function() {
-  var gl = this.gl;
-  var self = this;
-
-  var glState = [];
-
-  if (!WebVRConfig.DIRTY_SUBMIT_FRAME_BINDINGS) {
-    glState.push(
-      gl.CURRENT_PROGRAM,
-      gl.ARRAY_BUFFER_BINDING,
-      gl.ELEMENT_ARRAY_BUFFER_BINDING,
-      gl.TEXTURE_BINDING_2D, gl.TEXTURE0
-    );
-  }
-
-  WGLUPreserveGLState(gl, glState, function(gl) {
-    // Bind the real default framebuffer
-    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, null);
-
-    // Make sure the GL state is in a good place
-    if (self.cullFace) { self.realDisable.call(gl, gl.CULL_FACE); }
-    if (self.depthTest) { self.realDisable.call(gl, gl.DEPTH_TEST); }
-    if (self.blend) { self.realDisable.call(gl, gl.BLEND); }
-    if (self.scissorTest) { self.realDisable.call(gl, gl.SCISSOR_TEST); }
-    if (self.stencilTest) { self.realDisable.call(gl, gl.STENCIL_TEST); }
-    self.realColorMask.call(gl, true, true, true, true);
-    self.realViewport.call(gl, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-    // If the backbuffer has an alpha channel clear every frame so the page
-    // doesn't show through.
-    if (self.ctxAttribs.alpha || Util.isIOS()) {
-      self.realClearColor.call(gl, 0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    }
-
-    // Bind distortion program and mesh
-    gl.useProgram(self.program);
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.indexBuffer);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
-    gl.enableVertexAttribArray(self.attribs.position);
-    gl.enableVertexAttribArray(self.attribs.texCoord);
-    gl.vertexAttribPointer(self.attribs.position, 2, gl.FLOAT, false, 20, 0);
-    gl.vertexAttribPointer(self.attribs.texCoord, 3, gl.FLOAT, false, 20, 8);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.uniform1i(self.uniforms.diffuse, 0);
-    gl.bindTexture(gl.TEXTURE_2D, self.renderTarget);
-
-    gl.uniform4fv(self.uniforms.viewportOffsetScale, self.viewportOffsetScale);
-
-    // Draws both eyes
-    gl.drawElements(gl.TRIANGLES, self.indexCount, gl.UNSIGNED_SHORT, 0);
-
-    if (self.cardboardUI) {
-      self.cardboardUI.renderNoState();
-    }
-
-    // Bind the fake default framebuffer again
-    self.realBindFramebuffer.call(self.gl, gl.FRAMEBUFFER, self.framebuffer);
-
-    // If preserveDrawingBuffer == false clear the framebuffer
-    if (!self.ctxAttribs.preserveDrawingBuffer) {
-      self.realClearColor.call(gl, 0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-    }
-
-    if (!WebVRConfig.DIRTY_SUBMIT_FRAME_BINDINGS) {
-      self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.lastBoundFramebuffer);
-    }
-
-    // Restore state
-    if (self.cullFace) { self.realEnable.call(gl, gl.CULL_FACE); }
-    if (self.depthTest) { self.realEnable.call(gl, gl.DEPTH_TEST); }
-    if (self.blend) { self.realEnable.call(gl, gl.BLEND); }
-    if (self.scissorTest) { self.realEnable.call(gl, gl.SCISSOR_TEST); }
-    if (self.stencilTest) { self.realEnable.call(gl, gl.STENCIL_TEST); }
-
-    self.realColorMask.apply(gl, self.colorMask);
-    self.realViewport.apply(gl, self.viewport);
-    if (self.ctxAttribs.alpha || !self.ctxAttribs.preserveDrawingBuffer) {
-      self.realClearColor.apply(gl, self.clearColor);
-    }
-  });
-
-  // Workaround for the fact that Safari doesn't allow us to patch the canvas
-  // width and height correctly. After each submit frame check to see what the
-  // real backbuffer size has been set to and resize the fake backbuffer size
-  // to match.
-  if (Util.isIOS()) {
-    var canvas = gl.canvas;
-    if (canvas.width != self.bufferWidth || canvas.height != self.bufferHeight) {
-      self.bufferWidth = canvas.width;
-      self.bufferHeight = canvas.height;
-      self.onResize();
-    }
-  }
-};
-
-/**
- * Call when the deviceInfo has changed. At this point we need
- * to re-calculate the distortion mesh.
- */
-CardboardDistorter.prototype.updateDeviceInfo = function(deviceInfo) {
-  var gl = this.gl;
-  var self = this;
-
-  var glState = [gl.ARRAY_BUFFER_BINDING, gl.ELEMENT_ARRAY_BUFFER_BINDING];
-  WGLUPreserveGLState(gl, glState, function(gl) {
-    var vertices = self.computeMeshVertices_(self.meshWidth, self.meshHeight, deviceInfo);
-    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-    // Indices don't change based on device parameters, so only compute once.
-    if (!self.indexCount) {
-      var indices = self.computeMeshIndices_(self.meshWidth, self.meshHeight);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.indexBuffer);
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-      self.indexCount = indices.length;
-    }
-  });
-};
-
-/**
- * Build the distortion mesh vertices.
- * Based on code from the Unity cardboard plugin.
- */
-CardboardDistorter.prototype.computeMeshVertices_ = function(width, height, deviceInfo) {
-  var vertices = new Float32Array(2 * width * height * 5);
-
-  var lensFrustum = deviceInfo.getLeftEyeVisibleTanAngles();
-  var noLensFrustum = deviceInfo.getLeftEyeNoLensTanAngles();
-  var viewport = deviceInfo.getLeftEyeVisibleScreenRect(noLensFrustum);
-  var vidx = 0;
-  var iidx = 0;
-  for (var e = 0; e < 2; e++) {
-    for (var j = 0; j < height; j++) {
-      for (var i = 0; i < width; i++, vidx++) {
-        var u = i / (width - 1);
-        var v = j / (height - 1);
-
-        // Grid points regularly spaced in StreoScreen, and barrel distorted in
-        // the mesh.
-        var s = u;
-        var t = v;
-        var x = Util.lerp(lensFrustum[0], lensFrustum[2], u);
-        var y = Util.lerp(lensFrustum[3], lensFrustum[1], v);
-        var d = Math.sqrt(x * x + y * y);
-        var r = deviceInfo.distortion.distortInverse(d);
-        var p = x * r / d;
-        var q = y * r / d;
-        u = (p - noLensFrustum[0]) / (noLensFrustum[2] - noLensFrustum[0]);
-        v = (q - noLensFrustum[3]) / (noLensFrustum[1] - noLensFrustum[3]);
-
-        // Convert u,v to mesh screen coordinates.
-        var aspect = deviceInfo.device.widthMeters / deviceInfo.device.heightMeters;
-
-        // FIXME: The original Unity plugin multiplied U by the aspect ratio
-        // and didn't multiply either value by 2, but that seems to get it
-        // really close to correct looking for me. I hate this kind of "Don't
-        // know why it works" code though, and wold love a more logical
-        // explanation of what needs to happen here.
-        u = (viewport.x + u * viewport.width - 0.5) * 2.0; //* aspect;
-        v = (viewport.y + v * viewport.height - 0.5) * 2.0;
-
-        vertices[(vidx * 5) + 0] = u; // position.x
-        vertices[(vidx * 5) + 1] = v; // position.y
-        vertices[(vidx * 5) + 2] = s; // texCoord.x
-        vertices[(vidx * 5) + 3] = t; // texCoord.y
-        vertices[(vidx * 5) + 4] = e; // texCoord.z (viewport index)
-      }
-    }
-    var w = lensFrustum[2] - lensFrustum[0];
-    lensFrustum[0] = -(w + lensFrustum[0]);
-    lensFrustum[2] = w - lensFrustum[2];
-    w = noLensFrustum[2] - noLensFrustum[0];
-    noLensFrustum[0] = -(w + noLensFrustum[0]);
-    noLensFrustum[2] = w - noLensFrustum[2];
-    viewport.x = 1 - (viewport.x + viewport.width);
-  }
-  return vertices;
-}
-
-/**
- * Build the distortion mesh indices.
- * Based on code from the Unity cardboard plugin.
- */
-CardboardDistorter.prototype.computeMeshIndices_ = function(width, height) {
-  var indices = new Uint16Array(2 * (width - 1) * (height - 1) * 6);
-  var halfwidth = width / 2;
-  var halfheight = height / 2;
-  var vidx = 0;
-  var iidx = 0;
-  for (var e = 0; e < 2; e++) {
-    for (var j = 0; j < height; j++) {
-      for (var i = 0; i < width; i++, vidx++) {
-        if (i == 0 || j == 0)
-          continue;
-        // Build a quad.  Lower right and upper left quadrants have quads with
-        // the triangle diagonal flipped to get the vignette to interpolate
-        // correctly.
-        if ((i <= halfwidth) == (j <= halfheight)) {
-          // Quad diagonal lower left to upper right.
-          indices[iidx++] = vidx;
-          indices[iidx++] = vidx - width - 1;
-          indices[iidx++] = vidx - width;
-          indices[iidx++] = vidx - width - 1;
-          indices[iidx++] = vidx;
-          indices[iidx++] = vidx - 1;
-        } else {
-          // Quad diagonal upper left to lower right.
-          indices[iidx++] = vidx - 1;
-          indices[iidx++] = vidx - width;
-          indices[iidx++] = vidx;
-          indices[iidx++] = vidx - width;
-          indices[iidx++] = vidx - 1;
-          indices[iidx++] = vidx - width - 1;
-        }
-      }
-    }
-  }
-  return indices;
-};
-
-CardboardDistorter.prototype.getOwnPropertyDescriptor_ = function(proto, attrName) {
-  var descriptor = Object.getOwnPropertyDescriptor(proto, attrName);
-  // In some cases (ahem... Safari), the descriptor returns undefined get and
-  // set fields. In this case, we need to create a synthetic property
-  // descriptor. This works around some of the issues in
-  // https://github.com/borismus/webvr-polyfill/issues/46
-  if (descriptor.get === undefined || descriptor.set === undefined) {
-    descriptor.configurable = true;
-    descriptor.enumerable = true;
-    descriptor.get = function() {
-      return this.getAttribute(attrName);
-    };
-    descriptor.set = function(val) {
-      this.setAttribute(attrName, val);
-    };
-  }
-  return descriptor;
-};
-
-module.exports = CardboardDistorter;
-
-},{"./cardboard-ui.js":5,"./deps/wglu-preserve-state.js":7,"./util.js":22}],5:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Util = _dereq_('./util.js');
-var WGLUPreserveGLState = _dereq_('./deps/wglu-preserve-state.js');
-
-var uiVS = [
-  'attribute vec2 position;',
-
-  'uniform mat4 projectionMat;',
-
-  'void main() {',
-  '  gl_Position = projectionMat * vec4( position, -1.0, 1.0 );',
-  '}',
-].join('\n');
-
-var uiFS = [
-  'precision mediump float;',
-
-  'uniform vec4 color;',
-
-  'void main() {',
-  '  gl_FragColor = color;',
-  '}',
-].join('\n');
-
-var DEG2RAD = Math.PI/180.0;
-
-// The gear has 6 identical sections, each spanning 60 degrees.
-var kAnglePerGearSection = 60;
-
-// Half-angle of the span of the outer rim.
-var kOuterRimEndAngle = 12;
-
-// Angle between the middle of the outer rim and the start of the inner rim.
-var kInnerRimBeginAngle = 20;
-
-// Distance from center to outer rim, normalized so that the entire model
-// fits in a [-1, 1] x [-1, 1] square.
-var kOuterRadius = 1;
-
-// Distance from center to depressed rim, in model units.
-var kMiddleRadius = 0.75;
-
-// Radius of the inner hollow circle, in model units.
-var kInnerRadius = 0.3125;
-
-// Center line thickness in DP.
-var kCenterLineThicknessDp = 4;
-
-// Button width in DP.
-var kButtonWidthDp = 28;
-
-// Factor to scale the touch area that responds to the touch.
-var kTouchSlopFactor = 1.5;
-
-var Angles = [
-  0, kOuterRimEndAngle, kInnerRimBeginAngle,
-  kAnglePerGearSection - kInnerRimBeginAngle,
-  kAnglePerGearSection - kOuterRimEndAngle
-];
-
-/**
- * Renders the alignment line and "options" gear. It is assumed that the canvas
- * this is rendered into covers the entire screen (or close to it.)
- */
-function CardboardUI(gl) {
-  this.gl = gl;
-
-  this.attribs = {
-    position: 0
-  };
-  this.program = Util.linkProgram(gl, uiVS, uiFS, this.attribs);
-  this.uniforms = Util.getProgramUniforms(gl, this.program);
-
-  this.vertexBuffer = gl.createBuffer();
-  this.gearOffset = 0;
-  this.gearVertexCount = 0;
-  this.arrowOffset = 0;
-  this.arrowVertexCount = 0;
-
-  this.projMat = new Float32Array(16);
-
-  this.listener = null;
-
-  this.onResize();
-};
-
-/**
- * Tears down all the resources created by the UI renderer.
- */
-CardboardUI.prototype.destroy = function() {
-  var gl = this.gl;
-
-  if (this.listener) {
-    gl.canvas.removeEventListener('click', this.listener, false);
-  }
-
-  gl.deleteProgram(this.program);
-  gl.deleteBuffer(this.vertexBuffer);
-};
-
-/**
- * Adds a listener to clicks on the gear and back icons
- */
-CardboardUI.prototype.listen = function(optionsCallback, backCallback) {
-  var canvas = this.gl.canvas;
-  this.listener = function(event) {
-    var midline = canvas.clientWidth / 2;
-    var buttonSize = kButtonWidthDp * kTouchSlopFactor;
-    // Check to see if the user clicked on (or around) the gear icon
-    if (event.clientX > midline - buttonSize &&
-        event.clientX < midline + buttonSize &&
-        event.clientY > canvas.clientHeight - buttonSize) {
-      optionsCallback(event);
-    }
-    // Check to see if the user clicked on (or around) the back icon
-    else if (event.clientX < buttonSize && event.clientY < buttonSize) {
-      backCallback(event);
-    }
-  };
-  canvas.addEventListener('click', this.listener, false);
-};
-
-/**
- * Builds the UI mesh.
- */
-CardboardUI.prototype.onResize = function() {
-  var gl = this.gl;
-  var self = this;
-
-  var glState = [
-    gl.ARRAY_BUFFER_BINDING
-  ];
-
-  WGLUPreserveGLState(gl, glState, function(gl) {
-    var vertices = [];
-
-    var midline = gl.drawingBufferWidth / 2;
-
-    // Assumes your canvas width and height is scaled proportionately.
-    // TODO(smus): The following causes buttons to become huge on iOS, but seems
-    // like the right thing to do. For now, added a hack. But really, investigate why.
-    var dps = (gl.drawingBufferWidth / (screen.width * window.devicePixelRatio));
-    if (!Util.isIOS()) {
-      dps *= window.devicePixelRatio;
-    }
-
-    var lineWidth = kCenterLineThicknessDp * dps / 2;
-    var buttonSize = kButtonWidthDp * kTouchSlopFactor * dps;
-    var buttonScale = kButtonWidthDp * dps / 2;
-    var buttonBorder = ((kButtonWidthDp * kTouchSlopFactor) - kButtonWidthDp) * dps;
-
-    // Build centerline
-    vertices.push(midline - lineWidth, buttonSize);
-    vertices.push(midline - lineWidth, gl.drawingBufferHeight);
-    vertices.push(midline + lineWidth, buttonSize);
-    vertices.push(midline + lineWidth, gl.drawingBufferHeight);
-
-    // Build gear
-    self.gearOffset = (vertices.length / 2);
-
-    function addGearSegment(theta, r) {
-      var angle = (90 - theta) * DEG2RAD;
-      var x = Math.cos(angle);
-      var y = Math.sin(angle);
-      vertices.push(kInnerRadius * x * buttonScale + midline, kInnerRadius * y * buttonScale + buttonScale);
-      vertices.push(r * x * buttonScale + midline, r * y * buttonScale + buttonScale);
-    }
-
-    for (var i = 0; i <= 6; i++) {
-      var segmentTheta = i * kAnglePerGearSection;
-
-      addGearSegment(segmentTheta, kOuterRadius);
-      addGearSegment(segmentTheta + kOuterRimEndAngle, kOuterRadius);
-      addGearSegment(segmentTheta + kInnerRimBeginAngle, kMiddleRadius);
-      addGearSegment(segmentTheta + (kAnglePerGearSection - kInnerRimBeginAngle), kMiddleRadius);
-      addGearSegment(segmentTheta + (kAnglePerGearSection - kOuterRimEndAngle), kOuterRadius);
-    }
-
-    self.gearVertexCount = (vertices.length / 2) - self.gearOffset;
-
-    // Build back arrow
-    self.arrowOffset = (vertices.length / 2);
-
-    function addArrowVertex(x, y) {
-      vertices.push(buttonBorder + x, gl.drawingBufferHeight - buttonBorder - y);
-    }
-
-    var angledLineWidth = lineWidth / Math.sin(45 * DEG2RAD);
-
-    addArrowVertex(0, buttonScale);
-    addArrowVertex(buttonScale, 0);
-    addArrowVertex(buttonScale + angledLineWidth, angledLineWidth);
-    addArrowVertex(angledLineWidth, buttonScale + angledLineWidth);
-
-    addArrowVertex(angledLineWidth, buttonScale - angledLineWidth);
-    addArrowVertex(0, buttonScale);
-    addArrowVertex(buttonScale, buttonScale * 2);
-    addArrowVertex(buttonScale + angledLineWidth, (buttonScale * 2) - angledLineWidth);
-
-    addArrowVertex(angledLineWidth, buttonScale - angledLineWidth);
-    addArrowVertex(0, buttonScale);
-
-    addArrowVertex(angledLineWidth, buttonScale - lineWidth);
-    addArrowVertex(kButtonWidthDp * dps, buttonScale - lineWidth);
-    addArrowVertex(angledLineWidth, buttonScale + lineWidth);
-    addArrowVertex(kButtonWidthDp * dps, buttonScale + lineWidth);
-
-    self.arrowVertexCount = (vertices.length / 2) - self.arrowOffset;
-
-    // Buffer data
-    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  });
-};
-
-/**
- * Performs distortion pass on the injected backbuffer, rendering it to the real
- * backbuffer.
- */
-CardboardUI.prototype.render = function() {
-  var gl = this.gl;
-  var self = this;
-
-  var glState = [
-    gl.CULL_FACE,
-    gl.DEPTH_TEST,
-    gl.BLEND,
-    gl.SCISSOR_TEST,
-    gl.STENCIL_TEST,
-    gl.COLOR_WRITEMASK,
-    gl.VIEWPORT,
-
-    gl.CURRENT_PROGRAM,
-    gl.ARRAY_BUFFER_BINDING
-  ];
-
-  WGLUPreserveGLState(gl, glState, function(gl) {
-    // Make sure the GL state is in a good place
-    gl.disable(gl.CULL_FACE);
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.BLEND);
-    gl.disable(gl.SCISSOR_TEST);
-    gl.disable(gl.STENCIL_TEST);
-    gl.colorMask(true, true, true, true);
-    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-    self.renderNoState();
-  });
-};
-
-CardboardUI.prototype.renderNoState = function() {
-  var gl = this.gl;
-
-  // Bind distortion program and mesh
-  gl.useProgram(this.program);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-  gl.enableVertexAttribArray(this.attribs.position);
-  gl.vertexAttribPointer(this.attribs.position, 2, gl.FLOAT, false, 8, 0);
-
-  gl.uniform4f(this.uniforms.color, 1.0, 1.0, 1.0, 1.0);
-
-  Util.orthoMatrix(this.projMat, 0, gl.drawingBufferWidth, 0, gl.drawingBufferHeight, 0.1, 1024.0);
-  gl.uniformMatrix4fv(this.uniforms.projectionMat, false, this.projMat);
-
-  // Draws UI element
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  gl.drawArrays(gl.TRIANGLE_STRIP, this.gearOffset, this.gearVertexCount);
-  gl.drawArrays(gl.TRIANGLE_STRIP, this.arrowOffset, this.arrowVertexCount);
-};
-
-module.exports = CardboardUI;
-
-},{"./deps/wglu-preserve-state.js":7,"./util.js":22}],6:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var CardboardDistorter = _dereq_('./cardboard-distorter.js');
-var CardboardUI = _dereq_('./cardboard-ui.js');
-var DeviceInfo = _dereq_('./device-info.js');
-var Dpdb = _dereq_('./dpdb/dpdb.js');
-var FusionPoseSensor = _dereq_('./sensor-fusion/fusion-pose-sensor.js');
-var RotateInstructions = _dereq_('./rotate-instructions.js');
-var ViewerSelector = _dereq_('./viewer-selector.js');
-var VRDisplay = _dereq_('./base.js').VRDisplay;
-var Util = _dereq_('./util.js');
-
-var Eye = {
-  LEFT: 'left',
-  RIGHT: 'right'
-};
-
-/**
- * VRDisplay based on mobile device parameters and DeviceMotion APIs.
- */
-function CardboardVRDisplay() {
-  this.displayName = 'Cardboard VRDisplay (webvr-polyfill)';
-
-  this.capabilities.hasOrientation = true;
-  this.capabilities.canPresent = true;
-
-  // "Private" members.
-  this.bufferScale_ = WebVRConfig.BUFFER_SCALE;
-  this.poseSensor_ = new FusionPoseSensor();
-  this.distorter_ = null;
-  this.cardboardUI_ = null;
-
-  this.dpdb_ = new Dpdb(true, this.onDeviceParamsUpdated_.bind(this));
-  this.deviceInfo_ = new DeviceInfo(this.dpdb_.getDeviceParams());
-
-  this.viewerSelector_ = new ViewerSelector();
-  this.viewerSelector_.on('change', this.onViewerChanged_.bind(this));
-
-  // Set the correct initial viewer.
-  this.deviceInfo_.setViewer(this.viewerSelector_.getCurrentViewer());
-
-  if (!WebVRConfig.ROTATE_INSTRUCTIONS_DISABLED) {
-    this.rotateInstructions_ = new RotateInstructions();
-  }
-
-  if (Util.isIOS()) {
-    // Listen for resize events to workaround this awful Safari bug.
-    window.addEventListener('resize', this.onResize_.bind(this));
-  }
-}
-CardboardVRDisplay.prototype = new VRDisplay();
-
-CardboardVRDisplay.prototype.getImmediatePose = function() {
-  return {
-    position: this.poseSensor_.getPosition(),
-    orientation: this.poseSensor_.getOrientation(),
-    linearVelocity: null,
-    linearAcceleration: null,
-    angularVelocity: null,
-    angularAcceleration: null
-  };
-};
-
-CardboardVRDisplay.prototype.resetPose = function() {
-  this.poseSensor_.resetPose();
-};
-
-CardboardVRDisplay.prototype.getEyeParameters = function(whichEye) {
-  var offset = [this.deviceInfo_.viewer.interLensDistance * 0.5, 0.0, 0.0];
-  var fieldOfView;
-
-  // TODO: FoV can be a little expensive to compute. Cache when device params change.
-  if (whichEye == Eye.LEFT) {
-    offset[0] *= -1.0;
-    fieldOfView = this.deviceInfo_.getFieldOfViewLeftEye();
-  } else if (whichEye == Eye.RIGHT) {
-    fieldOfView = this.deviceInfo_.getFieldOfViewRightEye();
+var getOriginFromUrl = function getOriginFromUrl(url) {
+  var domainIdx;
+  var protoSepIdx = url.indexOf("://");
+  if (protoSepIdx !== -1) {
+    domainIdx = protoSepIdx + 3;
   } else {
-    console.error('Invalid eye provided: %s', whichEye);
-    return null;
+    domainIdx = 0;
   }
-
-  return {
-    fieldOfView: fieldOfView,
-    offset: offset,
-    // TODO: Should be able to provide better values than these.
-    renderWidth: this.deviceInfo_.device.width * 0.5 * this.bufferScale_,
-    renderHeight: this.deviceInfo_.device.height * this.bufferScale_,
+  var domainEndIdx = url.indexOf('/', domainIdx);
+  if (domainEndIdx === -1) {
+    domainEndIdx = url.length;
+  }
+  return url.substring(0, domainEndIdx);
+};
+var getQuaternionAngle = function getQuaternionAngle(quat) {
+  if (quat.w > 1) {
+    console.warn('getQuaternionAngle: w > 1');
+    return 0;
+  }
+  var angle = 2 * Math.acos(quat.w);
+  return angle;
+};
+var warnOnce = function () {
+  var observedWarnings = {};
+  return function (key, message) {
+    if (observedWarnings[key] === undefined) {
+      console.warn('webvr-polyfill: ' + message);
+      observedWarnings[key] = true;
+    }
   };
+}();
+var deprecateWarning = function deprecateWarning(deprecated, suggested) {
+  var alternative = suggested ? 'Please use ' + suggested + ' instead.' : '';
+  warnOnce(deprecated, deprecated + ' has been deprecated. ' + 'This may not work on native WebVR displays. ' + alternative);
 };
-
-CardboardVRDisplay.prototype.onDeviceParamsUpdated_ = function(newParams) {
-  if (Util.isDebug()) {
-    console.log('DPDB reported that device params were updated.');
-  }
-  this.deviceInfo_.updateDeviceParams(newParams);
-
-  if (this.distorter_) {
-    this.distorter_.updateDeviceInfo(this.deviceInfo_);
-  }
-};
-
-CardboardVRDisplay.prototype.updateBounds_ = function () {
-  if (this.layer_ && this.distorter_ && (this.layer_.leftBounds || this.layer_.rightBounds)) {
-    this.distorter_.setTextureBounds(this.layer_.leftBounds, this.layer_.rightBounds);
-  }
-};
-
-CardboardVRDisplay.prototype.beginPresent_ = function() {
-  var gl = this.layer_.source.getContext('webgl');
-  if (!gl)
-    gl = this.layer_.source.getContext('experimental-webgl');
-  if (!gl)
-    gl = this.layer_.source.getContext('webgl2');
-
-  if (!gl)
-    return; // Can't do distortion without a WebGL context.
-
-  // Provides a way to opt out of distortion
-  if (this.layer_.predistorted) {
-    if (!WebVRConfig.CARDBOARD_UI_DISABLED) {
-      gl.canvas.width = Util.getScreenWidth() * this.bufferScale_;
-      gl.canvas.height = Util.getScreenHeight() * this.bufferScale_;
-      this.cardboardUI_ = new CardboardUI(gl);
-    }
-  } else {
-    // Create a new distorter for the target context
-    this.distorter_ = new CardboardDistorter(gl);
-    this.distorter_.updateDeviceInfo(this.deviceInfo_);
-    this.cardboardUI_ = this.distorter_.cardboardUI;
-  }
-
-  if (this.cardboardUI_) {
-    this.cardboardUI_.listen(function(e) {
-      // Options clicked.
-      this.viewerSelector_.show(this.layer_.source.parentElement);
-      e.stopPropagation();
-      e.preventDefault();
-    }.bind(this), function(e) {
-      // Back clicked.
-      this.exitPresent();
-      e.stopPropagation();
-      e.preventDefault();
-    }.bind(this));
-  }
-
-  if (this.rotateInstructions_) {
-    if (Util.isLandscapeMode() && Util.isMobile()) {
-      // In landscape mode, temporarily show the "put into Cardboard"
-      // interstitial. Otherwise, do the default thing.
-      this.rotateInstructions_.showTemporarily(3000, this.layer_.source.parentElement);
-    } else {
-      this.rotateInstructions_.update();
-    }
-  }
-
-  // Listen for orientation change events in order to show interstitial.
-  this.orientationHandler = this.onOrientationChange_.bind(this);
-  window.addEventListener('orientationchange', this.orientationHandler);
-
-  // Listen for present display change events in order to update distorter dimensions
-  this.vrdisplaypresentchangeHandler = this.updateBounds_.bind(this);
-  window.addEventListener('vrdisplaypresentchange', this.vrdisplaypresentchangeHandler);
-
-  // Fire this event initially, to give geometry-distortion clients the chance
-  // to do something custom.
-  this.fireVRDisplayDeviceParamsChange_();
-};
-
-CardboardVRDisplay.prototype.endPresent_ = function() {
-  if (this.distorter_) {
-    this.distorter_.destroy();
-    this.distorter_ = null;
-  }
-  if (this.cardboardUI_) {
-    this.cardboardUI_.destroy();
-    this.cardboardUI_ = null;
-  }
-
-  if (this.rotateInstructions_) {
-    this.rotateInstructions_.hide();
-  }
-  this.viewerSelector_.hide();
-
-  window.removeEventListener('orientationchange', this.orientationHandler);
-  window.removeEventListener('vrdisplaypresentchange', this.vrdisplaypresentchangeHandler);
-};
-
-CardboardVRDisplay.prototype.submitFrame = function(pose) {
-  if (this.distorter_) {
-    this.distorter_.submitFrame();
-  } else if (this.cardboardUI_ && this.layer_) {
-    // Hack for predistorted: true.
-    var canvas = this.layer_.source.getContext('webgl').canvas;
-    if (canvas.width != this.lastWidth || canvas.height != this.lastHeight) {
-      this.cardboardUI_.onResize();
-    }
-    this.lastWidth = canvas.width;
-    this.lastHeight = canvas.height;
-
-    // Render the Cardboard UI.
-    this.cardboardUI_.render();
-  }
-};
-
-CardboardVRDisplay.prototype.onOrientationChange_ = function(e) {
-  // Hide the viewer selector.
-  this.viewerSelector_.hide();
-
-  // Update the rotate instructions.
-  if (this.rotateInstructions_) {
-    this.rotateInstructions_.update();
-  }
-
-  this.onResize_();
-};
-
-CardboardVRDisplay.prototype.onResize_ = function(e) {
-  if (this.layer_) {
-    var gl = this.layer_.source.getContext('webgl');
-    // Size the CSS canvas.
-    // Added padding on right and bottom because iPhone 5 will not
-    // hide the URL bar unless content is bigger than the screen.
-    // This will not be visible as long as the container element (e.g. body)
-    // is set to 'overflow: hidden'.
-    var cssProperties = [
-      'position: absolute',
-      'top: 0',
-      'left: 0',
-      'width: ' + Math.max(screen.width, screen.height) + 'px',
-      'height: ' + Math.min(screen.height, screen.width) + 'px',
-      'border: 0',
-      'margin: 0',
-      'padding: 0 10px 10px 0',
-    ];
-    gl.canvas.setAttribute('style', cssProperties.join('; ') + ';');
-
-    Util.safariCssSizeWorkaround(gl.canvas);
-  }
-};
-
-CardboardVRDisplay.prototype.onViewerChanged_ = function(viewer) {
-  this.deviceInfo_.setViewer(viewer);
-
-  if (this.distorter_) {
-    // Update the distortion appropriately.
-    this.distorter_.updateDeviceInfo(this.deviceInfo_);
-  }
-
-  // Fire a new event containing viewer and device parameters for clients that
-  // want to implement their own geometry-based distortion.
-  this.fireVRDisplayDeviceParamsChange_();
-};
-
-CardboardVRDisplay.prototype.fireVRDisplayDeviceParamsChange_ = function() {
-  var event = new CustomEvent('vrdisplaydeviceparamschange', {
-    detail: {
-      vrdisplay: this,
-      deviceInfo: this.deviceInfo_,
-    }
-  });
-  window.dispatchEvent(event);
-};
-
-module.exports = CardboardVRDisplay;
-
-},{"./base.js":3,"./cardboard-distorter.js":4,"./cardboard-ui.js":5,"./device-info.js":8,"./dpdb/dpdb.js":12,"./rotate-instructions.js":16,"./sensor-fusion/fusion-pose-sensor.js":18,"./util.js":22,"./viewer-selector.js":23}],7:[function(_dereq_,module,exports){
-/*
-Copyright (c) 2016, Brandon Jones.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
-
-/*
-Caches specified GL state, runs a callback, and restores the cached state when
-done.
-
-Example usage:
-
-var savedState = [
-  gl.ARRAY_BUFFER_BINDING,
-
-  // TEXTURE_BINDING_2D or _CUBE_MAP must always be followed by the texure unit.
-  gl.TEXTURE_BINDING_2D, gl.TEXTURE0,
-
-  gl.CLEAR_COLOR,
-];
-// After this call the array buffer, texture unit 0, active texture, and clear
-// color will be restored. The viewport will remain changed, however, because
-// gl.VIEWPORT was not included in the savedState list.
-WGLUPreserveGLState(gl, savedState, function(gl) {
-  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, ....);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, ...);
-
-  gl.clearColor(1, 0, 0, 1);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-});
-
-Note that this is not intended to be fast. Managing state in your own code to
-avoid redundant state setting and querying will always be faster. This function
-is most useful for cases where you may not have full control over the WebGL
-calls being made, such as tooling or effect injectors.
-*/
-
 function WGLUPreserveGLState(gl, bindings, callback) {
   if (!bindings) {
     callback(gl);
     return;
   }
-
   var boundValues = [];
-
   var activeTexture = null;
   for (var i = 0; i < bindings.length; ++i) {
     var binding = bindings[i];
@@ -2158,15 +708,13 @@ function WGLUPreserveGLState(gl, bindings, callback) {
         break;
     }
   }
-
   callback(gl);
-
   for (var i = 0; i < bindings.length; ++i) {
     var binding = bindings[i];
     var boundValue = boundValues[i];
     switch (binding) {
       case gl.ACTIVE_TEXTURE:
-        break; // Ignore this binding, since we special-case it to happen last.
+        break;
       case gl.ARRAY_BUFFER_BINDING:
         gl.bindBuffer(gl.ARRAY_BUFFER, boundValue);
         break;
@@ -2220,60 +768,887 @@ function WGLUPreserveGLState(gl, bindings, callback) {
         console.log("No GL restore behavior for 0x" + binding.toString(16));
         break;
     }
-
     if (activeTexture) {
       gl.activeTexture(activeTexture);
     }
   }
 }
-
-module.exports = WGLUPreserveGLState;
-},{}],8:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Distortion = _dereq_('./distortion/distortion.js');
-var MathUtil = _dereq_('./math-util.js');
-var Util = _dereq_('./util.js');
-
+var glPreserveState = WGLUPreserveGLState;
+var distortionVS = ['attribute vec2 position;', 'attribute vec3 texCoord;', 'varying vec2 vTexCoord;', 'uniform vec4 viewportOffsetScale[2];', 'void main() {', '  vec4 viewport = viewportOffsetScale[int(texCoord.z)];', '  vTexCoord = (texCoord.xy * viewport.zw) + viewport.xy;', '  gl_Position = vec4( position, 1.0, 1.0 );', '}'].join('\n');
+var distortionFS = ['precision mediump float;', 'uniform sampler2D diffuse;', 'varying vec2 vTexCoord;', 'void main() {', '  gl_FragColor = texture2D(diffuse, vTexCoord);', '}'].join('\n');
+function CardboardDistorter(gl, cardboardUI, bufferScale, dirtySubmitFrameBindings) {
+  this.gl = gl;
+  this.cardboardUI = cardboardUI;
+  this.bufferScale = bufferScale;
+  this.dirtySubmitFrameBindings = dirtySubmitFrameBindings;
+  this.ctxAttribs = gl.getContextAttributes();
+  this.meshWidth = 20;
+  this.meshHeight = 20;
+  this.bufferWidth = gl.drawingBufferWidth;
+  this.bufferHeight = gl.drawingBufferHeight;
+  this.realBindFramebuffer = gl.bindFramebuffer;
+  this.realEnable = gl.enable;
+  this.realDisable = gl.disable;
+  this.realColorMask = gl.colorMask;
+  this.realClearColor = gl.clearColor;
+  this.realViewport = gl.viewport;
+  if (!isIOS()) {
+    this.realCanvasWidth = Object.getOwnPropertyDescriptor(gl.canvas.__proto__, 'width');
+    this.realCanvasHeight = Object.getOwnPropertyDescriptor(gl.canvas.__proto__, 'height');
+  }
+  this.isPatched = false;
+  this.lastBoundFramebuffer = null;
+  this.cullFace = false;
+  this.depthTest = false;
+  this.blend = false;
+  this.scissorTest = false;
+  this.stencilTest = false;
+  this.viewport = [0, 0, 0, 0];
+  this.colorMask = [true, true, true, true];
+  this.clearColor = [0, 0, 0, 0];
+  this.attribs = {
+    position: 0,
+    texCoord: 1
+  };
+  this.program = linkProgram(gl, distortionVS, distortionFS, this.attribs);
+  this.uniforms = getProgramUniforms(gl, this.program);
+  this.viewportOffsetScale = new Float32Array(8);
+  this.setTextureBounds();
+  this.vertexBuffer = gl.createBuffer();
+  this.indexBuffer = gl.createBuffer();
+  this.indexCount = 0;
+  this.renderTarget = gl.createTexture();
+  this.framebuffer = gl.createFramebuffer();
+  this.depthStencilBuffer = null;
+  this.depthBuffer = null;
+  this.stencilBuffer = null;
+  if (this.ctxAttribs.depth && this.ctxAttribs.stencil) {
+    this.depthStencilBuffer = gl.createRenderbuffer();
+  } else if (this.ctxAttribs.depth) {
+    this.depthBuffer = gl.createRenderbuffer();
+  } else if (this.ctxAttribs.stencil) {
+    this.stencilBuffer = gl.createRenderbuffer();
+  }
+  this.patch();
+  this.onResize();
+}
+CardboardDistorter.prototype.destroy = function () {
+  var gl = this.gl;
+  this.unpatch();
+  gl.deleteProgram(this.program);
+  gl.deleteBuffer(this.vertexBuffer);
+  gl.deleteBuffer(this.indexBuffer);
+  gl.deleteTexture(this.renderTarget);
+  gl.deleteFramebuffer(this.framebuffer);
+  if (this.depthStencilBuffer) {
+    gl.deleteRenderbuffer(this.depthStencilBuffer);
+  }
+  if (this.depthBuffer) {
+    gl.deleteRenderbuffer(this.depthBuffer);
+  }
+  if (this.stencilBuffer) {
+    gl.deleteRenderbuffer(this.stencilBuffer);
+  }
+  if (this.cardboardUI) {
+    this.cardboardUI.destroy();
+  }
+};
+CardboardDistorter.prototype.onResize = function () {
+  var gl = this.gl;
+  var self = this;
+  var glState = [gl.RENDERBUFFER_BINDING, gl.TEXTURE_BINDING_2D, gl.TEXTURE0];
+  glPreserveState(gl, glState, function (gl) {
+    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, null);
+    if (self.scissorTest) {
+      self.realDisable.call(gl, gl.SCISSOR_TEST);
+    }
+    self.realColorMask.call(gl, true, true, true, true);
+    self.realViewport.call(gl, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    self.realClearColor.call(gl, 0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.framebuffer);
+    gl.bindTexture(gl.TEXTURE_2D, self.renderTarget);
+    gl.texImage2D(gl.TEXTURE_2D, 0, self.ctxAttribs.alpha ? gl.RGBA : gl.RGB, self.bufferWidth, self.bufferHeight, 0, self.ctxAttribs.alpha ? gl.RGBA : gl.RGB, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, self.renderTarget, 0);
+    if (self.ctxAttribs.depth && self.ctxAttribs.stencil) {
+      gl.bindRenderbuffer(gl.RENDERBUFFER, self.depthStencilBuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_STENCIL, self.bufferWidth, self.bufferHeight);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, self.depthStencilBuffer);
+    } else if (self.ctxAttribs.depth) {
+      gl.bindRenderbuffer(gl.RENDERBUFFER, self.depthBuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, self.bufferWidth, self.bufferHeight);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, self.depthBuffer);
+    } else if (self.ctxAttribs.stencil) {
+      gl.bindRenderbuffer(gl.RENDERBUFFER, self.stencilBuffer);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, self.bufferWidth, self.bufferHeight);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, self.stencilBuffer);
+    }
+    if (!gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
+      console.error('Framebuffer incomplete!');
+    }
+    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.lastBoundFramebuffer);
+    if (self.scissorTest) {
+      self.realEnable.call(gl, gl.SCISSOR_TEST);
+    }
+    self.realColorMask.apply(gl, self.colorMask);
+    self.realViewport.apply(gl, self.viewport);
+    self.realClearColor.apply(gl, self.clearColor);
+  });
+  if (this.cardboardUI) {
+    this.cardboardUI.onResize();
+  }
+};
+CardboardDistorter.prototype.patch = function () {
+  if (this.isPatched) {
+    return;
+  }
+  var self = this;
+  var canvas = this.gl.canvas;
+  var gl = this.gl;
+  if (!isIOS()) {
+    canvas.width = getScreenWidth() * this.bufferScale;
+    canvas.height = getScreenHeight() * this.bufferScale;
+    Object.defineProperty(canvas, 'width', {
+      configurable: true,
+      enumerable: true,
+      get: function get() {
+        return self.bufferWidth;
+      },
+      set: function set(value) {
+        self.bufferWidth = value;
+        self.realCanvasWidth.set.call(canvas, value);
+        self.onResize();
+      }
+    });
+    Object.defineProperty(canvas, 'height', {
+      configurable: true,
+      enumerable: true,
+      get: function get() {
+        return self.bufferHeight;
+      },
+      set: function set(value) {
+        self.bufferHeight = value;
+        self.realCanvasHeight.set.call(canvas, value);
+        self.onResize();
+      }
+    });
+  }
+  this.lastBoundFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+  if (this.lastBoundFramebuffer == null) {
+    this.lastBoundFramebuffer = this.framebuffer;
+    this.gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+  }
+  this.gl.bindFramebuffer = function (target, framebuffer) {
+    self.lastBoundFramebuffer = framebuffer ? framebuffer : self.framebuffer;
+    self.realBindFramebuffer.call(gl, target, self.lastBoundFramebuffer);
+  };
+  this.cullFace = gl.getParameter(gl.CULL_FACE);
+  this.depthTest = gl.getParameter(gl.DEPTH_TEST);
+  this.blend = gl.getParameter(gl.BLEND);
+  this.scissorTest = gl.getParameter(gl.SCISSOR_TEST);
+  this.stencilTest = gl.getParameter(gl.STENCIL_TEST);
+  gl.enable = function (pname) {
+    switch (pname) {
+      case gl.CULL_FACE:
+        self.cullFace = true;break;
+      case gl.DEPTH_TEST:
+        self.depthTest = true;break;
+      case gl.BLEND:
+        self.blend = true;break;
+      case gl.SCISSOR_TEST:
+        self.scissorTest = true;break;
+      case gl.STENCIL_TEST:
+        self.stencilTest = true;break;
+    }
+    self.realEnable.call(gl, pname);
+  };
+  gl.disable = function (pname) {
+    switch (pname) {
+      case gl.CULL_FACE:
+        self.cullFace = false;break;
+      case gl.DEPTH_TEST:
+        self.depthTest = false;break;
+      case gl.BLEND:
+        self.blend = false;break;
+      case gl.SCISSOR_TEST:
+        self.scissorTest = false;break;
+      case gl.STENCIL_TEST:
+        self.stencilTest = false;break;
+    }
+    self.realDisable.call(gl, pname);
+  };
+  this.colorMask = gl.getParameter(gl.COLOR_WRITEMASK);
+  gl.colorMask = function (r, g, b, a) {
+    self.colorMask[0] = r;
+    self.colorMask[1] = g;
+    self.colorMask[2] = b;
+    self.colorMask[3] = a;
+    self.realColorMask.call(gl, r, g, b, a);
+  };
+  this.clearColor = gl.getParameter(gl.COLOR_CLEAR_VALUE);
+  gl.clearColor = function (r, g, b, a) {
+    self.clearColor[0] = r;
+    self.clearColor[1] = g;
+    self.clearColor[2] = b;
+    self.clearColor[3] = a;
+    self.realClearColor.call(gl, r, g, b, a);
+  };
+  this.viewport = gl.getParameter(gl.VIEWPORT);
+  gl.viewport = function (x, y, w, h) {
+    self.viewport[0] = x;
+    self.viewport[1] = y;
+    self.viewport[2] = w;
+    self.viewport[3] = h;
+    self.realViewport.call(gl, x, y, w, h);
+  };
+  this.isPatched = true;
+  safariCssSizeWorkaround(canvas);
+};
+CardboardDistorter.prototype.unpatch = function () {
+  if (!this.isPatched) {
+    return;
+  }
+  var gl = this.gl;
+  var canvas = this.gl.canvas;
+  if (!isIOS()) {
+    Object.defineProperty(canvas, 'width', this.realCanvasWidth);
+    Object.defineProperty(canvas, 'height', this.realCanvasHeight);
+  }
+  canvas.width = this.bufferWidth;
+  canvas.height = this.bufferHeight;
+  gl.bindFramebuffer = this.realBindFramebuffer;
+  gl.enable = this.realEnable;
+  gl.disable = this.realDisable;
+  gl.colorMask = this.realColorMask;
+  gl.clearColor = this.realClearColor;
+  gl.viewport = this.realViewport;
+  if (this.lastBoundFramebuffer == this.framebuffer) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+  this.isPatched = false;
+  setTimeout(function () {
+    safariCssSizeWorkaround(canvas);
+  }, 1);
+};
+CardboardDistorter.prototype.setTextureBounds = function (leftBounds, rightBounds) {
+  if (!leftBounds) {
+    leftBounds = [0, 0, 0.5, 1];
+  }
+  if (!rightBounds) {
+    rightBounds = [0.5, 0, 0.5, 1];
+  }
+  this.viewportOffsetScale[0] = leftBounds[0];
+  this.viewportOffsetScale[1] = leftBounds[1];
+  this.viewportOffsetScale[2] = leftBounds[2];
+  this.viewportOffsetScale[3] = leftBounds[3];
+  this.viewportOffsetScale[4] = rightBounds[0];
+  this.viewportOffsetScale[5] = rightBounds[1];
+  this.viewportOffsetScale[6] = rightBounds[2];
+  this.viewportOffsetScale[7] = rightBounds[3];
+};
+CardboardDistorter.prototype.submitFrame = function () {
+  var gl = this.gl;
+  var self = this;
+  var glState = [];
+  if (!this.dirtySubmitFrameBindings) {
+    glState.push(gl.CURRENT_PROGRAM, gl.ARRAY_BUFFER_BINDING, gl.ELEMENT_ARRAY_BUFFER_BINDING, gl.TEXTURE_BINDING_2D, gl.TEXTURE0);
+  }
+  glPreserveState(gl, glState, function (gl) {
+    self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, null);
+    if (self.cullFace) {
+      self.realDisable.call(gl, gl.CULL_FACE);
+    }
+    if (self.depthTest) {
+      self.realDisable.call(gl, gl.DEPTH_TEST);
+    }
+    if (self.blend) {
+      self.realDisable.call(gl, gl.BLEND);
+    }
+    if (self.scissorTest) {
+      self.realDisable.call(gl, gl.SCISSOR_TEST);
+    }
+    if (self.stencilTest) {
+      self.realDisable.call(gl, gl.STENCIL_TEST);
+    }
+    self.realColorMask.call(gl, true, true, true, true);
+    self.realViewport.call(gl, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    if (self.ctxAttribs.alpha || isIOS()) {
+      self.realClearColor.call(gl, 0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    gl.useProgram(self.program);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.indexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
+    gl.enableVertexAttribArray(self.attribs.position);
+    gl.enableVertexAttribArray(self.attribs.texCoord);
+    gl.vertexAttribPointer(self.attribs.position, 2, gl.FLOAT, false, 20, 0);
+    gl.vertexAttribPointer(self.attribs.texCoord, 3, gl.FLOAT, false, 20, 8);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(self.uniforms.diffuse, 0);
+    gl.bindTexture(gl.TEXTURE_2D, self.renderTarget);
+    gl.uniform4fv(self.uniforms.viewportOffsetScale, self.viewportOffsetScale);
+    gl.drawElements(gl.TRIANGLES, self.indexCount, gl.UNSIGNED_SHORT, 0);
+    if (self.cardboardUI) {
+      self.cardboardUI.renderNoState();
+    }
+    self.realBindFramebuffer.call(self.gl, gl.FRAMEBUFFER, self.framebuffer);
+    if (!self.ctxAttribs.preserveDrawingBuffer) {
+      self.realClearColor.call(gl, 0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    if (!self.dirtySubmitFrameBindings) {
+      self.realBindFramebuffer.call(gl, gl.FRAMEBUFFER, self.lastBoundFramebuffer);
+    }
+    if (self.cullFace) {
+      self.realEnable.call(gl, gl.CULL_FACE);
+    }
+    if (self.depthTest) {
+      self.realEnable.call(gl, gl.DEPTH_TEST);
+    }
+    if (self.blend) {
+      self.realEnable.call(gl, gl.BLEND);
+    }
+    if (self.scissorTest) {
+      self.realEnable.call(gl, gl.SCISSOR_TEST);
+    }
+    if (self.stencilTest) {
+      self.realEnable.call(gl, gl.STENCIL_TEST);
+    }
+    self.realColorMask.apply(gl, self.colorMask);
+    self.realViewport.apply(gl, self.viewport);
+    if (self.ctxAttribs.alpha || !self.ctxAttribs.preserveDrawingBuffer) {
+      self.realClearColor.apply(gl, self.clearColor);
+    }
+  });
+  if (isIOS()) {
+    var canvas = gl.canvas;
+    if (canvas.width != self.bufferWidth || canvas.height != self.bufferHeight) {
+      self.bufferWidth = canvas.width;
+      self.bufferHeight = canvas.height;
+      self.onResize();
+    }
+  }
+};
+CardboardDistorter.prototype.updateDeviceInfo = function (deviceInfo) {
+  var gl = this.gl;
+  var self = this;
+  var glState = [gl.ARRAY_BUFFER_BINDING, gl.ELEMENT_ARRAY_BUFFER_BINDING];
+  glPreserveState(gl, glState, function (gl) {
+    var vertices = self.computeMeshVertices_(self.meshWidth, self.meshHeight, deviceInfo);
+    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    if (!self.indexCount) {
+      var indices = self.computeMeshIndices_(self.meshWidth, self.meshHeight);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.indexBuffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+      self.indexCount = indices.length;
+    }
+  });
+};
+CardboardDistorter.prototype.computeMeshVertices_ = function (width, height, deviceInfo) {
+  var vertices = new Float32Array(2 * width * height * 5);
+  var lensFrustum = deviceInfo.getLeftEyeVisibleTanAngles();
+  var noLensFrustum = deviceInfo.getLeftEyeNoLensTanAngles();
+  var viewport = deviceInfo.getLeftEyeVisibleScreenRect(noLensFrustum);
+  var vidx = 0;
+  for (var e = 0; e < 2; e++) {
+    for (var j = 0; j < height; j++) {
+      for (var i = 0; i < width; i++, vidx++) {
+        var u = i / (width - 1);
+        var v = j / (height - 1);
+        var s = u;
+        var t = v;
+        var x = lerp(lensFrustum[0], lensFrustum[2], u);
+        var y = lerp(lensFrustum[3], lensFrustum[1], v);
+        var d = Math.sqrt(x * x + y * y);
+        var r = deviceInfo.distortion.distortInverse(d);
+        var p = x * r / d;
+        var q = y * r / d;
+        u = (p - noLensFrustum[0]) / (noLensFrustum[2] - noLensFrustum[0]);
+        v = (q - noLensFrustum[3]) / (noLensFrustum[1] - noLensFrustum[3]);
+        u = (viewport.x + u * viewport.width - 0.5) * 2.0;
+        v = (viewport.y + v * viewport.height - 0.5) * 2.0;
+        vertices[vidx * 5 + 0] = u;
+        vertices[vidx * 5 + 1] = v;
+        vertices[vidx * 5 + 2] = s;
+        vertices[vidx * 5 + 3] = t;
+        vertices[vidx * 5 + 4] = e;
+      }
+    }
+    var w = lensFrustum[2] - lensFrustum[0];
+    lensFrustum[0] = -(w + lensFrustum[0]);
+    lensFrustum[2] = w - lensFrustum[2];
+    w = noLensFrustum[2] - noLensFrustum[0];
+    noLensFrustum[0] = -(w + noLensFrustum[0]);
+    noLensFrustum[2] = w - noLensFrustum[2];
+    viewport.x = 1 - (viewport.x + viewport.width);
+  }
+  return vertices;
+};
+CardboardDistorter.prototype.computeMeshIndices_ = function (width, height) {
+  var indices = new Uint16Array(2 * (width - 1) * (height - 1) * 6);
+  var halfwidth = width / 2;
+  var halfheight = height / 2;
+  var vidx = 0;
+  var iidx = 0;
+  for (var e = 0; e < 2; e++) {
+    for (var j = 0; j < height; j++) {
+      for (var i = 0; i < width; i++, vidx++) {
+        if (i == 0 || j == 0) continue;
+        if (i <= halfwidth == j <= halfheight) {
+          indices[iidx++] = vidx;
+          indices[iidx++] = vidx - width - 1;
+          indices[iidx++] = vidx - width;
+          indices[iidx++] = vidx - width - 1;
+          indices[iidx++] = vidx;
+          indices[iidx++] = vidx - 1;
+        } else {
+          indices[iidx++] = vidx - 1;
+          indices[iidx++] = vidx - width;
+          indices[iidx++] = vidx;
+          indices[iidx++] = vidx - width;
+          indices[iidx++] = vidx - 1;
+          indices[iidx++] = vidx - width - 1;
+        }
+      }
+    }
+  }
+  return indices;
+};
+CardboardDistorter.prototype.getOwnPropertyDescriptor_ = function (proto, attrName) {
+  var descriptor = Object.getOwnPropertyDescriptor(proto, attrName);
+  if (descriptor.get === undefined || descriptor.set === undefined) {
+    descriptor.configurable = true;
+    descriptor.enumerable = true;
+    descriptor.get = function () {
+      return this.getAttribute(attrName);
+    };
+    descriptor.set = function (val) {
+      this.setAttribute(attrName, val);
+    };
+  }
+  return descriptor;
+};
+var uiVS = ['attribute vec2 position;', 'uniform mat4 projectionMat;', 'void main() {', '  gl_Position = projectionMat * vec4( position, -1.0, 1.0 );', '}'].join('\n');
+var uiFS = ['precision mediump float;', 'uniform vec4 color;', 'void main() {', '  gl_FragColor = color;', '}'].join('\n');
+var DEG2RAD = Math.PI / 180.0;
+var kAnglePerGearSection = 60;
+var kOuterRimEndAngle = 12;
+var kInnerRimBeginAngle = 20;
+var kOuterRadius = 1;
+var kMiddleRadius = 0.75;
+var kInnerRadius = 0.3125;
+var kCenterLineThicknessDp = 4;
+var kButtonWidthDp = 28;
+var kTouchSlopFactor = 1.5;
+function CardboardUI(gl) {
+  this.gl = gl;
+  this.attribs = {
+    position: 0
+  };
+  this.program = linkProgram(gl, uiVS, uiFS, this.attribs);
+  this.uniforms = getProgramUniforms(gl, this.program);
+  this.vertexBuffer = gl.createBuffer();
+  this.gearOffset = 0;
+  this.gearVertexCount = 0;
+  this.arrowOffset = 0;
+  this.arrowVertexCount = 0;
+  this.projMat = new Float32Array(16);
+  this.listener = null;
+  this.onResize();
+}
+CardboardUI.prototype.destroy = function () {
+  var gl = this.gl;
+  if (this.listener) {
+    gl.canvas.removeEventListener('click', this.listener, false);
+  }
+  gl.deleteProgram(this.program);
+  gl.deleteBuffer(this.vertexBuffer);
+};
+CardboardUI.prototype.listen = function (optionsCallback, backCallback) {
+  var canvas = this.gl.canvas;
+  this.listener = function (event) {
+    var midline = canvas.clientWidth / 2;
+    var buttonSize = kButtonWidthDp * kTouchSlopFactor;
+    if (event.clientX > midline - buttonSize && event.clientX < midline + buttonSize && event.clientY > canvas.clientHeight - buttonSize) {
+      optionsCallback(event);
+    }
+    else if (event.clientX < buttonSize && event.clientY < buttonSize) {
+        backCallback(event);
+      }
+  };
+  canvas.addEventListener('click', this.listener, false);
+};
+CardboardUI.prototype.onResize = function () {
+  var gl = this.gl;
+  var self = this;
+  var glState = [gl.ARRAY_BUFFER_BINDING];
+  glPreserveState(gl, glState, function (gl) {
+    var vertices = [];
+    var midline = gl.drawingBufferWidth / 2;
+    var physicalPixels = Math.max(screen.width, screen.height) * window.devicePixelRatio;
+    var scalingRatio = gl.drawingBufferWidth / physicalPixels;
+    var dps = scalingRatio * window.devicePixelRatio;
+    var lineWidth = kCenterLineThicknessDp * dps / 2;
+    var buttonSize = kButtonWidthDp * kTouchSlopFactor * dps;
+    var buttonScale = kButtonWidthDp * dps / 2;
+    var buttonBorder = (kButtonWidthDp * kTouchSlopFactor - kButtonWidthDp) * dps;
+    vertices.push(midline - lineWidth, buttonSize);
+    vertices.push(midline - lineWidth, gl.drawingBufferHeight);
+    vertices.push(midline + lineWidth, buttonSize);
+    vertices.push(midline + lineWidth, gl.drawingBufferHeight);
+    self.gearOffset = vertices.length / 2;
+    function addGearSegment(theta, r) {
+      var angle = (90 - theta) * DEG2RAD;
+      var x = Math.cos(angle);
+      var y = Math.sin(angle);
+      vertices.push(kInnerRadius * x * buttonScale + midline, kInnerRadius * y * buttonScale + buttonScale);
+      vertices.push(r * x * buttonScale + midline, r * y * buttonScale + buttonScale);
+    }
+    for (var i = 0; i <= 6; i++) {
+      var segmentTheta = i * kAnglePerGearSection;
+      addGearSegment(segmentTheta, kOuterRadius);
+      addGearSegment(segmentTheta + kOuterRimEndAngle, kOuterRadius);
+      addGearSegment(segmentTheta + kInnerRimBeginAngle, kMiddleRadius);
+      addGearSegment(segmentTheta + (kAnglePerGearSection - kInnerRimBeginAngle), kMiddleRadius);
+      addGearSegment(segmentTheta + (kAnglePerGearSection - kOuterRimEndAngle), kOuterRadius);
+    }
+    self.gearVertexCount = vertices.length / 2 - self.gearOffset;
+    self.arrowOffset = vertices.length / 2;
+    function addArrowVertex(x, y) {
+      vertices.push(buttonBorder + x, gl.drawingBufferHeight - buttonBorder - y);
+    }
+    var angledLineWidth = lineWidth / Math.sin(45 * DEG2RAD);
+    addArrowVertex(0, buttonScale);
+    addArrowVertex(buttonScale, 0);
+    addArrowVertex(buttonScale + angledLineWidth, angledLineWidth);
+    addArrowVertex(angledLineWidth, buttonScale + angledLineWidth);
+    addArrowVertex(angledLineWidth, buttonScale - angledLineWidth);
+    addArrowVertex(0, buttonScale);
+    addArrowVertex(buttonScale, buttonScale * 2);
+    addArrowVertex(buttonScale + angledLineWidth, buttonScale * 2 - angledLineWidth);
+    addArrowVertex(angledLineWidth, buttonScale - angledLineWidth);
+    addArrowVertex(0, buttonScale);
+    addArrowVertex(angledLineWidth, buttonScale - lineWidth);
+    addArrowVertex(kButtonWidthDp * dps, buttonScale - lineWidth);
+    addArrowVertex(angledLineWidth, buttonScale + lineWidth);
+    addArrowVertex(kButtonWidthDp * dps, buttonScale + lineWidth);
+    self.arrowVertexCount = vertices.length / 2 - self.arrowOffset;
+    gl.bindBuffer(gl.ARRAY_BUFFER, self.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  });
+};
+CardboardUI.prototype.render = function () {
+  var gl = this.gl;
+  var self = this;
+  var glState = [gl.CULL_FACE, gl.DEPTH_TEST, gl.BLEND, gl.SCISSOR_TEST, gl.STENCIL_TEST, gl.COLOR_WRITEMASK, gl.VIEWPORT, gl.CURRENT_PROGRAM, gl.ARRAY_BUFFER_BINDING];
+  glPreserveState(gl, glState, function (gl) {
+    gl.disable(gl.CULL_FACE);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.STENCIL_TEST);
+    gl.colorMask(true, true, true, true);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    self.renderNoState();
+  });
+};
+CardboardUI.prototype.renderNoState = function () {
+  var gl = this.gl;
+  gl.useProgram(this.program);
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+  gl.enableVertexAttribArray(this.attribs.position);
+  gl.vertexAttribPointer(this.attribs.position, 2, gl.FLOAT, false, 8, 0);
+  gl.uniform4f(this.uniforms.color, 1.0, 1.0, 1.0, 1.0);
+  orthoMatrix(this.projMat, 0, gl.drawingBufferWidth, 0, gl.drawingBufferHeight, 0.1, 1024.0);
+  gl.uniformMatrix4fv(this.uniforms.projectionMat, false, this.projMat);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.drawArrays(gl.TRIANGLE_STRIP, this.gearOffset, this.gearVertexCount);
+  gl.drawArrays(gl.TRIANGLE_STRIP, this.arrowOffset, this.arrowVertexCount);
+};
+function Distortion(coefficients) {
+  this.coefficients = coefficients;
+}
+Distortion.prototype.distortInverse = function (radius) {
+  var r0 = 0;
+  var r1 = 1;
+  var dr0 = radius - this.distort(r0);
+  while (Math.abs(r1 - r0) > 0.0001             ) {
+    var dr1 = radius - this.distort(r1);
+    var r2 = r1 - dr1 * ((r1 - r0) / (dr1 - dr0));
+    r0 = r1;
+    r1 = r2;
+    dr0 = dr1;
+  }
+  return r1;
+};
+Distortion.prototype.distort = function (radius) {
+  var r2 = radius * radius;
+  var ret = 0;
+  for (var i = 0; i < this.coefficients.length; i++) {
+    ret = r2 * (ret + this.coefficients[i]);
+  }
+  return (ret + 1) * radius;
+};
+var degToRad = Math.PI / 180;
+var radToDeg = 180 / Math.PI;
+var Vector3 = function Vector3(x, y, z) {
+  this.x = x || 0;
+  this.y = y || 0;
+  this.z = z || 0;
+};
+Vector3.prototype = {
+  constructor: Vector3,
+  set: function set(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
+  },
+  copy: function copy(v) {
+    this.x = v.x;
+    this.y = v.y;
+    this.z = v.z;
+    return this;
+  },
+  length: function length() {
+    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+  },
+  normalize: function normalize() {
+    var scalar = this.length();
+    if (scalar !== 0) {
+      var invScalar = 1 / scalar;
+      this.multiplyScalar(invScalar);
+    } else {
+      this.x = 0;
+      this.y = 0;
+      this.z = 0;
+    }
+    return this;
+  },
+  multiplyScalar: function multiplyScalar(scalar) {
+    this.x *= scalar;
+    this.y *= scalar;
+    this.z *= scalar;
+  },
+  applyQuaternion: function applyQuaternion(q) {
+    var x = this.x;
+    var y = this.y;
+    var z = this.z;
+    var qx = q.x;
+    var qy = q.y;
+    var qz = q.z;
+    var qw = q.w;
+    var ix = qw * x + qy * z - qz * y;
+    var iy = qw * y + qz * x - qx * z;
+    var iz = qw * z + qx * y - qy * x;
+    var iw = -qx * x - qy * y - qz * z;
+    this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    return this;
+  },
+  dot: function dot(v) {
+    return this.x * v.x + this.y * v.y + this.z * v.z;
+  },
+  crossVectors: function crossVectors(a, b) {
+    var ax = a.x,
+        ay = a.y,
+        az = a.z;
+    var bx = b.x,
+        by = b.y,
+        bz = b.z;
+    this.x = ay * bz - az * by;
+    this.y = az * bx - ax * bz;
+    this.z = ax * by - ay * bx;
+    return this;
+  }
+};
+var Quaternion = function Quaternion(x, y, z, w) {
+  this.x = x || 0;
+  this.y = y || 0;
+  this.z = z || 0;
+  this.w = w !== undefined ? w : 1;
+};
+Quaternion.prototype = {
+  constructor: Quaternion,
+  set: function set(x, y, z, w) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.w = w;
+    return this;
+  },
+  copy: function copy(quaternion) {
+    this.x = quaternion.x;
+    this.y = quaternion.y;
+    this.z = quaternion.z;
+    this.w = quaternion.w;
+    return this;
+  },
+  setFromEulerXYZ: function setFromEulerXYZ(x, y, z) {
+    var c1 = Math.cos(x / 2);
+    var c2 = Math.cos(y / 2);
+    var c3 = Math.cos(z / 2);
+    var s1 = Math.sin(x / 2);
+    var s2 = Math.sin(y / 2);
+    var s3 = Math.sin(z / 2);
+    this.x = s1 * c2 * c3 + c1 * s2 * s3;
+    this.y = c1 * s2 * c3 - s1 * c2 * s3;
+    this.z = c1 * c2 * s3 + s1 * s2 * c3;
+    this.w = c1 * c2 * c3 - s1 * s2 * s3;
+    return this;
+  },
+  setFromEulerYXZ: function setFromEulerYXZ(x, y, z) {
+    var c1 = Math.cos(x / 2);
+    var c2 = Math.cos(y / 2);
+    var c3 = Math.cos(z / 2);
+    var s1 = Math.sin(x / 2);
+    var s2 = Math.sin(y / 2);
+    var s3 = Math.sin(z / 2);
+    this.x = s1 * c2 * c3 + c1 * s2 * s3;
+    this.y = c1 * s2 * c3 - s1 * c2 * s3;
+    this.z = c1 * c2 * s3 - s1 * s2 * c3;
+    this.w = c1 * c2 * c3 + s1 * s2 * s3;
+    return this;
+  },
+  setFromAxisAngle: function setFromAxisAngle(axis, angle) {
+    var halfAngle = angle / 2,
+        s = Math.sin(halfAngle);
+    this.x = axis.x * s;
+    this.y = axis.y * s;
+    this.z = axis.z * s;
+    this.w = Math.cos(halfAngle);
+    return this;
+  },
+  multiply: function multiply(q) {
+    return this.multiplyQuaternions(this, q);
+  },
+  multiplyQuaternions: function multiplyQuaternions(a, b) {
+    var qax = a.x,
+        qay = a.y,
+        qaz = a.z,
+        qaw = a.w;
+    var qbx = b.x,
+        qby = b.y,
+        qbz = b.z,
+        qbw = b.w;
+    this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+    this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+    this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+    this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+    return this;
+  },
+  inverse: function inverse() {
+    this.x *= -1;
+    this.y *= -1;
+    this.z *= -1;
+    this.normalize();
+    return this;
+  },
+  normalize: function normalize() {
+    var l = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+    if (l === 0) {
+      this.x = 0;
+      this.y = 0;
+      this.z = 0;
+      this.w = 1;
+    } else {
+      l = 1 / l;
+      this.x = this.x * l;
+      this.y = this.y * l;
+      this.z = this.z * l;
+      this.w = this.w * l;
+    }
+    return this;
+  },
+  slerp: function slerp(qb, t) {
+    if (t === 0) return this;
+    if (t === 1) return this.copy(qb);
+    var x = this.x,
+        y = this.y,
+        z = this.z,
+        w = this.w;
+    var cosHalfTheta = w * qb.w + x * qb.x + y * qb.y + z * qb.z;
+    if (cosHalfTheta < 0) {
+      this.w = -qb.w;
+      this.x = -qb.x;
+      this.y = -qb.y;
+      this.z = -qb.z;
+      cosHalfTheta = -cosHalfTheta;
+    } else {
+      this.copy(qb);
+    }
+    if (cosHalfTheta >= 1.0) {
+      this.w = w;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      return this;
+    }
+    var halfTheta = Math.acos(cosHalfTheta);
+    var sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+    if (Math.abs(sinHalfTheta) < 0.001) {
+      this.w = 0.5 * (w + this.w);
+      this.x = 0.5 * (x + this.x);
+      this.y = 0.5 * (y + this.y);
+      this.z = 0.5 * (z + this.z);
+      return this;
+    }
+    var ratioA = Math.sin((1 - t) * halfTheta) / sinHalfTheta,
+        ratioB = Math.sin(t * halfTheta) / sinHalfTheta;
+    this.w = w * ratioA + this.w * ratioB;
+    this.x = x * ratioA + this.x * ratioB;
+    this.y = y * ratioA + this.y * ratioB;
+    this.z = z * ratioA + this.z * ratioB;
+    return this;
+  },
+  setFromUnitVectors: function () {
+    var v1, r;
+    var EPS = 0.000001;
+    return function (vFrom, vTo) {
+      if (v1 === undefined) v1 = new Vector3();
+      r = vFrom.dot(vTo) + 1;
+      if (r < EPS) {
+        r = 0;
+        if (Math.abs(vFrom.x) > Math.abs(vFrom.z)) {
+          v1.set(-vFrom.y, vFrom.x, 0);
+        } else {
+          v1.set(0, -vFrom.z, vFrom.y);
+        }
+      } else {
+        v1.crossVectors(vFrom, vTo);
+      }
+      this.x = v1.x;
+      this.y = v1.y;
+      this.z = v1.z;
+      this.w = r;
+      this.normalize();
+      return this;
+    };
+  }()
+};
 function Device(params) {
-  this.width = params.width || Util.getScreenWidth();
-  this.height = params.height || Util.getScreenHeight();
+  this.width = params.width || getScreenWidth();
+  this.height = params.height || getScreenHeight();
   this.widthMeters = params.widthMeters;
   this.heightMeters = params.heightMeters;
   this.bevelMeters = params.bevelMeters;
 }
-
-
-// Fallback Android device (based on Nexus 5 measurements) for use when
-// we can't recognize an Android device.
 var DEFAULT_ANDROID = new Device({
   widthMeters: 0.110,
   heightMeters: 0.062,
   bevelMeters: 0.004
 });
-
-// Fallback iOS device (based on iPhone6) for use when
-// we can't recognize an Android device.
 var DEFAULT_IOS = new Device({
   widthMeters: 0.1038,
   heightMeters: 0.0584,
   bevelMeters: 0.004
 });
-
-
 var Viewers = {
   CardboardV1: new CardboardViewer({
     id: 'CardboardV1',
@@ -2283,9 +1658,7 @@ var Viewers = {
     baselineLensDistance: 0.035,
     screenLensDistance: 0.042,
     distortionCoefficients: [0.441, 0.156],
-    inverseCoefficients: [-0.4410035, 0.42756155, -0.4804439, 0.5460139,
-      -0.58821183, 0.5733938, -0.48303202, 0.33299083, -0.17573841,
-      0.0651772, -0.01488963, 0.001559834]
+    inverseCoefficients: [-0.4410035, 0.42756155, -0.4804439, 0.5460139, -0.58821183, 0.5733938, -0.48303202, 0.33299083, -0.17573841, 0.0651772, -0.01488963, 0.001559834]
   }),
   CardboardV2: new CardboardViewer({
     id: 'CardboardV2',
@@ -2295,46 +1668,31 @@ var Viewers = {
     baselineLensDistance: 0.035,
     screenLensDistance: 0.039,
     distortionCoefficients: [0.34, 0.55],
-    inverseCoefficients: [-0.33836704, -0.18162185, 0.862655, -1.2462051,
-      1.0560602, -0.58208317, 0.21609078, -0.05444823, 0.009177956,
-      -9.904169E-4, 6.183535E-5, -1.6981803E-6]
+    inverseCoefficients: [-0.33836704, -0.18162185, 0.862655, -1.2462051, 1.0560602, -0.58208317, 0.21609078, -0.05444823, 0.009177956, -9.904169E-4, 6.183535E-5, -1.6981803E-6]
   })
 };
-
-
-var DEFAULT_LEFT_CENTER = {x: 0.5, y: 0.5};
-var DEFAULT_RIGHT_CENTER = {x: 0.5, y: 0.5};
-
-/**
- * Manages information about the device and the viewer.
- *
- * deviceParams indicates the parameters of the device to use (generally
- * obtained from dpdb.getDeviceParams()). Can be null to mean no device
- * params were found.
- */
-function DeviceInfo(deviceParams) {
+function DeviceInfo(deviceParams, additionalViewers) {
   this.viewer = Viewers.CardboardV2;
   this.updateDeviceParams(deviceParams);
   this.distortion = new Distortion(this.viewer.distortionCoefficients);
+  for (var i = 0; i < additionalViewers.length; i++) {
+    var viewer = additionalViewers[i];
+    Viewers[viewer.id] = new CardboardViewer(viewer);
+  }
 }
-
-DeviceInfo.prototype.updateDeviceParams = function(deviceParams) {
+DeviceInfo.prototype.updateDeviceParams = function (deviceParams) {
   this.device = this.determineDevice_(deviceParams) || this.device;
 };
-
-DeviceInfo.prototype.getDevice = function() {
+DeviceInfo.prototype.getDevice = function () {
   return this.device;
 };
-
-DeviceInfo.prototype.setViewer = function(viewer) {
+DeviceInfo.prototype.setViewer = function (viewer) {
   this.viewer = viewer;
   this.distortion = new Distortion(this.viewer.distortionCoefficients);
 };
-
-DeviceInfo.prototype.determineDevice_ = function(deviceParams) {
+DeviceInfo.prototype.determineDevice_ = function (deviceParams) {
   if (!deviceParams) {
-    // No parameters, so use a default.
-    if (Util.isIOS()) {
+    if (isIOS()) {
       console.warn('Using fallback iOS device measurements.');
       return DEFAULT_IOS;
     } else {
@@ -2342,45 +1700,30 @@ DeviceInfo.prototype.determineDevice_ = function(deviceParams) {
       return DEFAULT_ANDROID;
     }
   }
-
-  // Compute device screen dimensions based on deviceParams.
   var METERS_PER_INCH = 0.0254;
   var metersPerPixelX = METERS_PER_INCH / deviceParams.xdpi;
   var metersPerPixelY = METERS_PER_INCH / deviceParams.ydpi;
-  var width = Util.getScreenWidth();
-  var height = Util.getScreenHeight();
+  var width = getScreenWidth();
+  var height = getScreenHeight();
   return new Device({
     widthMeters: metersPerPixelX * width,
     heightMeters: metersPerPixelY * height,
-    bevelMeters: deviceParams.bevelMm * 0.001,
+    bevelMeters: deviceParams.bevelMm * 0.001
   });
 };
-
-/**
- * Calculates field of view for the left eye.
- */
-DeviceInfo.prototype.getDistortedFieldOfViewLeftEye = function() {
+DeviceInfo.prototype.getDistortedFieldOfViewLeftEye = function () {
   var viewer = this.viewer;
   var device = this.device;
   var distortion = this.distortion;
-
-  // Device.height and device.width for device in portrait mode, so transpose.
   var eyeToScreenDistance = viewer.screenLensDistance;
-
   var outerDist = (device.widthMeters - viewer.interLensDistance) / 2;
   var innerDist = viewer.interLensDistance / 2;
   var bottomDist = viewer.baselineLensDistance - device.bevelMeters;
   var topDist = device.heightMeters - bottomDist;
-
-  var outerAngle = MathUtil.radToDeg * Math.atan(
-      distortion.distort(outerDist / eyeToScreenDistance));
-  var innerAngle = MathUtil.radToDeg * Math.atan(
-      distortion.distort(innerDist / eyeToScreenDistance));
-  var bottomAngle = MathUtil.radToDeg * Math.atan(
-      distortion.distort(bottomDist / eyeToScreenDistance));
-  var topAngle = MathUtil.radToDeg * Math.atan(
-      distortion.distort(topDist / eyeToScreenDistance));
-
+  var outerAngle = radToDeg * Math.atan(distortion.distort(outerDist / eyeToScreenDistance));
+  var innerAngle = radToDeg * Math.atan(distortion.distort(innerDist / eyeToScreenDistance));
+  var bottomAngle = radToDeg * Math.atan(distortion.distort(bottomDist / eyeToScreenDistance));
+  var topAngle = radToDeg * Math.atan(distortion.distort(topDist / eyeToScreenDistance));
   return {
     leftDegrees: Math.min(outerAngle, viewer.fov),
     rightDegrees: Math.min(innerAngle, viewer.fov),
@@ -2388,35 +1731,24 @@ DeviceInfo.prototype.getDistortedFieldOfViewLeftEye = function() {
     upDegrees: Math.min(topAngle, viewer.fov)
   };
 };
-
-/**
- * Calculates the tan-angles from the maximum FOV for the left eye for the
- * current device and screen parameters.
- */
-DeviceInfo.prototype.getLeftEyeVisibleTanAngles = function() {
+DeviceInfo.prototype.getLeftEyeVisibleTanAngles = function () {
   var viewer = this.viewer;
   var device = this.device;
   var distortion = this.distortion;
-
-  // Tan-angles from the max FOV.
-  var fovLeft = Math.tan(-MathUtil.degToRad * viewer.fov);
-  var fovTop = Math.tan(MathUtil.degToRad * viewer.fov);
-  var fovRight = Math.tan(MathUtil.degToRad * viewer.fov);
-  var fovBottom = Math.tan(-MathUtil.degToRad * viewer.fov);
-  // Viewport size.
+  var fovLeft = Math.tan(-degToRad * viewer.fov);
+  var fovTop = Math.tan(degToRad * viewer.fov);
+  var fovRight = Math.tan(degToRad * viewer.fov);
+  var fovBottom = Math.tan(-degToRad * viewer.fov);
   var halfWidth = device.widthMeters / 4;
   var halfHeight = device.heightMeters / 2;
-  // Viewport center, measured from left lens position.
-  var verticalLensOffset = (viewer.baselineLensDistance - device.bevelMeters - halfHeight);
+  var verticalLensOffset = viewer.baselineLensDistance - device.bevelMeters - halfHeight;
   var centerX = viewer.interLensDistance / 2 - halfWidth;
   var centerY = -verticalLensOffset;
   var centerZ = viewer.screenLensDistance;
-  // Tan-angles of the viewport edges, as seen through the lens.
   var screenLeft = distortion.distort((centerX - halfWidth) / centerZ);
   var screenTop = distortion.distort((centerY + halfHeight) / centerZ);
   var screenRight = distortion.distort((centerX + halfWidth) / centerZ);
   var screenBottom = distortion.distort((centerY - halfHeight) / centerZ);
-  // Compare the two sets of tan-angles and take the value closer to zero on each side.
   var result = new Float32Array(4);
   result[0] = Math.max(fovLeft, screenLeft);
   result[1] = Math.min(fovTop, screenTop);
@@ -2424,51 +1756,34 @@ DeviceInfo.prototype.getLeftEyeVisibleTanAngles = function() {
   result[3] = Math.max(fovBottom, screenBottom);
   return result;
 };
-
-/**
- * Calculates the tan-angles from the maximum FOV for the left eye for the
- * current device and screen parameters, assuming no lenses.
- */
-DeviceInfo.prototype.getLeftEyeNoLensTanAngles = function() {
+DeviceInfo.prototype.getLeftEyeNoLensTanAngles = function () {
   var viewer = this.viewer;
   var device = this.device;
   var distortion = this.distortion;
-
   var result = new Float32Array(4);
-  // Tan-angles from the max FOV.
-  var fovLeft = distortion.distortInverse(Math.tan(-MathUtil.degToRad * viewer.fov));
-  var fovTop = distortion.distortInverse(Math.tan(MathUtil.degToRad * viewer.fov));
-  var fovRight = distortion.distortInverse(Math.tan(MathUtil.degToRad * viewer.fov));
-  var fovBottom = distortion.distortInverse(Math.tan(-MathUtil.degToRad * viewer.fov));
-  // Viewport size.
+  var fovLeft = distortion.distortInverse(Math.tan(-degToRad * viewer.fov));
+  var fovTop = distortion.distortInverse(Math.tan(degToRad * viewer.fov));
+  var fovRight = distortion.distortInverse(Math.tan(degToRad * viewer.fov));
+  var fovBottom = distortion.distortInverse(Math.tan(-degToRad * viewer.fov));
   var halfWidth = device.widthMeters / 4;
   var halfHeight = device.heightMeters / 2;
-  // Viewport center, measured from left lens position.
-  var verticalLensOffset = (viewer.baselineLensDistance - device.bevelMeters - halfHeight);
+  var verticalLensOffset = viewer.baselineLensDistance - device.bevelMeters - halfHeight;
   var centerX = viewer.interLensDistance / 2 - halfWidth;
   var centerY = -verticalLensOffset;
   var centerZ = viewer.screenLensDistance;
-  // Tan-angles of the viewport edges, as seen through the lens.
   var screenLeft = (centerX - halfWidth) / centerZ;
   var screenTop = (centerY + halfHeight) / centerZ;
   var screenRight = (centerX + halfWidth) / centerZ;
   var screenBottom = (centerY - halfHeight) / centerZ;
-  // Compare the two sets of tan-angles and take the value closer to zero on each side.
   result[0] = Math.max(fovLeft, screenLeft);
   result[1] = Math.min(fovTop, screenTop);
   result[2] = Math.min(fovRight, screenRight);
   result[3] = Math.max(fovBottom, screenBottom);
   return result;
 };
-
-/**
- * Calculates the screen rectangle visible from the left eye for the
- * current device and screen parameters.
- */
-DeviceInfo.prototype.getLeftEyeVisibleScreenRect = function(undistortedFrustum) {
+DeviceInfo.prototype.getLeftEyeVisibleScreenRect = function (undistortedFrustum) {
   var viewer = this.viewer;
   var device = this.device;
-
   var dist = viewer.screenLensDistance;
   var eyeX = (device.widthMeters - viewer.interLensDistance) / 2;
   var eyeY = viewer.baselineLensDistance - device.bevelMeters;
@@ -2483,13 +1798,10 @@ DeviceInfo.prototype.getLeftEyeVisibleScreenRect = function(undistortedFrustum) 
     height: top - bottom
   };
 };
-
-DeviceInfo.prototype.getFieldOfViewLeftEye = function(opt_isUndistorted) {
-  return opt_isUndistorted ? this.getUndistortedFieldOfViewLeftEye() :
-      this.getDistortedFieldOfViewLeftEye();
+DeviceInfo.prototype.getFieldOfViewLeftEye = function (opt_isUndistorted) {
+  return opt_isUndistorted ? this.getUndistortedFieldOfViewLeftEye() : this.getDistortedFieldOfViewLeftEye();
 };
-
-DeviceInfo.prototype.getFieldOfViewRightEye = function(opt_isUndistorted) {
+DeviceInfo.prototype.getFieldOfViewRightEye = function (opt_isUndistorted) {
   var fov = this.getFieldOfViewLeftEye(opt_isUndistorted);
   return {
     leftDegrees: fov.rightDegrees,
@@ -2498,34 +1810,24 @@ DeviceInfo.prototype.getFieldOfViewRightEye = function(opt_isUndistorted) {
     downDegrees: fov.downDegrees
   };
 };
-
-/**
- * Calculates undistorted field of view for the left eye.
- */
-DeviceInfo.prototype.getUndistortedFieldOfViewLeftEye = function() {
+DeviceInfo.prototype.getUndistortedFieldOfViewLeftEye = function () {
   var p = this.getUndistortedParams_();
-
   return {
-    leftDegrees: MathUtil.radToDeg * Math.atan(p.outerDist),
-    rightDegrees: MathUtil.radToDeg * Math.atan(p.innerDist),
-    downDegrees: MathUtil.radToDeg * Math.atan(p.bottomDist),
-    upDegrees: MathUtil.radToDeg * Math.atan(p.topDist)
+    leftDegrees: radToDeg * Math.atan(p.outerDist),
+    rightDegrees: radToDeg * Math.atan(p.innerDist),
+    downDegrees: radToDeg * Math.atan(p.bottomDist),
+    upDegrees: radToDeg * Math.atan(p.topDist)
   };
 };
-
-DeviceInfo.prototype.getUndistortedViewportLeftEye = function() {
+DeviceInfo.prototype.getUndistortedViewportLeftEye = function () {
   var p = this.getUndistortedParams_();
   var viewer = this.viewer;
   var device = this.device;
-
-  // Distances stored in local variables are in tan-angle units unless otherwise
-  // noted.
   var eyeToScreenDistance = viewer.screenLensDistance;
   var screenWidth = device.widthMeters / eyeToScreenDistance;
   var screenHeight = device.heightMeters / eyeToScreenDistance;
   var xPxPerTanAngle = device.width / screenWidth;
   var yPxPerTanAngle = device.height / screenHeight;
-
   var x = Math.round((p.eyePosX - p.outerDist) * xPxPerTanAngle);
   var y = Math.round((p.eyePosY - p.bottomDist) * yPxPerTanAngle);
   return {
@@ -2535,28 +1837,22 @@ DeviceInfo.prototype.getUndistortedViewportLeftEye = function() {
     height: Math.round((p.eyePosY + p.topDist) * yPxPerTanAngle) - y
   };
 };
-
-DeviceInfo.prototype.getUndistortedParams_ = function() {
+DeviceInfo.prototype.getUndistortedParams_ = function () {
   var viewer = this.viewer;
   var device = this.device;
   var distortion = this.distortion;
-
-  // Most of these variables in tan-angle units.
   var eyeToScreenDistance = viewer.screenLensDistance;
   var halfLensDistance = viewer.interLensDistance / 2 / eyeToScreenDistance;
   var screenWidth = device.widthMeters / eyeToScreenDistance;
   var screenHeight = device.heightMeters / eyeToScreenDistance;
-
   var eyePosX = screenWidth / 2 - halfLensDistance;
   var eyePosY = (viewer.baselineLensDistance - device.bevelMeters) / eyeToScreenDistance;
-
   var maxFov = viewer.fov;
-  var viewerMax = distortion.distortInverse(Math.tan(MathUtil.degToRad * maxFov));
+  var viewerMax = distortion.distortInverse(Math.tan(degToRad * maxFov));
   var outerDist = Math.min(eyePosX, viewerMax);
   var innerDist = Math.min(halfLensDistance, viewerMax);
   var bottomDist = Math.min(eyePosY, viewerMax);
   var topDist = Math.min(screenHeight - eyePosY, viewerMax);
-
   return {
     outerDist: outerDist,
     innerDist: innerDist,
@@ -2566,1355 +1862,52 @@ DeviceInfo.prototype.getUndistortedParams_ = function() {
     eyePosY: eyePosY
   };
 };
-
-
 function CardboardViewer(params) {
-  // A machine readable ID.
   this.id = params.id;
-  // A human readable label.
   this.label = params.label;
-
-  // Field of view in degrees (per side).
   this.fov = params.fov;
-
-  // Distance between lens centers in meters.
   this.interLensDistance = params.interLensDistance;
-  // Distance between viewer baseline and lens center in meters.
   this.baselineLensDistance = params.baselineLensDistance;
-  // Screen-to-lens distance in meters.
   this.screenLensDistance = params.screenLensDistance;
-
-  // Distortion coefficients.
   this.distortionCoefficients = params.distortionCoefficients;
-  // Inverse distortion coefficients.
-  // TODO: Calculate these from distortionCoefficients in the future.
   this.inverseCoefficients = params.inverseCoefficients;
 }
-
-// Export viewer information.
 DeviceInfo.Viewers = Viewers;
-module.exports = DeviceInfo;
-
-},{"./distortion/distortion.js":10,"./math-util.js":14,"./util.js":22}],9:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var VRDisplay = _dereq_('./base.js').VRDisplay;
-var HMDVRDevice = _dereq_('./base.js').HMDVRDevice;
-var PositionSensorVRDevice = _dereq_('./base.js').PositionSensorVRDevice;
-
-/**
- * Wraps a VRDisplay and exposes it as a HMDVRDevice
- */
-function VRDisplayHMDDevice(display) {
-  this.display = display;
-
-  this.hardwareUnitId = display.displayId;
-  this.deviceId = 'webvr-polyfill:HMD:' + display.displayId;
-  this.deviceName = display.displayName + ' (HMD)';
-}
-VRDisplayHMDDevice.prototype = new HMDVRDevice();
-
-VRDisplayHMDDevice.prototype.getEyeParameters = function(whichEye) {
-  var eyeParameters = this.display.getEyeParameters(whichEye);
-
-  return {
-    currentFieldOfView: eyeParameters.fieldOfView,
-    maximumFieldOfView: eyeParameters.fieldOfView,
-    minimumFieldOfView: eyeParameters.fieldOfView,
-    recommendedFieldOfView: eyeParameters.fieldOfView,
-    eyeTranslation: { x: eyeParameters.offset[0], y: eyeParameters.offset[1], z: eyeParameters.offset[2] },
-    renderRect: {
-      x: (whichEye == 'right') ? eyeParameters.renderWidth : 0,
-      y: 0,
-      width: eyeParameters.renderWidth,
-      height: eyeParameters.renderHeight
-    }
-  };
-};
-
-VRDisplayHMDDevice.prototype.setFieldOfView =
-    function(opt_fovLeft, opt_fovRight, opt_zNear, opt_zFar) {
-  // Not supported. getEyeParameters reports that the min, max, and recommended
-  // FoV is all the same, so no adjustment can be made.
-};
-
-// TODO: Need to hook requestFullscreen to see if a wrapped VRDisplay was passed
-// in as an option. If so we should prevent the default fullscreen behavior and
-// call VRDisplay.requestPresent instead.
-
-/**
- * Wraps a VRDisplay and exposes it as a PositionSensorVRDevice
- */
-function VRDisplayPositionSensorDevice(display) {
-  this.display = display;
-
-  this.hardwareUnitId = display.displayId;
-  this.deviceId = 'webvr-polyfill:PositionSensor: ' + display.displayId;
-  this.deviceName = display.displayName + ' (PositionSensor)';
-}
-VRDisplayPositionSensorDevice.prototype = new PositionSensorVRDevice();
-
-VRDisplayPositionSensorDevice.prototype.getState = function() {
-  var pose = this.display.getPose();
-  return {
-    position: pose.position ? { x: pose.position[0], y: pose.position[1], z: pose.position[2] } : null,
-    orientation: pose.orientation ? { x: pose.orientation[0], y: pose.orientation[1], z: pose.orientation[2], w: pose.orientation[3] } : null,
-    linearVelocity: null,
-    linearAcceleration: null,
-    angularVelocity: null,
-    angularAcceleration: null
-  };
-};
-
-VRDisplayPositionSensorDevice.prototype.resetState = function() {
-  return this.positionDevice.resetPose();
-};
-
-
-module.exports.VRDisplayHMDDevice = VRDisplayHMDDevice;
-module.exports.VRDisplayPositionSensorDevice = VRDisplayPositionSensorDevice;
-
-
-},{"./base.js":3}],10:[function(_dereq_,module,exports){
-/**
- * TODO(smus): Implement coefficient inversion.
- */
-function Distortion(coefficients) {
-  this.coefficients = coefficients;
-}
-
-/**
- * Calculates the inverse distortion for a radius.
- * </p><p>
- * Allows to compute the original undistorted radius from a distorted one.
- * See also getApproximateInverseDistortion() for a faster but potentially
- * less accurate method.
- *
- * @param {Number} radius Distorted radius from the lens center in tan-angle units.
- * @return {Number} The undistorted radius in tan-angle units.
- */
-Distortion.prototype.distortInverse = function(radius) {
-  // Secant method.
-  var r0 = 0;
-  var r1 = 1;
-  var dr0 = radius - this.distort(r0);
-  while (Math.abs(r1 - r0) > 0.0001 /** 0.1mm */) {
-    var dr1 = radius - this.distort(r1);
-    var r2 = r1 - dr1 * ((r1 - r0) / (dr1 - dr0));
-    r0 = r1;
-    r1 = r2;
-    dr0 = dr1;
-  }
-  return r1;
-};
-
-/**
- * Distorts a radius by its distortion factor from the center of the lenses.
- *
- * @param {Number} radius Radius from the lens center in tan-angle units.
- * @return {Number} The distorted radius in tan-angle units.
- */
-Distortion.prototype.distort = function(radius) {
-  var r2 = radius * radius;
-  var ret = 0;
-  for (var i = 0; i < this.coefficients.length; i++) {
-    ret = r2 * (ret + this.coefficients[i]);
-  }
-  return (ret + 1) * radius;
-};
-
-// Functions below roughly ported from
-// https://github.com/googlesamples/cardboard-unity/blob/master/Cardboard/Scripts/CardboardProfile.cs#L412
-
-// Solves a small linear equation via destructive gaussian
-// elimination and back substitution.  This isn't generic numeric
-// code, it's just a quick hack to work with the generally
-// well-behaved symmetric matrices for least-squares fitting.
-// Not intended for reuse.
-//
-// @param a Input positive definite symmetrical matrix. Destroyed
-//     during calculation.
-// @param y Input right-hand-side values. Destroyed during calculation.
-// @return Resulting x value vector.
-//
-Distortion.prototype.solveLinear_ = function(a, y) {
-  var n = a.length;
-
-  // Gaussian elimination (no row exchange) to triangular matrix.
-  // The input matrix is a A^T A product which should be a positive
-  // definite symmetrical matrix, and if I remember my linear
-  // algebra right this implies that the pivots will be nonzero and
-  // calculations sufficiently accurate without needing row
-  // exchange.
-  for (var j = 0; j < n - 1; ++j) {
-    for (var k = j + 1; k < n; ++k) {
-      var p = a[j][k] / a[j][j];
-      for (var i = j + 1; i < n; ++i) {
-        a[i][k] -= p * a[i][j];
-      }
-      y[k] -= p * y[j];
-    }
-  }
-  // From this point on, only the matrix elements a[j][i] with i>=j are
-  // valid. The elimination doesn't fill in eliminated 0 values.
-
-  var x = new Array(n);
-
-  // Back substitution.
-  for (var j = n - 1; j >= 0; --j) {
-    var v = y[j];
-    for (var i = j + 1; i < n; ++i) {
-      v -= a[i][j] * x[i];
-    }
-    x[j] = v / a[j][j];
-  }
-
-  return x;
-};
-
-// Solves a least-squares matrix equation.  Given the equation A * x = y, calculate the
-// least-square fit x = inverse(A * transpose(A)) * transpose(A) * y.  The way this works
-// is that, while A is typically not a square matrix (and hence not invertible), A * transpose(A)
-// is always square.  That is:
-//   A * x = y
-//   transpose(A) * (A * x) = transpose(A) * y   <- multiply both sides by transpose(A)
-//   (transpose(A) * A) * x = transpose(A) * y   <- associativity
-//   x = inverse(transpose(A) * A) * transpose(A) * y  <- solve for x
-// Matrix A's row count (first index) must match y's value count.  A's column count (second index)
-// determines the length of the result vector x.
-Distortion.prototype.solveLeastSquares_ = function(matA, vecY) {
-  var i, j, k, sum;
-  var numSamples = matA.length;
-  var numCoefficients = matA[0].length;
-  if (numSamples != vecY.Length) {
-    throw new Error("Matrix / vector dimension mismatch");
-  }
-
-  // Calculate transpose(A) * A
-  var matATA = new Array(numCoefficients);
-  for (k = 0; k < numCoefficients; ++k) {
-    matATA[k] = new Array(numCoefficients);
-    for (j = 0; j < numCoefficients; ++j) {
-      sum = 0;
-      for (i = 0; i < numSamples; ++i) {
-        sum += matA[j][i] * matA[k][i];
-      }
-      matATA[k][j] = sum;
-    }
-  }
-
-  // Calculate transpose(A) * y
-  var vecATY = new Array(numCoefficients);
-  for (j = 0; j < numCoefficients; ++j) {
-    sum = 0;
-    for (i = 0; i < numSamples; ++i) {
-      sum += matA[j][i] * vecY[i];
-    }
-    vecATY[j] = sum;
-  }
-
-  // Now solve (A * transpose(A)) * x = transpose(A) * y.
-  return this.solveLinear_(matATA, vecATY);
-};
-
-/// Calculates an approximate inverse to the given radial distortion parameters.
-Distortion.prototype.approximateInverse = function(maxRadius, numSamples) {
-  maxRadius = maxRadius || 1;
-  numSamples = numSamples || 100;
-  var numCoefficients = 6;
-  var i, j;
-
-  // R + K1*R^3 + K2*R^5 = r, with R = rp = distort(r)
-  // Repeating for numSamples:
-  //   [ R0^3, R0^5 ] * [ K1 ] = [ r0 - R0 ]
-  //   [ R1^3, R1^5 ]   [ K2 ]   [ r1 - R1 ]
-  //   [ R2^3, R2^5 ]            [ r2 - R2 ]
-  //   [ etc... ]                [ etc... ]
-  // That is:
-  //   matA * [K1, K2] = y
-  // Solve:
-  //   [K1, K2] = inverse(transpose(matA) * matA) * transpose(matA) * y
-  var matA = new Array(numCoefficients);
-  for (j = 0; j < numCoefficients; ++j) {
-    matA[j] = new Array(numSamples);
-  }
-  var vecY = new Array(numSamples);
-
-  for (i = 0; i < numSamples; ++i) {
-    var r = maxRadius * (i + 1) / numSamples;
-    var rp = this.distort(r);
-    var v = rp;
-    for (j = 0; j < numCoefficients; ++j) {
-      v *= rp * rp;
-      matA[j][i] = v;
-    }
-    vecY[i] = r - rp;
-  }
-
-  var inverseCoefficients = this.solveLeastSquares_(matA, vecY);
-
-  return new Distortion(inverseCoefficients);
-};
-
-module.exports = Distortion;
-
-},{}],11:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * DPDB cache.
- */
+var format = 1;
+var last_updated = "2018-12-10T17:01:42Z";
+var devices = [{"type":"android","rules":[{"mdmh":"asus/*/Nexus 7/*"},{"ua":"Nexus 7"}],"dpi":[320.8,323],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"asus/*/ASUS_Z00AD/*"},{"ua":"ASUS_Z00AD"}],"dpi":[403,404.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Google/*/Pixel 2 XL/*"},{"ua":"Pixel 2 XL"}],"dpi":537.9,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Google/*/Pixel 3 XL/*"},{"ua":"Pixel 3 XL"}],"dpi":[558.5,553.8],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Google/*/Pixel XL/*"},{"ua":"Pixel XL"}],"dpi":[537.9,533],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Google/*/Pixel 3/*"},{"ua":"Pixel 3"}],"dpi":442.4,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Google/*/Pixel 2/*"},{"ua":"Pixel 2"}],"dpi":441,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"Google/*/Pixel/*"},{"ua":"Pixel"}],"dpi":[432.6,436.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"HTC/*/HTC6435LVW/*"},{"ua":"HTC6435LVW"}],"dpi":[449.7,443.3],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"HTC/*/HTC One XL/*"},{"ua":"HTC One XL"}],"dpi":[315.3,314.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"htc/*/Nexus 9/*"},{"ua":"Nexus 9"}],"dpi":289,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"HTC/*/HTC One M9/*"},{"ua":"HTC One M9"}],"dpi":[442.5,443.3],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"HTC/*/HTC One_M8/*"},{"ua":"HTC One_M8"}],"dpi":[449.7,447.4],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"HTC/*/HTC One/*"},{"ua":"HTC One"}],"dpi":472.8,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Huawei/*/Nexus 6P/*"},{"ua":"Nexus 6P"}],"dpi":[515.1,518],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Huawei/*/BLN-L24/*"},{"ua":"HONORBLN-L24"}],"dpi":480,"bw":4,"ac":500},{"type":"android","rules":[{"mdmh":"Huawei/*/BKL-L09/*"},{"ua":"BKL-L09"}],"dpi":403,"bw":3.47,"ac":500},{"type":"android","rules":[{"mdmh":"LENOVO/*/Lenovo PB2-690Y/*"},{"ua":"Lenovo PB2-690Y"}],"dpi":[457.2,454.713],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"LGE/*/Nexus 5X/*"},{"ua":"Nexus 5X"}],"dpi":[422,419.9],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/LGMS345/*"},{"ua":"LGMS345"}],"dpi":[221.7,219.1],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"LGE/*/LG-D800/*"},{"ua":"LG-D800"}],"dpi":[422,424.1],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"LGE/*/LG-D850/*"},{"ua":"LG-D850"}],"dpi":[537.9,541.9],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"LGE/*/VS985 4G/*"},{"ua":"VS985 4G"}],"dpi":[537.9,535.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/Nexus 5/*"},{"ua":"Nexus 5 B"}],"dpi":[442.4,444.8],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/Nexus 4/*"},{"ua":"Nexus 4"}],"dpi":[319.8,318.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/LG-P769/*"},{"ua":"LG-P769"}],"dpi":[240.6,247.5],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/LGMS323/*"},{"ua":"LGMS323"}],"dpi":[206.6,204.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"LGE/*/LGLS996/*"},{"ua":"LGLS996"}],"dpi":[403.4,401.5],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Micromax/*/4560MMX/*"},{"ua":"4560MMX"}],"dpi":[240,219.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Micromax/*/A250/*"},{"ua":"Micromax A250"}],"dpi":[480,446.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Micromax/*/Micromax AQ4501/*"},{"ua":"Micromax AQ4501"}],"dpi":240,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/G5/*"},{"ua":"Moto G (5) Plus"}],"dpi":[403.4,403],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/DROID RAZR/*"},{"ua":"DROID RAZR"}],"dpi":[368.1,256.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT830C/*"},{"ua":"XT830C"}],"dpi":[254,255.9],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT1021/*"},{"ua":"XT1021"}],"dpi":[254,256.7],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/XT1023/*"},{"ua":"XT1023"}],"dpi":[254,256.7],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/XT1028/*"},{"ua":"XT1028"}],"dpi":[326.6,327.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT1034/*"},{"ua":"XT1034"}],"dpi":[326.6,328.4],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/XT1053/*"},{"ua":"XT1053"}],"dpi":[315.3,316.1],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT1562/*"},{"ua":"XT1562"}],"dpi":[403.4,402.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/Nexus 6/*"},{"ua":"Nexus 6 B"}],"dpi":[494.3,489.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT1063/*"},{"ua":"XT1063"}],"dpi":[295,296.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/XT1064/*"},{"ua":"XT1064"}],"dpi":[295,295.6],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/XT1092/*"},{"ua":"XT1092"}],"dpi":[422,424.1],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"motorola/*/XT1095/*"},{"ua":"XT1095"}],"dpi":[422,423.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"motorola/*/G4/*"},{"ua":"Moto G (4)"}],"dpi":401,"bw":4,"ac":1000},{"type":"android","rules":[{"mdmh":"OnePlus/*/A0001/*"},{"ua":"A0001"}],"dpi":[403.4,401],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"OnePlus/*/ONE E1005/*"},{"ua":"ONE E1005"}],"dpi":[442.4,441.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"OnePlus/*/ONE A2005/*"},{"ua":"ONE A2005"}],"dpi":[391.9,405.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"OnePlus/*/ONEPLUS A5000/*"},{"ua":"ONEPLUS A5000 "}],"dpi":[403.411,399.737],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"OnePlus/*/ONE A5010/*"},{"ua":"ONEPLUS A5010"}],"dpi":[403,400],"bw":2,"ac":1000},{"type":"android","rules":[{"mdmh":"OPPO/*/X909/*"},{"ua":"X909"}],"dpi":[442.4,444.1],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9082/*"},{"ua":"GT-I9082"}],"dpi":[184.7,185.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G360P/*"},{"ua":"SM-G360P"}],"dpi":[196.7,205.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/Nexus S/*"},{"ua":"Nexus S"}],"dpi":[234.5,229.8],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9300/*"},{"ua":"GT-I9300"}],"dpi":[304.8,303.9],"bw":5,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-T230NU/*"},{"ua":"SM-T230NU"}],"dpi":216,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SGH-T399/*"},{"ua":"SGH-T399"}],"dpi":[217.7,231.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SGH-M919/*"},{"ua":"SGH-M919"}],"dpi":[440.8,437.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N9005/*"},{"ua":"SM-N9005"}],"dpi":[386.4,387],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SAMSUNG-SM-N900A/*"},{"ua":"SAMSUNG-SM-N900A"}],"dpi":[386.4,387.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9500/*"},{"ua":"GT-I9500"}],"dpi":[442.5,443.3],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9505/*"},{"ua":"GT-I9505"}],"dpi":439.4,"bw":4,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G900F/*"},{"ua":"SM-G900F"}],"dpi":[415.6,431.6],"bw":5,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G900M/*"},{"ua":"SM-G900M"}],"dpi":[415.6,431.6],"bw":5,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G800F/*"},{"ua":"SM-G800F"}],"dpi":326.8,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G906S/*"},{"ua":"SM-G906S"}],"dpi":[562.7,572.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9300/*"},{"ua":"GT-I9300"}],"dpi":[306.7,304.8],"bw":5,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-T535/*"},{"ua":"SM-T535"}],"dpi":[142.6,136.4],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N920C/*"},{"ua":"SM-N920C"}],"dpi":[515.1,518.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N920P/*"},{"ua":"SM-N920P"}],"dpi":[386.3655,390.144],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N920W8/*"},{"ua":"SM-N920W8"}],"dpi":[515.1,518.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9300I/*"},{"ua":"GT-I9300I"}],"dpi":[304.8,305.8],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-I9195/*"},{"ua":"GT-I9195"}],"dpi":[249.4,256.7],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SPH-L520/*"},{"ua":"SPH-L520"}],"dpi":[249.4,255.9],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SAMSUNG-SGH-I717/*"},{"ua":"SAMSUNG-SGH-I717"}],"dpi":285.8,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SPH-D710/*"},{"ua":"SPH-D710"}],"dpi":[217.7,204.2],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/GT-N7100/*"},{"ua":"GT-N7100"}],"dpi":265.1,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SCH-I605/*"},{"ua":"SCH-I605"}],"dpi":265.1,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/Galaxy Nexus/*"},{"ua":"Galaxy Nexus"}],"dpi":[315.3,314.2],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N910H/*"},{"ua":"SM-N910H"}],"dpi":[515.1,518],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-N910C/*"},{"ua":"SM-N910C"}],"dpi":[515.2,520.2],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G130M/*"},{"ua":"SM-G130M"}],"dpi":[165.9,164.8],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G928I/*"},{"ua":"SM-G928I"}],"dpi":[515.1,518.4],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G920F/*"},{"ua":"SM-G920F"}],"dpi":580.6,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G920P/*"},{"ua":"SM-G920P"}],"dpi":[522.5,577],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G925F/*"},{"ua":"SM-G925F"}],"dpi":580.6,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G925V/*"},{"ua":"SM-G925V"}],"dpi":[522.5,576.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G930F/*"},{"ua":"SM-G930F"}],"dpi":576.6,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G935F/*"},{"ua":"SM-G935F"}],"dpi":533,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G950F/*"},{"ua":"SM-G950F"}],"dpi":[562.707,565.293],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G955U/*"},{"ua":"SM-G955U"}],"dpi":[522.514,525.762],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"samsung/*/SM-G955F/*"},{"ua":"SM-G955F"}],"dpi":[522.514,525.762],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"Sony/*/C6903/*"},{"ua":"C6903"}],"dpi":[442.5,443.3],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"Sony/*/D6653/*"},{"ua":"D6653"}],"dpi":[428.6,427.6],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Sony/*/E6653/*"},{"ua":"E6653"}],"dpi":[428.6,425.7],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Sony/*/E6853/*"},{"ua":"E6853"}],"dpi":[403.4,401.9],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Sony/*/SGP321/*"},{"ua":"SGP321"}],"dpi":[224.7,224.1],"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"TCT/*/ALCATEL ONE TOUCH Fierce/*"},{"ua":"ALCATEL ONE TOUCH Fierce"}],"dpi":[240,247.5],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"THL/*/thl 5000/*"},{"ua":"thl 5000"}],"dpi":[480,443.3],"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"Fly/*/IQ4412/*"},{"ua":"IQ4412"}],"dpi":307.9,"bw":3,"ac":1000},{"type":"android","rules":[{"mdmh":"ZTE/*/ZTE Blade L2/*"},{"ua":"ZTE Blade L2"}],"dpi":240,"bw":3,"ac":500},{"type":"android","rules":[{"mdmh":"BENEVE/*/VR518/*"},{"ua":"VR518"}],"dpi":480,"bw":3,"ac":500},{"type":"ios","rules":[{"res":[640,960]}],"dpi":[325.1,328.4],"bw":4,"ac":1000},{"type":"ios","rules":[{"res":[640,1136]}],"dpi":[317.1,320.2],"bw":3,"ac":1000},{"type":"ios","rules":[{"res":[750,1334]}],"dpi":326.4,"bw":4,"ac":1000},{"type":"ios","rules":[{"res":[1242,2208]}],"dpi":[453.6,458.4],"bw":4,"ac":1000},{"type":"ios","rules":[{"res":[1125,2001]}],"dpi":[410.9,415.4],"bw":4,"ac":1000},{"type":"ios","rules":[{"res":[1125,2436]}],"dpi":458,"bw":4,"ac":1000}];
 var DPDB_CACHE = {
-  "format": 1,
-  "last_updated": "2016-01-20T00:18:35Z",
-  "devices": [
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "asus/*/Nexus 7/*" },
-      { "ua": "Nexus 7" }
-    ],
-    "dpi": [ 320.8, 323.0 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "asus/*/ASUS_Z00AD/*" },
-      { "ua": "ASUS_Z00AD" }
-    ],
-    "dpi": [ 403.0, 404.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "HTC/*/HTC6435LVW/*" },
-      { "ua": "HTC6435LVW" }
-    ],
-    "dpi": [ 449.7, 443.3 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "HTC/*/HTC One XL/*" },
-      { "ua": "HTC One XL" }
-    ],
-    "dpi": [ 315.3, 314.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "htc/*/Nexus 9/*" },
-      { "ua": "Nexus 9" }
-    ],
-    "dpi": 289.0,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "HTC/*/HTC One M9/*" },
-      { "ua": "HTC One M9" }
-    ],
-    "dpi": [ 442.5, 443.3 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "HTC/*/HTC One_M8/*" },
-      { "ua": "HTC One_M8" }
-    ],
-    "dpi": [ 449.7, 447.4 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "HTC/*/HTC One/*" },
-      { "ua": "HTC One" }
-    ],
-    "dpi": 472.8,
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Huawei/*/Nexus 6P/*" },
-      { "ua": "Nexus 6P" }
-    ],
-    "dpi": [ 515.1, 518.0 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/Nexus 5X/*" },
-      { "ua": "Nexus 5X" }
-    ],
-    "dpi": [ 422.0, 419.9 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LGMS345/*" },
-      { "ua": "LGMS345" }
-    ],
-    "dpi": [ 221.7, 219.1 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LG-D800/*" },
-      { "ua": "LG-D800" }
-    ],
-    "dpi": [ 422.0, 424.1 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LG-D850/*" },
-      { "ua": "LG-D850" }
-    ],
-    "dpi": [ 537.9, 541.9 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/VS985 4G/*" },
-      { "ua": "VS985 4G" }
-    ],
-    "dpi": [ 537.9, 535.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/Nexus 5/*" },
-      { "ua": "Nexus 5 " }
-    ],
-    "dpi": [ 442.4, 444.8 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/Nexus 4/*" },
-      { "ua": "Nexus 4" }
-    ],
-    "dpi": [ 319.8, 318.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LG-P769/*" },
-      { "ua": "LG-P769" }
-    ],
-    "dpi": [ 240.6, 247.5 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LGMS323/*" },
-      { "ua": "LGMS323" }
-    ],
-    "dpi": [ 206.6, 204.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "LGE/*/LGLS996/*" },
-      { "ua": "LGLS996" }
-    ],
-    "dpi": [ 403.4, 401.5 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Micromax/*/4560MMX/*" },
-      { "ua": "4560MMX" }
-    ],
-    "dpi": [ 240.0, 219.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Micromax/*/A250/*" },
-      { "ua": "Micromax A250" }
-    ],
-    "dpi": [ 480.0, 446.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Micromax/*/Micromax AQ4501/*" },
-      { "ua": "Micromax AQ4501" }
-    ],
-    "dpi": 240.0,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/DROID RAZR/*" },
-      { "ua": "DROID RAZR" }
-    ],
-    "dpi": [ 368.1, 256.7 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT830C/*" },
-      { "ua": "XT830C" }
-    ],
-    "dpi": [ 254.0, 255.9 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1021/*" },
-      { "ua": "XT1021" }
-    ],
-    "dpi": [ 254.0, 256.7 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1023/*" },
-      { "ua": "XT1023" }
-    ],
-    "dpi": [ 254.0, 256.7 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1028/*" },
-      { "ua": "XT1028" }
-    ],
-    "dpi": [ 326.6, 327.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1034/*" },
-      { "ua": "XT1034" }
-    ],
-    "dpi": [ 326.6, 328.4 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1053/*" },
-      { "ua": "XT1053" }
-    ],
-    "dpi": [ 315.3, 316.1 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1562/*" },
-      { "ua": "XT1562" }
-    ],
-    "dpi": [ 403.4, 402.7 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/Nexus 6/*" },
-      { "ua": "Nexus 6 " }
-    ],
-    "dpi": [ 494.3, 489.7 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1063/*" },
-      { "ua": "XT1063" }
-    ],
-    "dpi": [ 295.0, 296.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1064/*" },
-      { "ua": "XT1064" }
-    ],
-    "dpi": [ 295.0, 295.6 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1092/*" },
-      { "ua": "XT1092" }
-    ],
-    "dpi": [ 422.0, 424.1 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "motorola/*/XT1095/*" },
-      { "ua": "XT1095" }
-    ],
-    "dpi": [ 422.0, 423.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "OnePlus/*/A0001/*" },
-      { "ua": "A0001" }
-    ],
-    "dpi": [ 403.4, 401.0 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "OnePlus/*/ONE E1005/*" },
-      { "ua": "ONE E1005" }
-    ],
-    "dpi": [ 442.4, 441.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "OnePlus/*/ONE A2005/*" },
-      { "ua": "ONE A2005" }
-    ],
-    "dpi": [ 391.9, 405.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "OPPO/*/X909/*" },
-      { "ua": "X909" }
-    ],
-    "dpi": [ 442.4, 444.1 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9082/*" },
-      { "ua": "GT-I9082" }
-    ],
-    "dpi": [ 184.7, 185.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G360P/*" },
-      { "ua": "SM-G360P" }
-    ],
-    "dpi": [ 196.7, 205.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/Nexus S/*" },
-      { "ua": "Nexus S" }
-    ],
-    "dpi": [ 234.5, 229.8 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9300/*" },
-      { "ua": "GT-I9300" }
-    ],
-    "dpi": [ 304.8, 303.9 ],
-    "bw": 5,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-T230NU/*" },
-      { "ua": "SM-T230NU" }
-    ],
-    "dpi": 216.0,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SGH-T399/*" },
-      { "ua": "SGH-T399" }
-    ],
-    "dpi": [ 217.7, 231.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-N9005/*" },
-      { "ua": "SM-N9005" }
-    ],
-    "dpi": [ 386.4, 387.0 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SAMSUNG-SM-N900A/*" },
-      { "ua": "SAMSUNG-SM-N900A" }
-    ],
-    "dpi": [ 386.4, 387.7 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9500/*" },
-      { "ua": "GT-I9500" }
-    ],
-    "dpi": [ 442.5, 443.3 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9505/*" },
-      { "ua": "GT-I9505" }
-    ],
-    "dpi": 439.4,
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G900F/*" },
-      { "ua": "SM-G900F" }
-    ],
-    "dpi": [ 415.6, 431.6 ],
-    "bw": 5,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G900M/*" },
-      { "ua": "SM-G900M" }
-    ],
-    "dpi": [ 415.6, 431.6 ],
-    "bw": 5,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G800F/*" },
-      { "ua": "SM-G800F" }
-    ],
-    "dpi": 326.8,
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G906S/*" },
-      { "ua": "SM-G906S" }
-    ],
-    "dpi": [ 562.7, 572.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9300/*" },
-      { "ua": "GT-I9300" }
-    ],
-    "dpi": [ 306.7, 304.8 ],
-    "bw": 5,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-T535/*" },
-      { "ua": "SM-T535" }
-    ],
-    "dpi": [ 142.6, 136.4 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-N920C/*" },
-      { "ua": "SM-N920C" }
-    ],
-    "dpi": [ 515.1, 518.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9300I/*" },
-      { "ua": "GT-I9300I" }
-    ],
-    "dpi": [ 304.8, 305.8 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-I9195/*" },
-      { "ua": "GT-I9195" }
-    ],
-    "dpi": [ 249.4, 256.7 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SPH-L520/*" },
-      { "ua": "SPH-L520" }
-    ],
-    "dpi": [ 249.4, 255.9 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SAMSUNG-SGH-I717/*" },
-      { "ua": "SAMSUNG-SGH-I717" }
-    ],
-    "dpi": 285.8,
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SPH-D710/*" },
-      { "ua": "SPH-D710" }
-    ],
-    "dpi": [ 217.7, 204.2 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/GT-N7100/*" },
-      { "ua": "GT-N7100" }
-    ],
-    "dpi": 265.1,
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SCH-I605/*" },
-      { "ua": "SCH-I605" }
-    ],
-    "dpi": 265.1,
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/Galaxy Nexus/*" },
-      { "ua": "Galaxy Nexus" }
-    ],
-    "dpi": [ 315.3, 314.2 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-N910H/*" },
-      { "ua": "SM-N910H" }
-    ],
-    "dpi": [ 515.1, 518.0 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-N910C/*" },
-      { "ua": "SM-N910C" }
-    ],
-    "dpi": [ 515.2, 520.2 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G130M/*" },
-      { "ua": "SM-G130M" }
-    ],
-    "dpi": [ 165.9, 164.8 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G928I/*" },
-      { "ua": "SM-G928I" }
-    ],
-    "dpi": [ 515.1, 518.4 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G920F/*" },
-      { "ua": "SM-G920F" }
-    ],
-    "dpi": 580.6,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G920P/*" },
-      { "ua": "SM-G920P" }
-    ],
-    "dpi": [ 522.5, 577.0 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G925F/*" },
-      { "ua": "SM-G925F" }
-    ],
-    "dpi": 580.6,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "samsung/*/SM-G925V/*" },
-      { "ua": "SM-G925V" }
-    ],
-    "dpi": [ 522.5, 576.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Sony/*/C6903/*" },
-      { "ua": "C6903" }
-    ],
-    "dpi": [ 442.5, 443.3 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Sony/*/D6653/*" },
-      { "ua": "D6653" }
-    ],
-    "dpi": [ 428.6, 427.6 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Sony/*/E6653/*" },
-      { "ua": "E6653" }
-    ],
-    "dpi": [ 428.6, 425.7 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Sony/*/E6853/*" },
-      { "ua": "E6853" }
-    ],
-    "dpi": [ 403.4, 401.9 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "Sony/*/SGP321/*" },
-      { "ua": "SGP321" }
-    ],
-    "dpi": [ 224.7, 224.1 ],
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "TCT/*/ALCATEL ONE TOUCH Fierce/*" },
-      { "ua": "ALCATEL ONE TOUCH Fierce" }
-    ],
-    "dpi": [ 240.0, 247.5 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "THL/*/thl 5000/*" },
-      { "ua": "thl 5000" }
-    ],
-    "dpi": [ 480.0, 443.3 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "android",
-    "rules": [
-      { "mdmh": "ZTE/*/ZTE Blade L2/*" },
-      { "ua": "ZTE Blade L2" }
-    ],
-    "dpi": 240.0,
-    "bw": 3,
-    "ac": 500
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 640, 960 ] } ],
-    "dpi": [ 325.1, 328.4 ],
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 640, 960 ] } ],
-    "dpi": [ 325.1, 328.4 ],
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 640, 1136 ] } ],
-    "dpi": [ 317.1, 320.2 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 640, 1136 ] } ],
-    "dpi": [ 317.1, 320.2 ],
-    "bw": 3,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 750, 1334 ] } ],
-    "dpi": 326.4,
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 750, 1334 ] } ],
-    "dpi": 326.4,
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 1242, 2208 ] } ],
-    "dpi": [ 453.6, 458.4 ],
-    "bw": 4,
-    "ac": 1000
-  },
-
-  {
-    "type": "ios",
-    "rules": [ { "res": [ 1242, 2208 ] } ],
-    "dpi": [ 453.6, 458.4 ],
-    "bw": 4,
-    "ac": 1000
-  }
-]};
-
-module.exports = DPDB_CACHE;
-
-},{}],12:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// Offline cache of the DPDB, to be used until we load the online one (and
-// as a fallback in case we can't load the online one).
-var DPDB_CACHE = _dereq_('./dpdb-cache.js');
-var Util = _dereq_('../util.js');
-
-// Online DPDB URL.
-var ONLINE_DPDB_URL = 'https://storage.googleapis.com/cardboard-dpdb/dpdb.json';
-
-/**
- * Calculates device parameters based on the DPDB (Device Parameter Database).
- * Initially, uses the cached DPDB values.
- *
- * If fetchOnline == true, then this object tries to fetch the online version
- * of the DPDB and updates the device info if a better match is found.
- * Calls the onDeviceParamsUpdated callback when there is an update to the
- * device information.
- */
-function Dpdb(fetchOnline, onDeviceParamsUpdated) {
-  // Start with the offline DPDB cache while we are loading the real one.
+	format: format,
+	last_updated: last_updated,
+	devices: devices
+};
+function Dpdb(url, onDeviceParamsUpdated) {
   this.dpdb = DPDB_CACHE;
-
-  // Calculate device params based on the offline version of the DPDB.
   this.recalculateDeviceParams_();
-
-  // XHR to fetch online DPDB file, if requested.
-  if (fetchOnline) {
-    // Set the callback.
+  if (url) {
     this.onDeviceParamsUpdated = onDeviceParamsUpdated;
-
     var xhr = new XMLHttpRequest();
     var obj = this;
-    xhr.open('GET', ONLINE_DPDB_URL, true);
-    xhr.addEventListener('load', function() {
+    xhr.open('GET', url, true);
+    xhr.addEventListener('load', function () {
       obj.loading = false;
       if (xhr.status >= 200 && xhr.status <= 299) {
-        // Success.
         obj.dpdb = JSON.parse(xhr.response);
         obj.recalculateDeviceParams_();
       } else {
-        // Error loading the DPDB.
         console.error('Error loading online DPDB!');
       }
     });
     xhr.send();
   }
 }
-
-// Returns the current device parameters.
-Dpdb.prototype.getDeviceParams = function() {
+Dpdb.prototype.getDeviceParams = function () {
   return this.deviceParams;
 };
-
-// Recalculates this device's parameters based on the DPDB.
-Dpdb.prototype.recalculateDeviceParams_ = function() {
+Dpdb.prototype.recalculateDeviceParams_ = function () {
   var newDeviceParams = this.calcDeviceParams_();
   if (newDeviceParams) {
     this.deviceParams = newDeviceParams;
-    // Invoke callback, if it is set.
     if (this.onDeviceParamsUpdated) {
       this.onDeviceParamsUpdated(this.deviceParams);
     }
@@ -3922,12 +1915,8 @@ Dpdb.prototype.recalculateDeviceParams_ = function() {
     console.error('Failed to recalculate device parameters.');
   }
 };
-
-// Returns a DeviceParams object that represents the best guess as to this
-// device's parameters. Can return null if the device does not match any
-// known devices.
-Dpdb.prototype.calcDeviceParams_ = function() {
-  var db = this.dpdb; // shorthand
+Dpdb.prototype.calcDeviceParams_ = function () {
+  var db = this.dpdb;
   if (!db) {
     console.error('DPDB not available.');
     return null;
@@ -3940,729 +1929,484 @@ Dpdb.prototype.calcDeviceParams_ = function() {
     console.error('DPDB does not have a devices section.');
     return null;
   }
-
-  // Get the actual user agent and screen dimensions in pixels.
   var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-  var width = Util.getScreenWidth();
-  var height = Util.getScreenHeight();
-
+  var width = getScreenWidth();
+  var height = getScreenHeight();
   if (!db.devices) {
     console.error('DPDB has no devices section.');
     return null;
   }
-
   for (var i = 0; i < db.devices.length; i++) {
     var device = db.devices[i];
     if (!device.rules) {
       console.warn('Device[' + i + '] has no rules section.');
       continue;
     }
-
     if (device.type != 'ios' && device.type != 'android') {
       console.warn('Device[' + i + '] has invalid type.');
       continue;
     }
-
-    // See if this device is of the appropriate type.
-    if (Util.isIOS() != (device.type == 'ios')) continue;
-
-    // See if this device matches any of the rules:
+    if (isIOS() != (device.type == 'ios')) continue;
     var matched = false;
     for (var j = 0; j < device.rules.length; j++) {
       var rule = device.rules[j];
-      if (this.matchRule_(rule, userAgent, width, height)) {
+      if (this.ruleMatches_(rule, userAgent, width, height)) {
         matched = true;
         break;
       }
     }
     if (!matched) continue;
-
-    // device.dpi might be an array of [ xdpi, ydpi] or just a scalar.
     var xdpi = device.dpi[0] || device.dpi;
     var ydpi = device.dpi[1] || device.dpi;
-
     return new DeviceParams({ xdpi: xdpi, ydpi: ydpi, bevelMm: device.bw });
   }
-
   console.warn('No DPDB device match.');
   return null;
 };
-
-Dpdb.prototype.matchRule_ = function(rule, ua, screenWidth, screenHeight) {
-  // We can only match 'ua' and 'res' rules, not other types like 'mdmh'
-  // (which are meant for native platforms).
+Dpdb.prototype.ruleMatches_ = function (rule, ua, screenWidth, screenHeight) {
   if (!rule.ua && !rule.res) return false;
-
-  // If our user agent string doesn't contain the indicated user agent string,
-  // the match fails.
+  if (rule.ua && rule.ua.substring(0, 2) === 'SM') rule.ua = rule.ua.substring(0, 7);
   if (rule.ua && ua.indexOf(rule.ua) < 0) return false;
-
-  // If the rule specifies screen dimensions that don't correspond to ours,
-  // the match fails.
   if (rule.res) {
     if (!rule.res[0] || !rule.res[1]) return false;
     var resX = rule.res[0];
     var resY = rule.res[1];
-    // Compare min and max so as to make the order not matter, i.e., it should
-    // be true that 640x480 == 480x640.
-    if (Math.min(screenWidth, screenHeight) != Math.min(resX, resY) ||
-        (Math.max(screenWidth, screenHeight) != Math.max(resX, resY))) {
+    if (Math.min(screenWidth, screenHeight) != Math.min(resX, resY) || Math.max(screenWidth, screenHeight) != Math.max(resX, resY)) {
       return false;
     }
   }
-
   return true;
-}
-
+};
 function DeviceParams(params) {
   this.xdpi = params.xdpi;
   this.ydpi = params.ydpi;
   this.bevelMm = params.bevelMm;
 }
-
-module.exports = Dpdb;
-
-},{"../util.js":22,"./dpdb-cache.js":11}],13:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var Util = _dereq_('./util.js');
-var WebVRPolyfill = _dereq_('./webvr-polyfill.js').WebVRPolyfill;
-
-// Initialize a WebVRConfig just in case.
-window.WebVRConfig = Util.extend({
-  // Forces availability of VR mode, even for non-mobile devices.
-  FORCE_ENABLE_VR: false,
-
-  // Complementary filter coefficient. 0 for accelerometer, 1 for gyro.
-  K_FILTER: 0.98,
-
-  // How far into the future to predict during fast motion (in seconds).
-  PREDICTION_TIME_S: 0.040,
-
-  // Flag to enable touch panner. In case you have your own touch controls.
-  TOUCH_PANNER_DISABLED: true,
-
-  // Flag to disabled the UI in VR Mode.
-  CARDBOARD_UI_DISABLED: false, // Default: false
-
-  // Flag to disable the instructions to rotate your device.
-  ROTATE_INSTRUCTIONS_DISABLED: false, // Default: false.
-
-  // Enable yaw panning only, disabling roll and pitch. This can be useful
-  // for panoramas with nothing interesting above or below.
-  YAW_ONLY: false,
-
-  // To disable keyboard and mouse controls, if you want to use your own
-  // implementation.
-  MOUSE_KEYBOARD_CONTROLS_DISABLED: false,
-
-  // Prevent the polyfill from initializing immediately. Requires the app
-  // to call InitializeWebVRPolyfill() before it can be used.
-  DEFER_INITIALIZATION: false,
-
-  // Enable the deprecated version of the API (navigator.getVRDevices).
-  ENABLE_DEPRECATED_API: false,
-
-  // Scales the recommended buffer size reported by WebVR, which can improve
-  // performance.
-  // UPDATE(2016-05-03): Setting this to 0.5 by default since 1.0 does not
-  // perform well on many mobile devices.
-  BUFFER_SCALE: 0.5,
-
-  // Allow VRDisplay.submitFrame to change gl bindings, which is more
-  // efficient if the application code will re-bind its resources on the
-  // next frame anyway. This has been seen to cause rendering glitches with
-  // THREE.js.
-  // Dirty bindings include: gl.FRAMEBUFFER_BINDING, gl.CURRENT_PROGRAM,
-  // gl.ARRAY_BUFFER_BINDING, gl.ELEMENT_ARRAY_BUFFER_BINDING,
-  // and gl.TEXTURE_BINDING_2D for texture unit 0.
-  DIRTY_SUBMIT_FRAME_BINDINGS: false,
-
-  // When set to true, this will cause a polyfilled VRDisplay to always be
-  // appended to the list returned by navigator.getVRDisplays(), even if that
-  // list includes a native VRDisplay.
-  ALWAYS_APPEND_POLYFILL_DISPLAY: false
-}, window.WebVRConfig);
-
-if (!window.WebVRConfig.DEFER_INITIALIZATION) {
-  new WebVRPolyfill();
-} else {
-  window.InitializeWebVRPolyfill = function() {
-    new WebVRPolyfill();
-  }
+function SensorSample(sample, timestampS) {
+  this.set(sample, timestampS);
 }
-
-},{"./util.js":22,"./webvr-polyfill.js":25}],14:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var MathUtil = window.MathUtil || {};
-
-MathUtil.degToRad = Math.PI / 180;
-MathUtil.radToDeg = 180 / Math.PI;
-
-// Some minimal math functionality borrowed from THREE.Math and stripped down
-// for the purposes of this library.
-
-
-MathUtil.Vector2 = function ( x, y ) {
-  this.x = x || 0;
-  this.y = y || 0;
+SensorSample.prototype.set = function (sample, timestampS) {
+  this.sample = sample;
+  this.timestampS = timestampS;
 };
-
-MathUtil.Vector2.prototype = {
-  constructor: MathUtil.Vector2,
-
-  set: function ( x, y ) {
-    this.x = x;
-    this.y = y;
-
-    return this;
-  },
-
-  copy: function ( v ) {
-    this.x = v.x;
-    this.y = v.y;
-
-    return this;
-  },
-
-  subVectors: function ( a, b ) {
-    this.x = a.x - b.x;
-    this.y = a.y - b.y;
-
-    return this;
-  },
+SensorSample.prototype.copy = function (sensorSample) {
+  this.set(sensorSample.sample, sensorSample.timestampS);
 };
-
-MathUtil.Vector3 = function ( x, y, z ) {
-  this.x = x || 0;
-  this.y = y || 0;
-  this.z = z || 0;
-};
-
-MathUtil.Vector3.prototype = {
-  constructor: MathUtil.Vector3,
-
-  set: function ( x, y, z ) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-
-    return this;
-  },
-
-  copy: function ( v ) {
-    this.x = v.x;
-    this.y = v.y;
-    this.z = v.z;
-
-    return this;
-  },
-
-  length: function () {
-    return Math.sqrt( this.x * this.x + this.y * this.y + this.z * this.z );
-  },
-
-  normalize: function () {
-    var scalar = this.length();
-
-    if ( scalar !== 0 ) {
-      var invScalar = 1 / scalar;
-
-      this.multiplyScalar(invScalar);
-    } else {
-      this.x = 0;
-      this.y = 0;
-      this.z = 0;
-    }
-
-    return this;
-  },
-
-  multiplyScalar: function ( scalar ) {
-    this.x *= scalar;
-    this.y *= scalar;
-    this.z *= scalar;
-  },
-
-  applyQuaternion: function ( q ) {
-    var x = this.x;
-    var y = this.y;
-    var z = this.z;
-
-    var qx = q.x;
-    var qy = q.y;
-    var qz = q.z;
-    var qw = q.w;
-
-    // calculate quat * vector
-    var ix =  qw * x + qy * z - qz * y;
-    var iy =  qw * y + qz * x - qx * z;
-    var iz =  qw * z + qx * y - qy * x;
-    var iw = - qx * x - qy * y - qz * z;
-
-    // calculate result * inverse quat
-    this.x = ix * qw + iw * - qx + iy * - qz - iz * - qy;
-    this.y = iy * qw + iw * - qy + iz * - qx - ix * - qz;
-    this.z = iz * qw + iw * - qz + ix * - qy - iy * - qx;
-
-    return this;
-  },
-
-  dot: function ( v ) {
-    return this.x * v.x + this.y * v.y + this.z * v.z;
-  },
-
-  crossVectors: function ( a, b ) {
-    var ax = a.x, ay = a.y, az = a.z;
-    var bx = b.x, by = b.y, bz = b.z;
-
-    this.x = ay * bz - az * by;
-    this.y = az * bx - ax * bz;
-    this.z = ax * by - ay * bx;
-
-    return this;
-  },
-};
-
-MathUtil.Quaternion = function ( x, y, z, w ) {
-  this.x = x || 0;
-  this.y = y || 0;
-  this.z = z || 0;
-  this.w = ( w !== undefined ) ? w : 1;
-};
-
-MathUtil.Quaternion.prototype = {
-  constructor: MathUtil.Quaternion,
-
-  set: function ( x, y, z, w ) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.w = w;
-
-    return this;
-  },
-
-  copy: function ( quaternion ) {
-    this.x = quaternion.x;
-    this.y = quaternion.y;
-    this.z = quaternion.z;
-    this.w = quaternion.w;
-
-    return this;
-  },
-
-  setFromEulerXYZ: function( x, y, z ) {
-    var c1 = Math.cos( x / 2 );
-    var c2 = Math.cos( y / 2 );
-    var c3 = Math.cos( z / 2 );
-    var s1 = Math.sin( x / 2 );
-    var s2 = Math.sin( y / 2 );
-    var s3 = Math.sin( z / 2 );
-
-    this.x = s1 * c2 * c3 + c1 * s2 * s3;
-    this.y = c1 * s2 * c3 - s1 * c2 * s3;
-    this.z = c1 * c2 * s3 + s1 * s2 * c3;
-    this.w = c1 * c2 * c3 - s1 * s2 * s3;
-
-    return this;
-  },
-
-  setFromEulerYXZ: function( x, y, z ) {
-    var c1 = Math.cos( x / 2 );
-    var c2 = Math.cos( y / 2 );
-    var c3 = Math.cos( z / 2 );
-    var s1 = Math.sin( x / 2 );
-    var s2 = Math.sin( y / 2 );
-    var s3 = Math.sin( z / 2 );
-
-    this.x = s1 * c2 * c3 + c1 * s2 * s3;
-    this.y = c1 * s2 * c3 - s1 * c2 * s3;
-    this.z = c1 * c2 * s3 - s1 * s2 * c3;
-    this.w = c1 * c2 * c3 + s1 * s2 * s3;
-
-    return this;
-  },
-
-  setFromAxisAngle: function ( axis, angle ) {
-    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
-    // assumes axis is normalized
-
-    var halfAngle = angle / 2, s = Math.sin( halfAngle );
-
-    this.x = axis.x * s;
-    this.y = axis.y * s;
-    this.z = axis.z * s;
-    this.w = Math.cos( halfAngle );
-
-    return this;
-  },
-
-  multiply: function ( q ) {
-    return this.multiplyQuaternions( this, q );
-  },
-
-  multiplyQuaternions: function ( a, b ) {
-    // from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
-
-    var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w;
-    var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w;
-
-    this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
-    this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
-    this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
-    this.w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
-
-    return this;
-  },
-
-  inverse: function () {
-    this.x *= -1;
-    this.y *= -1;
-    this.z *= -1;
-
-    this.normalize();
-
-    return this;
-  },
-
-  normalize: function () {
-    var l = Math.sqrt( this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w );
-
-    if ( l === 0 ) {
-      this.x = 0;
-      this.y = 0;
-      this.z = 0;
-      this.w = 1;
-    } else {
-      l = 1 / l;
-
-      this.x = this.x * l;
-      this.y = this.y * l;
-      this.z = this.z * l;
-      this.w = this.w * l;
-    }
-
-    return this;
-  },
-
-  slerp: function ( qb, t ) {
-    if ( t === 0 ) return this;
-    if ( t === 1 ) return this.copy( qb );
-
-    var x = this.x, y = this.y, z = this.z, w = this.w;
-
-    // http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/
-
-    var cosHalfTheta = w * qb.w + x * qb.x + y * qb.y + z * qb.z;
-
-    if ( cosHalfTheta < 0 ) {
-      this.w = - qb.w;
-      this.x = - qb.x;
-      this.y = - qb.y;
-      this.z = - qb.z;
-
-      cosHalfTheta = - cosHalfTheta;
-    } else {
-      this.copy( qb );
-    }
-
-    if ( cosHalfTheta >= 1.0 ) {
-      this.w = w;
-      this.x = x;
-      this.y = y;
-      this.z = z;
-
-      return this;
-    }
-
-    var halfTheta = Math.acos( cosHalfTheta );
-    var sinHalfTheta = Math.sqrt( 1.0 - cosHalfTheta * cosHalfTheta );
-
-    if ( Math.abs( sinHalfTheta ) < 0.001 ) {
-      this.w = 0.5 * ( w + this.w );
-      this.x = 0.5 * ( x + this.x );
-      this.y = 0.5 * ( y + this.y );
-      this.z = 0.5 * ( z + this.z );
-
-      return this;
-    }
-
-    var ratioA = Math.sin( ( 1 - t ) * halfTheta ) / sinHalfTheta,
-    ratioB = Math.sin( t * halfTheta ) / sinHalfTheta;
-
-    this.w = ( w * ratioA + this.w * ratioB );
-    this.x = ( x * ratioA + this.x * ratioB );
-    this.y = ( y * ratioA + this.y * ratioB );
-    this.z = ( z * ratioA + this.z * ratioB );
-
-    return this;
-  },
-
-  setFromUnitVectors: function () {
-    // http://lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final
-    // assumes direction vectors vFrom and vTo are normalized
-
-    var v1, r;
-    var EPS = 0.000001;
-
-    return function ( vFrom, vTo ) {
-      if ( v1 === undefined ) v1 = new MathUtil.Vector3();
-
-      r = vFrom.dot( vTo ) + 1;
-
-      if ( r < EPS ) {
-        r = 0;
-
-        if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
-          v1.set( - vFrom.y, vFrom.x, 0 );
-        } else {
-          v1.set( 0, - vFrom.z, vFrom.y );
-        }
-      } else {
-        v1.crossVectors( vFrom, vTo );
-      }
-
-      this.x = v1.x;
-      this.y = v1.y;
-      this.z = v1.z;
-      this.w = r;
-
-      this.normalize();
-
-      return this;
-    }
-  }(),
-};
-
-module.exports = MathUtil;
-
-},{}],15:[function(_dereq_,module,exports){
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var VRDisplay = _dereq_('./base.js').VRDisplay;
-var MathUtil = _dereq_('./math-util.js');
-var Util = _dereq_('./util.js');
-
-// How much to rotate per key stroke.
-var KEY_SPEED = 0.15;
-var KEY_ANIMATION_DURATION = 80;
-
-// How much to rotate for mouse events.
-var MOUSE_SPEED_X = 0.5;
-var MOUSE_SPEED_Y = 0.3;
-
-/**
- * VRDisplay based on mouse and keyboard input. Designed for desktops/laptops
- * where orientation events aren't supported. Cannot present.
- */
-function MouseKeyboardVRDisplay() {
-  this.displayName = 'Mouse and Keyboard VRDisplay (webvr-polyfill)';
-
-  this.capabilities.hasOrientation = true;
-
-  // Attach to mouse and keyboard events.
-  window.addEventListener('keydown', this.onKeyDown_.bind(this));
-  window.addEventListener('mousemove', this.onMouseMove_.bind(this));
-  window.addEventListener('mousedown', this.onMouseDown_.bind(this));
-  window.addEventListener('mouseup', this.onMouseUp_.bind(this));
-
-  // "Private" members.
-  this.phi_ = 0;
-  this.theta_ = 0;
-
-  // Variables for keyboard-based rotation animation.
-  this.targetAngle_ = null;
-  this.angleAnimation_ = null;
-
-  // State variables for calculations.
-  this.orientation_ = new MathUtil.Quaternion();
-
-  // Variables for mouse-based rotation.
-  this.rotateStart_ = new MathUtil.Vector2();
-  this.rotateEnd_ = new MathUtil.Vector2();
-  this.rotateDelta_ = new MathUtil.Vector2();
-  this.isDragging_ = false;
-
-  this.orientationOut_ = new Float32Array(4);
+function ComplementaryFilter(kFilter, isDebug) {
+  this.kFilter = kFilter;
+  this.isDebug = isDebug;
+  this.currentAccelMeasurement = new SensorSample();
+  this.currentGyroMeasurement = new SensorSample();
+  this.previousGyroMeasurement = new SensorSample();
+  if (isIOS()) {
+    this.filterQ = new Quaternion(-1, 0, 0, 1);
+  } else {
+    this.filterQ = new Quaternion(1, 0, 0, 1);
+  }
+  this.previousFilterQ = new Quaternion();
+  this.previousFilterQ.copy(this.filterQ);
+  this.accelQ = new Quaternion();
+  this.isOrientationInitialized = false;
+  this.estimatedGravity = new Vector3();
+  this.measuredGravity = new Vector3();
+  this.gyroIntegralQ = new Quaternion();
 }
-MouseKeyboardVRDisplay.prototype = new VRDisplay();
-
-MouseKeyboardVRDisplay.prototype.getImmediatePose = function() {
-  this.orientation_.setFromEulerYXZ(this.phi_, this.theta_, 0);
-
-  this.orientationOut_[0] = this.orientation_.x;
-  this.orientationOut_[1] = this.orientation_.y;
-  this.orientationOut_[2] = this.orientation_.z;
-  this.orientationOut_[3] = this.orientation_.w;
-
-  return {
-    position: null,
-    orientation: this.orientationOut_,
-    linearVelocity: null,
-    linearAcceleration: null,
-    angularVelocity: null,
-    angularAcceleration: null
-  };
+ComplementaryFilter.prototype.addAccelMeasurement = function (vector, timestampS) {
+  this.currentAccelMeasurement.set(vector, timestampS);
 };
-
-MouseKeyboardVRDisplay.prototype.onKeyDown_ = function(e) {
-  // Track WASD and arrow keys.
-  if (e.keyCode == 38) { // Up key.
-    this.animatePhi_(this.phi_ + KEY_SPEED);
-  } else if (e.keyCode == 39) { // Right key.
-    this.animateTheta_(this.theta_ - KEY_SPEED);
-  } else if (e.keyCode == 40) { // Down key.
-    this.animatePhi_(this.phi_ - KEY_SPEED);
-  } else if (e.keyCode == 37) { // Left key.
-    this.animateTheta_(this.theta_ + KEY_SPEED);
+ComplementaryFilter.prototype.addGyroMeasurement = function (vector, timestampS) {
+  this.currentGyroMeasurement.set(vector, timestampS);
+  var deltaT = timestampS - this.previousGyroMeasurement.timestampS;
+  if (isTimestampDeltaValid(deltaT)) {
+    this.run_();
   }
+  this.previousGyroMeasurement.copy(this.currentGyroMeasurement);
 };
-
-MouseKeyboardVRDisplay.prototype.animateTheta_ = function(targetAngle) {
-  this.animateKeyTransitions_('theta_', targetAngle);
-};
-
-MouseKeyboardVRDisplay.prototype.animatePhi_ = function(targetAngle) {
-  // Prevent looking too far up or down.
-  targetAngle = Util.clamp(targetAngle, -Math.PI/2, Math.PI/2);
-  this.animateKeyTransitions_('phi_', targetAngle);
-};
-
-/**
- * Start an animation to transition an angle from one value to another.
- */
-MouseKeyboardVRDisplay.prototype.animateKeyTransitions_ = function(angleName, targetAngle) {
-  // If an animation is currently running, cancel it.
-  if (this.angleAnimation_) {
-    cancelAnimationFrame(this.angleAnimation_);
-  }
-  var startAngle = this[angleName];
-  var startTime = new Date();
-  // Set up an interval timer to perform the animation.
-  this.angleAnimation_ = requestAnimationFrame(function animate() {
-    // Once we're finished the animation, we're done.
-    var elapsed = new Date() - startTime;
-    if (elapsed >= KEY_ANIMATION_DURATION) {
-      this[angleName] = targetAngle;
-      cancelAnimationFrame(this.angleAnimation_);
-      return;
-    }
-    // loop with requestAnimationFrame
-    this.angleAnimation_ = requestAnimationFrame(animate.bind(this))
-    // Linearly interpolate the angle some amount.
-    var percent = elapsed / KEY_ANIMATION_DURATION;
-    this[angleName] = startAngle + (targetAngle - startAngle) * percent;
-  }.bind(this));
-};
-
-MouseKeyboardVRDisplay.prototype.onMouseDown_ = function(e) {
-  this.rotateStart_.set(e.clientX, e.clientY);
-  this.isDragging_ = true;
-};
-
-// Very similar to https://gist.github.com/mrflix/8351020
-MouseKeyboardVRDisplay.prototype.onMouseMove_ = function(e) {
-  if (!this.isDragging_ && !this.isPointerLocked_()) {
+ComplementaryFilter.prototype.run_ = function () {
+  if (!this.isOrientationInitialized) {
+    this.accelQ = this.accelToQuaternion_(this.currentAccelMeasurement.sample);
+    this.previousFilterQ.copy(this.accelQ);
+    this.isOrientationInitialized = true;
     return;
   }
-  // Support pointer lock API.
-  if (this.isPointerLocked_()) {
-    var movementX = e.movementX || e.mozMovementX || 0;
-    var movementY = e.movementY || e.mozMovementY || 0;
-    this.rotateEnd_.set(this.rotateStart_.x - movementX, this.rotateStart_.y - movementY);
-  } else {
-    this.rotateEnd_.set(e.clientX, e.clientY);
+  var deltaT = this.currentGyroMeasurement.timestampS - this.previousGyroMeasurement.timestampS;
+  var gyroDeltaQ = this.gyroToQuaternionDelta_(this.currentGyroMeasurement.sample, deltaT);
+  this.gyroIntegralQ.multiply(gyroDeltaQ);
+  this.filterQ.copy(this.previousFilterQ);
+  this.filterQ.multiply(gyroDeltaQ);
+  var invFilterQ = new Quaternion();
+  invFilterQ.copy(this.filterQ);
+  invFilterQ.inverse();
+  this.estimatedGravity.set(0, 0, -1);
+  this.estimatedGravity.applyQuaternion(invFilterQ);
+  this.estimatedGravity.normalize();
+  this.measuredGravity.copy(this.currentAccelMeasurement.sample);
+  this.measuredGravity.normalize();
+  var deltaQ = new Quaternion();
+  deltaQ.setFromUnitVectors(this.estimatedGravity, this.measuredGravity);
+  deltaQ.inverse();
+  if (this.isDebug) {
+    console.log('Delta: %d deg, G_est: (%s, %s, %s), G_meas: (%s, %s, %s)', radToDeg * getQuaternionAngle(deltaQ), this.estimatedGravity.x.toFixed(1), this.estimatedGravity.y.toFixed(1), this.estimatedGravity.z.toFixed(1), this.measuredGravity.x.toFixed(1), this.measuredGravity.y.toFixed(1), this.measuredGravity.z.toFixed(1));
   }
-  // Calculate how much we moved in mouse space.
-  this.rotateDelta_.subVectors(this.rotateEnd_, this.rotateStart_);
-  this.rotateStart_.copy(this.rotateEnd_);
-
-  // Keep track of the cumulative euler angles.
-  this.phi_ += 2 * Math.PI * this.rotateDelta_.y / screen.height * MOUSE_SPEED_Y;
-  this.theta_ += 2 * Math.PI * this.rotateDelta_.x / screen.width * MOUSE_SPEED_X;
-
-  // Prevent looking too far up or down.
-  this.phi_ = Util.clamp(this.phi_, -Math.PI/2, Math.PI/2);
+  var targetQ = new Quaternion();
+  targetQ.copy(this.filterQ);
+  targetQ.multiply(deltaQ);
+  this.filterQ.slerp(targetQ, 1 - this.kFilter);
+  this.previousFilterQ.copy(this.filterQ);
 };
-
-MouseKeyboardVRDisplay.prototype.onMouseUp_ = function(e) {
-  this.isDragging_ = false;
+ComplementaryFilter.prototype.getOrientation = function () {
+  return this.filterQ;
 };
-
-MouseKeyboardVRDisplay.prototype.isPointerLocked_ = function() {
-  var el = document.pointerLockElement || document.mozPointerLockElement ||
-      document.webkitPointerLockElement;
-  return el !== undefined;
+ComplementaryFilter.prototype.accelToQuaternion_ = function (accel) {
+  var normAccel = new Vector3();
+  normAccel.copy(accel);
+  normAccel.normalize();
+  var quat = new Quaternion();
+  quat.setFromUnitVectors(new Vector3(0, 0, -1), normAccel);
+  quat.inverse();
+  return quat;
 };
-
-MouseKeyboardVRDisplay.prototype.resetPose = function() {
-  this.phi_ = 0;
-  this.theta_ = 0;
+ComplementaryFilter.prototype.gyroToQuaternionDelta_ = function (gyro, dt) {
+  var quat = new Quaternion();
+  var axis = new Vector3();
+  axis.copy(gyro);
+  axis.normalize();
+  quat.setFromAxisAngle(axis, gyro.length() * dt);
+  return quat;
 };
-
-module.exports = MouseKeyboardVRDisplay;
-
-},{"./base.js":3,"./math-util.js":14,"./util.js":22}],16:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Util = _dereq_('./util.js');
-
+function PosePredictor(predictionTimeS, isDebug) {
+  this.predictionTimeS = predictionTimeS;
+  this.isDebug = isDebug;
+  this.previousQ = new Quaternion();
+  this.previousTimestampS = null;
+  this.deltaQ = new Quaternion();
+  this.outQ = new Quaternion();
+}
+PosePredictor.prototype.getPrediction = function (currentQ, gyro, timestampS) {
+  if (!this.previousTimestampS) {
+    this.previousQ.copy(currentQ);
+    this.previousTimestampS = timestampS;
+    return currentQ;
+  }
+  var axis = new Vector3();
+  axis.copy(gyro);
+  axis.normalize();
+  var angularSpeed = gyro.length();
+  if (angularSpeed < degToRad * 20) {
+    if (this.isDebug) {
+      console.log('Moving slowly, at %s deg/s: no prediction', (radToDeg * angularSpeed).toFixed(1));
+    }
+    this.outQ.copy(currentQ);
+    this.previousQ.copy(currentQ);
+    return this.outQ;
+  }
+  var predictAngle = angularSpeed * this.predictionTimeS;
+  this.deltaQ.setFromAxisAngle(axis, predictAngle);
+  this.outQ.copy(this.previousQ);
+  this.outQ.multiply(this.deltaQ);
+  this.previousQ.copy(currentQ);
+  this.previousTimestampS = timestampS;
+  return this.outQ;
+};
+function FusionPoseSensor(kFilter, predictionTime, yawOnly, isDebug) {
+  this.yawOnly = yawOnly;
+  this.accelerometer = new Vector3();
+  this.gyroscope = new Vector3();
+  this.filter = new ComplementaryFilter(kFilter, isDebug);
+  this.posePredictor = new PosePredictor(predictionTime, isDebug);
+  this.isFirefoxAndroid = isFirefoxAndroid();
+  this.isIOS = isIOS();
+  var chromeVersion = getChromeVersion();
+  this.isDeviceMotionInRadians = !this.isIOS && chromeVersion && chromeVersion < 66;
+  this.isWithoutDeviceMotion = isChromeWithoutDeviceMotion();
+  this.filterToWorldQ = new Quaternion();
+  if (isIOS()) {
+    this.filterToWorldQ.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
+  } else {
+    this.filterToWorldQ.setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+  }
+  this.inverseWorldToScreenQ = new Quaternion();
+  this.worldToScreenQ = new Quaternion();
+  this.originalPoseAdjustQ = new Quaternion();
+  this.originalPoseAdjustQ.setFromAxisAngle(new Vector3(0, 0, 1), -window.orientation * Math.PI / 180);
+  this.setScreenTransform_();
+  if (isLandscapeMode()) {
+    this.filterToWorldQ.multiply(this.inverseWorldToScreenQ);
+  }
+  this.resetQ = new Quaternion();
+  this.orientationOut_ = new Float32Array(4);
+  this.start();
+}
+FusionPoseSensor.prototype.getPosition = function () {
+  return null;
+};
+FusionPoseSensor.prototype.getOrientation = function () {
+  var orientation = void 0;
+  if (this.isWithoutDeviceMotion && this._deviceOrientationQ) {
+    this.deviceOrientationFixQ = this.deviceOrientationFixQ || function () {
+      var z = new Quaternion().setFromAxisAngle(new Vector3(0, 0, -1), 0);
+      var y = new Quaternion();
+      if (window.orientation === -90) {
+        y.setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / -2);
+      } else {
+        y.setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
+      }
+      return z.multiply(y);
+    }();
+    this.deviceOrientationFilterToWorldQ = this.deviceOrientationFilterToWorldQ || function () {
+      var q = new Quaternion();
+      q.setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+      return q;
+    }();
+    orientation = this._deviceOrientationQ;
+    var out = new Quaternion();
+    out.copy(orientation);
+    out.multiply(this.deviceOrientationFilterToWorldQ);
+    out.multiply(this.resetQ);
+    out.multiply(this.worldToScreenQ);
+    out.multiplyQuaternions(this.deviceOrientationFixQ, out);
+    if (this.yawOnly) {
+      out.x = 0;
+      out.z = 0;
+      out.normalize();
+    }
+    this.orientationOut_[0] = out.x;
+    this.orientationOut_[1] = out.y;
+    this.orientationOut_[2] = out.z;
+    this.orientationOut_[3] = out.w;
+    return this.orientationOut_;
+  } else {
+    var filterOrientation = this.filter.getOrientation();
+    orientation = this.posePredictor.getPrediction(filterOrientation, this.gyroscope, this.previousTimestampS);
+  }
+  var out = new Quaternion();
+  out.copy(this.filterToWorldQ);
+  out.multiply(this.resetQ);
+  out.multiply(orientation);
+  out.multiply(this.worldToScreenQ);
+  if (this.yawOnly) {
+    out.x = 0;
+    out.z = 0;
+    out.normalize();
+  }
+  this.orientationOut_[0] = out.x;
+  this.orientationOut_[1] = out.y;
+  this.orientationOut_[2] = out.z;
+  this.orientationOut_[3] = out.w;
+  return this.orientationOut_;
+};
+FusionPoseSensor.prototype.resetPose = function () {
+  this.resetQ.copy(this.filter.getOrientation());
+  this.resetQ.x = 0;
+  this.resetQ.y = 0;
+  this.resetQ.z *= -1;
+  this.resetQ.normalize();
+  if (isLandscapeMode()) {
+    this.resetQ.multiply(this.inverseWorldToScreenQ);
+  }
+  this.resetQ.multiply(this.originalPoseAdjustQ);
+};
+FusionPoseSensor.prototype.onDeviceOrientation_ = function (e) {
+  this._deviceOrientationQ = this._deviceOrientationQ || new Quaternion();
+  var alpha = e.alpha,
+      beta = e.beta,
+      gamma = e.gamma;
+  alpha = (alpha || 0) * Math.PI / 180;
+  beta = (beta || 0) * Math.PI / 180;
+  gamma = (gamma || 0) * Math.PI / 180;
+  this._deviceOrientationQ.setFromEulerYXZ(beta, alpha, -gamma);
+};
+FusionPoseSensor.prototype.onDeviceMotion_ = function (deviceMotion) {
+  this.updateDeviceMotion_(deviceMotion);
+};
+FusionPoseSensor.prototype.updateDeviceMotion_ = function (deviceMotion) {
+  var accGravity = deviceMotion.accelerationIncludingGravity;
+  var rotRate = deviceMotion.rotationRate;
+  var timestampS = deviceMotion.timeStamp / 1000;
+  var deltaS = timestampS - this.previousTimestampS;
+  if (deltaS < 0) {
+    warnOnce('fusion-pose-sensor:invalid:non-monotonic', 'Invalid timestamps detected: non-monotonic timestamp from devicemotion');
+    this.previousTimestampS = timestampS;
+    return;
+  } else if (deltaS <= MIN_TIMESTEP || deltaS > MAX_TIMESTEP) {
+    warnOnce('fusion-pose-sensor:invalid:outside-threshold', 'Invalid timestamps detected: Timestamp from devicemotion outside expected range.');
+    this.previousTimestampS = timestampS;
+    return;
+  }
+  this.accelerometer.set(-accGravity.x, -accGravity.y, -accGravity.z);
+  if (isR7()) {
+    this.gyroscope.set(-rotRate.beta, rotRate.alpha, rotRate.gamma);
+  } else {
+    this.gyroscope.set(rotRate.alpha, rotRate.beta, rotRate.gamma);
+  }
+  if (!this.isDeviceMotionInRadians) {
+    this.gyroscope.multiplyScalar(Math.PI / 180);
+  }
+  this.filter.addAccelMeasurement(this.accelerometer, timestampS);
+  this.filter.addGyroMeasurement(this.gyroscope, timestampS);
+  this.previousTimestampS = timestampS;
+};
+FusionPoseSensor.prototype.onOrientationChange_ = function (screenOrientation) {
+  this.setScreenTransform_();
+};
+FusionPoseSensor.prototype.onMessage_ = function (event) {
+  var message = event.data;
+  if (!message || !message.type) {
+    return;
+  }
+  var type = message.type.toLowerCase();
+  if (type !== 'devicemotion') {
+    return;
+  }
+  this.updateDeviceMotion_(message.deviceMotionEvent);
+};
+FusionPoseSensor.prototype.setScreenTransform_ = function () {
+  this.worldToScreenQ.set(0, 0, 0, 1);
+  switch (window.orientation) {
+    case 0:
+      break;
+    case 90:
+      this.worldToScreenQ.setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI / 2);
+      break;
+    case -90:
+      this.worldToScreenQ.setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2);
+      break;
+    case 180:
+      break;
+  }
+  this.inverseWorldToScreenQ.copy(this.worldToScreenQ);
+  this.inverseWorldToScreenQ.inverse();
+};
+FusionPoseSensor.prototype.start = function () {
+  this.onDeviceMotionCallback_ = this.onDeviceMotion_.bind(this);
+  this.onOrientationChangeCallback_ = this.onOrientationChange_.bind(this);
+  this.onMessageCallback_ = this.onMessage_.bind(this);
+  this.onDeviceOrientationCallback_ = this.onDeviceOrientation_.bind(this);
+  if (isIOS() && isInsideCrossOriginIFrame()) {
+    window.addEventListener('message', this.onMessageCallback_);
+  }
+  window.addEventListener('orientationchange', this.onOrientationChangeCallback_);
+  if (this.isWithoutDeviceMotion) {
+    window.addEventListener('deviceorientation', this.onDeviceOrientationCallback_);
+  } else {
+    window.addEventListener('devicemotion', this.onDeviceMotionCallback_);
+  }
+};
+FusionPoseSensor.prototype.stop = function () {
+  window.removeEventListener('devicemotion', this.onDeviceMotionCallback_);
+  window.removeEventListener('deviceorientation', this.onDeviceOrientationCallback_);
+  window.removeEventListener('orientationchange', this.onOrientationChangeCallback_);
+  window.removeEventListener('message', this.onMessageCallback_);
+};
+var SENSOR_FREQUENCY = 60;
+var X_AXIS = new Vector3(1, 0, 0);
+var Z_AXIS = new Vector3(0, 0, 1);
+var SENSOR_TO_VR = new Quaternion();
+SENSOR_TO_VR.setFromAxisAngle(X_AXIS, -Math.PI / 2);
+SENSOR_TO_VR.multiply(new Quaternion().setFromAxisAngle(Z_AXIS, Math.PI / 2));
+var PoseSensor = function () {
+  function PoseSensor(config) {
+    classCallCheck(this, PoseSensor);
+    this.config = config;
+    this.sensor = null;
+    this.fusionSensor = null;
+    this._out = new Float32Array(4);
+    this.api = null;
+    this.errors = [];
+    this._sensorQ = new Quaternion();
+    this._outQ = new Quaternion();
+    this._onSensorRead = this._onSensorRead.bind(this);
+    this._onSensorError = this._onSensorError.bind(this);
+    this.init();
+  }
+  createClass(PoseSensor, [{
+    key: 'init',
+    value: function init() {
+      var sensor = null;
+      try {
+        sensor = new RelativeOrientationSensor({
+          frequency: SENSOR_FREQUENCY,
+          referenceFrame: 'screen'
+        });
+        sensor.addEventListener('error', this._onSensorError);
+      } catch (error) {
+        this.errors.push(error);
+        if (error.name === 'SecurityError') {
+          console.error('Cannot construct sensors due to the Feature Policy');
+          console.warn('Attempting to fall back using "devicemotion"; however this will ' + 'fail in the future without correct permissions.');
+          this.useDeviceMotion();
+        } else if (error.name === 'ReferenceError') {
+          this.useDeviceMotion();
+        } else {
+          console.error(error);
+        }
+      }
+      if (sensor) {
+        this.api = 'sensor';
+        this.sensor = sensor;
+        this.sensor.addEventListener('reading', this._onSensorRead);
+        this.sensor.start();
+      }
+    }
+  }, {
+    key: 'useDeviceMotion',
+    value: function useDeviceMotion() {
+      this.api = 'devicemotion';
+      this.fusionSensor = new FusionPoseSensor(this.config.K_FILTER, this.config.PREDICTION_TIME_S, this.config.YAW_ONLY, this.config.DEBUG);
+      if (this.sensor) {
+        this.sensor.removeEventListener('reading', this._onSensorRead);
+        this.sensor.removeEventListener('error', this._onSensorError);
+        this.sensor = null;
+      }
+    }
+  }, {
+    key: 'getOrientation',
+    value: function getOrientation() {
+      if (this.fusionSensor) {
+        return this.fusionSensor.getOrientation();
+      }
+      if (!this.sensor || !this.sensor.quaternion) {
+        this._out[0] = this._out[1] = this._out[2] = 0;
+        this._out[3] = 1;
+        return this._out;
+      }
+      var q = this.sensor.quaternion;
+      this._sensorQ.set(q[0], q[1], q[2], q[3]);
+      var out = this._outQ;
+      out.copy(SENSOR_TO_VR);
+      out.multiply(this._sensorQ);
+      if (this.config.YAW_ONLY) {
+        out.x = out.z = 0;
+        out.normalize();
+      }
+      this._out[0] = out.x;
+      this._out[1] = out.y;
+      this._out[2] = out.z;
+      this._out[3] = out.w;
+      return this._out;
+    }
+  }, {
+    key: '_onSensorError',
+    value: function _onSensorError(event) {
+      this.errors.push(event.error);
+      if (event.error.name === 'NotAllowedError') {
+        console.error('Permission to access sensor was denied');
+      } else if (event.error.name === 'NotReadableError') {
+        console.error('Sensor could not be read');
+      } else {
+        console.error(event.error);
+      }
+      this.useDeviceMotion();
+    }
+  }, {
+    key: '_onSensorRead',
+    value: function _onSensorRead() {}
+  }]);
+  return PoseSensor;
+}();
+var rotateInstructionsAsset = "<svg width='198' height='240' viewBox='0 0 198 240' xmlns='http://www.w3.org/2000/svg'><g fill='none' fill-rule='evenodd'><path d='M149.625 109.527l6.737 3.891v.886c0 .177.013.36.038.549.01.081.02.162.027.242.14 1.415.974 2.998 2.105 3.999l5.72 5.062.081-.09s4.382-2.53 5.235-3.024l25.97 14.993v54.001c0 .771-.386 1.217-.948 1.217-.233 0-.495-.076-.772-.236l-23.967-13.838-.014.024-27.322 15.775-.85-1.323c-4.731-1.529-9.748-2.74-14.951-3.61a.27.27 0 0 0-.007.024l-5.067 16.961-7.891 4.556-.037-.063v27.59c0 .772-.386 1.217-.948 1.217-.232 0-.495-.076-.772-.236l-42.473-24.522c-.95-.549-1.72-1.877-1.72-2.967v-1.035l-.021.047a5.111 5.111 0 0 0-1.816-.399 5.682 5.682 0 0 0-.546.001 13.724 13.724 0 0 1-1.918-.041c-1.655-.153-3.2-.6-4.404-1.296l-46.576-26.89.005.012-10.278-18.75c-1.001-1.827-.241-4.216 1.698-5.336l56.011-32.345a4.194 4.194 0 0 1 2.099-.572c1.326 0 2.572.659 3.227 1.853l.005-.003.227.413-.006.004a9.63 9.63 0 0 0 1.477 2.018l.277.27c1.914 1.85 4.468 2.801 7.113 2.801 1.949 0 3.948-.517 5.775-1.572.013 0 7.319-4.219 7.319-4.219a4.194 4.194 0 0 1 2.099-.572c1.326 0 2.572.658 3.226 1.853l3.25 5.928.022-.018 6.785 3.917-.105-.182 46.881-26.965m0-1.635c-.282 0-.563.073-.815.218l-46.169 26.556-5.41-3.124-3.005-5.481c-.913-1.667-2.699-2.702-4.66-2.703-1.011 0-2.02.274-2.917.792a3825 3825 0 0 1-7.275 4.195l-.044.024a9.937 9.937 0 0 1-4.957 1.353c-2.292 0-4.414-.832-5.976-2.342l-.252-.245a7.992 7.992 0 0 1-1.139-1.534 1.379 1.379 0 0 0-.06-.122l-.227-.414a1.718 1.718 0 0 0-.095-.154c-.938-1.574-2.673-2.545-4.571-2.545-1.011 0-2.02.274-2.917.792L3.125 155.502c-2.699 1.559-3.738 4.94-2.314 7.538l10.278 18.75c.177.323.448.563.761.704l46.426 26.804c1.403.81 3.157 1.332 5.072 1.508a15.661 15.661 0 0 0 2.146.046 4.766 4.766 0 0 1 .396 0c.096.004.19.011.283.022.109 1.593 1.159 3.323 2.529 4.114l42.472 24.522c.524.302 1.058.455 1.59.455 1.497 0 2.583-1.2 2.583-2.852v-26.562l7.111-4.105a1.64 1.64 0 0 0 .749-.948l4.658-15.593c4.414.797 8.692 1.848 12.742 3.128l.533.829a1.634 1.634 0 0 0 2.193.531l26.532-15.317L193 192.433c.523.302 1.058.455 1.59.455 1.497 0 2.583-1.199 2.583-2.852v-54.001c0-.584-.312-1.124-.818-1.416l-25.97-14.993a1.633 1.633 0 0 0-1.636.001c-.606.351-2.993 1.73-4.325 2.498l-4.809-4.255c-.819-.725-1.461-1.933-1.561-2.936a7.776 7.776 0 0 0-.033-.294 2.487 2.487 0 0 1-.023-.336v-.886c0-.584-.312-1.123-.817-1.416l-6.739-3.891a1.633 1.633 0 0 0-.817-.219' fill='#455A64'/><path d='M96.027 132.636l46.576 26.891c1.204.695 1.979 1.587 2.242 2.541l-.01.007-81.374 46.982h-.001c-1.654-.152-3.199-.6-4.403-1.295l-46.576-26.891 83.546-48.235' fill='#FAFAFA'/><path d='M63.461 209.174c-.008 0-.015 0-.022-.002-1.693-.156-3.228-.609-4.441-1.309l-46.576-26.89a.118.118 0 0 1 0-.203l83.546-48.235a.117.117 0 0 1 .117 0l46.576 26.891c1.227.708 2.021 1.612 2.296 2.611a.116.116 0 0 1-.042.124l-.021.016-81.375 46.981a.11.11 0 0 1-.058.016zm-50.747-28.303l46.401 26.79c1.178.68 2.671 1.121 4.32 1.276l81.272-46.922c-.279-.907-1.025-1.73-2.163-2.387l-46.517-26.857-83.313 48.1z' fill='#607D8B'/><path d='M148.327 165.471a5.85 5.85 0 0 1-.546.001c-1.894-.083-3.302-1.038-3.145-2.132a2.693 2.693 0 0 0-.072-1.105l-81.103 46.822c.628.058 1.272.073 1.918.042.182-.009.364-.009.546-.001 1.894.083 3.302 1.038 3.145 2.132l79.257-45.759' fill='#FFF'/><path d='M69.07 211.347a.118.118 0 0 1-.115-.134c.045-.317-.057-.637-.297-.925-.505-.61-1.555-1.022-2.738-1.074a5.966 5.966 0 0 0-.535.001 14.03 14.03 0 0 1-1.935-.041.117.117 0 0 1-.103-.092.116.116 0 0 1 .055-.126l81.104-46.822a.117.117 0 0 1 .171.07c.104.381.129.768.074 1.153-.045.316.057.637.296.925.506.61 1.555 1.021 2.739 1.073.178.008.357.008.535-.001a.117.117 0 0 1 .064.218l-79.256 45.759a.114.114 0 0 1-.059.016zm-3.405-2.372c.089 0 .177.002.265.006 1.266.056 2.353.488 2.908 1.158.227.274.35.575.36.882l78.685-45.429c-.036 0-.072-.001-.107-.003-1.267-.056-2.354-.489-2.909-1.158-.282-.34-.402-.724-.347-1.107a2.604 2.604 0 0 0-.032-.91L63.846 208.97a13.91 13.91 0 0 0 1.528.012c.097-.005.194-.007.291-.007z' fill='#607D8B'/><path d='M2.208 162.134c-1.001-1.827-.241-4.217 1.698-5.337l56.011-32.344c1.939-1.12 4.324-.546 5.326 1.281l.232.41a9.344 9.344 0 0 0 1.47 2.021l.278.27c3.325 3.214 8.583 3.716 12.888 1.23l7.319-4.22c1.94-1.119 4.324-.546 5.325 1.282l3.25 5.928-83.519 48.229-10.278-18.75z' fill='#FAFAFA'/><path d='M12.486 181.001a.112.112 0 0 1-.031-.005.114.114 0 0 1-.071-.056L2.106 162.19c-1.031-1.88-.249-4.345 1.742-5.494l56.01-32.344a4.328 4.328 0 0 1 2.158-.588c1.415 0 2.65.702 3.311 1.882.01.008.018.017.024.028l.227.414a.122.122 0 0 1 .013.038 9.508 9.508 0 0 0 1.439 1.959l.275.266c1.846 1.786 4.344 2.769 7.031 2.769 1.977 0 3.954-.538 5.717-1.557a.148.148 0 0 1 .035-.013l7.284-4.206a4.321 4.321 0 0 1 2.157-.588c1.427 0 2.672.716 3.329 1.914l3.249 5.929a.116.116 0 0 1-.044.157l-83.518 48.229a.116.116 0 0 1-.059.016zm49.53-57.004c-.704 0-1.41.193-2.041.557l-56.01 32.345c-1.882 1.086-2.624 3.409-1.655 5.179l10.221 18.645 83.317-48.112-3.195-5.829c-.615-1.122-1.783-1.792-3.124-1.792a4.08 4.08 0 0 0-2.04.557l-7.317 4.225a.148.148 0 0 1-.035.013 11.7 11.7 0 0 1-5.801 1.569c-2.748 0-5.303-1.007-7.194-2.835l-.278-.27a9.716 9.716 0 0 1-1.497-2.046.096.096 0 0 1-.013-.037l-.191-.347a.11.11 0 0 1-.023-.029c-.615-1.123-1.783-1.793-3.124-1.793z' fill='#607D8B'/><path d='M42.434 155.808c-2.51-.001-4.697-1.258-5.852-3.365-1.811-3.304-.438-7.634 3.059-9.654l12.291-7.098a7.599 7.599 0 0 1 3.789-1.033c2.51 0 4.697 1.258 5.852 3.365 1.811 3.304.439 7.634-3.059 9.654l-12.291 7.098a7.606 7.606 0 0 1-3.789 1.033zm13.287-20.683a7.128 7.128 0 0 0-3.555.971l-12.291 7.098c-3.279 1.893-4.573 5.942-2.883 9.024 1.071 1.955 3.106 3.122 5.442 3.122a7.13 7.13 0 0 0 3.556-.97l12.291-7.098c3.279-1.893 4.572-5.942 2.883-9.024-1.072-1.955-3.106-3.123-5.443-3.123z' fill='#607D8B'/><path d='M149.588 109.407l6.737 3.89v.887c0 .176.013.36.037.549.011.081.02.161.028.242.14 1.415.973 2.998 2.105 3.999l7.396 6.545c.177.156.358.295.541.415 1.579 1.04 2.95.466 3.062-1.282.049-.784.057-1.595.023-2.429l-.003-.16v-1.151l25.987 15.003v54c0 1.09-.77 1.53-1.72.982l-42.473-24.523c-.95-.548-1.72-1.877-1.72-2.966v-34.033' fill='#FAFAFA'/><path d='M194.553 191.25c-.257 0-.54-.085-.831-.253l-42.472-24.521c-.981-.567-1.779-1.943-1.779-3.068v-34.033h.234v34.033c0 1.051.745 2.336 1.661 2.866l42.473 24.521c.424.245.816.288 1.103.122.285-.164.442-.52.442-1.002v-53.933l-25.753-14.868.003 1.106c.034.832.026 1.654-.024 2.439-.054.844-.396 1.464-.963 1.746-.619.309-1.45.173-2.28-.373a5.023 5.023 0 0 1-.553-.426l-7.397-6.544c-1.158-1.026-1.999-2.625-2.143-4.076a9.624 9.624 0 0 0-.027-.238 4.241 4.241 0 0 1-.038-.564v-.82l-6.68-3.856.117-.202 6.738 3.89.058.034v.954c0 .171.012.351.036.533.011.083.021.165.029.246.138 1.395.948 2.935 2.065 3.923l7.397 6.545c.173.153.35.289.527.406.758.499 1.504.63 2.047.359.49-.243.786-.795.834-1.551.05-.778.057-1.591.024-2.417l-.004-.163v-1.355l.175.1 25.987 15.004.059.033v54.068c0 .569-.198.996-.559 1.204a1.002 1.002 0 0 1-.506.131' fill='#607D8B'/><path d='M145.685 163.161l24.115 13.922-25.978 14.998-1.462-.307c-6.534-2.17-13.628-3.728-21.019-4.616-4.365-.524-8.663 1.096-9.598 3.62a2.746 2.746 0 0 0-.011 1.928c1.538 4.267 4.236 8.363 7.995 12.135l.532.845-25.977 14.997-24.115-13.922 75.518-43.6' fill='#FFF'/><path d='M94.282 220.818l-.059-.033-24.29-14.024.175-.101 75.577-43.634.058.033 24.29 14.024-26.191 15.122-.045-.01-1.461-.307c-6.549-2.174-13.613-3.725-21.009-4.614a13.744 13.744 0 0 0-1.638-.097c-3.758 0-7.054 1.531-7.837 3.642a2.62 2.62 0 0 0-.01 1.848c1.535 4.258 4.216 8.326 7.968 12.091l.016.021.526.835.006.01.064.102-.105.061-25.977 14.998-.058.033zm-23.881-14.057l23.881 13.788 24.802-14.32c.546-.315.846-.489 1.017-.575l-.466-.74c-3.771-3.787-6.467-7.881-8.013-12.168a2.851 2.851 0 0 1 .011-2.008c.815-2.199 4.203-3.795 8.056-3.795.557 0 1.117.033 1.666.099 7.412.891 14.491 2.445 21.041 4.621.836.175 1.215.254 1.39.304l25.78-14.884-23.881-13.788-75.284 43.466z' fill='#607D8B'/><path d='M167.23 125.979v50.871l-27.321 15.773-6.461-14.167c-.91-1.996-3.428-1.738-5.624.574a10.238 10.238 0 0 0-2.33 4.018l-6.46 21.628-27.322 15.774v-50.871l75.518-43.6' fill='#FFF'/><path d='M91.712 220.567a.127.127 0 0 1-.059-.016.118.118 0 0 1-.058-.101v-50.871c0-.042.023-.08.058-.101l75.519-43.6a.117.117 0 0 1 .175.101v50.871c0 .041-.023.08-.059.1l-27.321 15.775a.118.118 0 0 1-.094.01.12.12 0 0 1-.071-.063l-6.46-14.168c-.375-.822-1.062-1.275-1.934-1.275-1.089 0-2.364.686-3.5 1.881a10.206 10.206 0 0 0-2.302 3.972l-6.46 21.627a.118.118 0 0 1-.054.068L91.77 220.551a.12.12 0 0 1-.058.016zm.117-50.92v50.601l27.106-15.65 6.447-21.583a10.286 10.286 0 0 1 2.357-4.065c1.18-1.242 2.517-1.954 3.669-1.954.969 0 1.731.501 2.146 1.411l6.407 14.051 27.152-15.676v-50.601l-75.284 43.466z' fill='#607D8B'/><path d='M168.543 126.213v50.87l-27.322 15.774-6.46-14.168c-.91-1.995-3.428-1.738-5.624.574a10.248 10.248 0 0 0-2.33 4.019l-6.461 21.627-27.321 15.774v-50.87l75.518-43.6' fill='#FFF'/><path d='M93.025 220.8a.123.123 0 0 1-.059-.015.12.12 0 0 1-.058-.101v-50.871c0-.042.023-.08.058-.101l75.518-43.6a.112.112 0 0 1 .117 0c.036.02.059.059.059.1v50.871a.116.116 0 0 1-.059.101l-27.321 15.774a.111.111 0 0 1-.094.01.115.115 0 0 1-.071-.062l-6.46-14.168c-.375-.823-1.062-1.275-1.935-1.275-1.088 0-2.363.685-3.499 1.881a10.19 10.19 0 0 0-2.302 3.971l-6.461 21.628a.108.108 0 0 1-.053.067l-27.322 15.775a.12.12 0 0 1-.058.015zm.117-50.919v50.6l27.106-15.649 6.447-21.584a10.293 10.293 0 0 1 2.357-4.065c1.179-1.241 2.516-1.954 3.668-1.954.969 0 1.732.502 2.147 1.412l6.407 14.051 27.152-15.676v-50.601l-75.284 43.466z' fill='#607D8B'/><path d='M169.8 177.083l-27.322 15.774-6.46-14.168c-.91-1.995-3.428-1.738-5.625.574a10.246 10.246 0 0 0-2.329 4.019l-6.461 21.627-27.321 15.774v-50.87l75.518-43.6v50.87z' fill='#FAFAFA'/><path d='M94.282 220.917a.234.234 0 0 1-.234-.233v-50.871c0-.083.045-.161.117-.202l75.518-43.601a.234.234 0 1 1 .35.202v50.871a.233.233 0 0 1-.116.202l-27.322 15.775a.232.232 0 0 1-.329-.106l-6.461-14.168c-.36-.789-.992-1.206-1.828-1.206-1.056 0-2.301.672-3.415 1.844a10.099 10.099 0 0 0-2.275 3.924l-6.46 21.628a.235.235 0 0 1-.107.136l-27.322 15.774a.23.23 0 0 1-.116.031zm.233-50.969v50.331l26.891-15.525 6.434-21.539a10.41 10.41 0 0 1 2.384-4.112c1.201-1.265 2.569-1.991 3.753-1.991 1.018 0 1.818.526 2.253 1.48l6.354 13.934 26.982-15.578v-50.331l-75.051 43.331z' fill='#607D8B'/><path d='M109.894 199.943c-1.774 0-3.241-.725-4.244-2.12a.224.224 0 0 1 .023-.294.233.233 0 0 1 .301-.023c.78.547 1.705.827 2.75.827 1.323 0 2.754-.439 4.256-1.306 5.311-3.067 9.631-10.518 9.631-16.611 0-1.927-.442-3.56-1.278-4.724a.232.232 0 0 1 .323-.327c1.671 1.172 2.591 3.381 2.591 6.219 0 6.242-4.426 13.863-9.865 17.003-1.574.908-3.084 1.356-4.488 1.356zm-2.969-1.542c.813.651 1.82.877 2.968.877h.001c1.321 0 2.753-.327 4.254-1.194 5.311-3.067 9.632-10.463 9.632-16.556 0-1.979-.463-3.599-1.326-4.761.411 1.035.625 2.275.625 3.635 0 6.243-4.426 13.883-9.865 17.023-1.574.909-3.084 1.317-4.49 1.317-.641 0-1.243-.149-1.799-.341z' fill='#607D8B'/><path d='M113.097 197.23c5.384-3.108 9.748-10.636 9.748-16.814 0-2.051-.483-3.692-1.323-4.86-1.784-1.252-4.374-1.194-7.257.47-5.384 3.108-9.748 10.636-9.748 16.814 0 2.051.483 3.692 1.323 4.86 1.784 1.252 4.374 1.194 7.257-.47' fill='#FAFAFA'/><path d='M108.724 198.614c-1.142 0-2.158-.213-3.019-.817-.021-.014-.04.014-.055-.007-.894-1.244-1.367-2.948-1.367-4.973 0-6.242 4.426-13.864 9.865-17.005 1.574-.908 3.084-1.363 4.49-1.363 1.142 0 2.158.309 3.018.913a.23.23 0 0 1 .056.056c.894 1.244 1.367 2.972 1.367 4.997 0 6.243-4.426 13.783-9.865 16.923-1.574.909-3.084 1.276-4.49 1.276zm-2.718-1.109c.774.532 1.688.776 2.718.776 1.323 0 2.754-.413 4.256-1.28 5.311-3.066 9.631-10.505 9.631-16.598 0-1.909-.434-3.523-1.255-4.685-.774-.533-1.688-.799-2.718-.799-1.323 0-2.755.441-4.256 1.308-5.311 3.066-9.631 10.506-9.631 16.599 0 1.909.434 3.517 1.255 4.679z' fill='#607D8B'/><path d='M149.318 114.262l-9.984 8.878 15.893 11.031 5.589-6.112-11.498-13.797' fill='#FAFAFA'/><path d='M169.676 120.84l-9.748 5.627c-3.642 2.103-9.528 2.113-13.147.024-3.62-2.089-3.601-5.488.041-7.591l9.495-5.608-6.729-3.885-81.836 47.071 45.923 26.514 3.081-1.779c.631-.365.869-.898.618-1.39-2.357-4.632-2.593-9.546-.683-14.262 5.638-13.92 24.509-24.815 48.618-28.07 8.169-1.103 16.68-.967 24.704.394.852.145 1.776.008 2.407-.357l3.081-1.778-25.825-14.91' fill='#FAFAFA'/><path d='M113.675 183.459a.47.47 0 0 1-.233-.062l-45.924-26.515a.468.468 0 0 1 .001-.809l81.836-47.071a.467.467 0 0 1 .466 0l6.729 3.885a.467.467 0 0 1-.467.809l-6.496-3.75-80.9 46.533 44.988 25.973 2.848-1.644c.192-.111.62-.409.435-.773-2.416-4.748-2.658-9.814-.7-14.65 2.806-6.927 8.885-13.242 17.582-18.263 8.657-4.998 19.518-8.489 31.407-10.094 8.198-1.107 16.79-.97 24.844.397.739.125 1.561.007 2.095-.301l2.381-1.374-25.125-14.506a.467.467 0 0 1 .467-.809l25.825 14.91a.467.467 0 0 1 0 .809l-3.081 1.779c-.721.417-1.763.575-2.718.413-7.963-1.351-16.457-1.486-24.563-.392-11.77 1.589-22.512 5.039-31.065 9.977-8.514 4.916-14.456 11.073-17.183 17.805-1.854 4.578-1.623 9.376.666 13.875.37.725.055 1.513-.8 2.006l-3.081 1.78a.476.476 0 0 1-.234.062' fill='#455A64'/><path d='M153.316 128.279c-2.413 0-4.821-.528-6.652-1.586-1.818-1.049-2.82-2.461-2.82-3.975 0-1.527 1.016-2.955 2.861-4.02l9.493-5.607a.233.233 0 1 1 .238.402l-9.496 5.609c-1.696.979-2.628 2.263-2.628 3.616 0 1.34.918 2.608 2.585 3.571 3.549 2.049 9.343 2.038 12.914-.024l9.748-5.628a.234.234 0 0 1 .234.405l-9.748 5.628c-1.858 1.072-4.296 1.609-6.729 1.609' fill='#607D8B'/><path d='M113.675 182.992l-45.913-26.508M113.675 183.342a.346.346 0 0 1-.175-.047l-45.913-26.508a.35.35 0 1 1 .35-.607l45.913 26.508a.35.35 0 0 1-.175.654' fill='#455A64'/><path d='M67.762 156.484v54.001c0 1.09.77 2.418 1.72 2.967l42.473 24.521c.95.549 1.72.11 1.72-.98v-54.001' fill='#FAFAFA'/><path d='M112.727 238.561c-.297 0-.62-.095-.947-.285l-42.473-24.521c-1.063-.613-1.895-2.05-1.895-3.27v-54.001a.35.35 0 1 1 .701 0v54.001c0 .96.707 2.18 1.544 2.663l42.473 24.522c.344.198.661.243.87.122.206-.119.325-.411.325-.799v-54.001a.35.35 0 1 1 .7 0v54.001c0 .655-.239 1.154-.675 1.406a1.235 1.235 0 0 1-.623.162' fill='#455A64'/><path d='M112.86 147.512h-.001c-2.318 0-4.499-.522-6.142-1.471-1.705-.984-2.643-2.315-2.643-3.749 0-1.445.952-2.791 2.68-3.788l12.041-6.953c1.668-.962 3.874-1.493 6.212-1.493 2.318 0 4.499.523 6.143 1.472 1.704.984 2.643 2.315 2.643 3.748 0 1.446-.952 2.791-2.68 3.789l-12.042 6.952c-1.668.963-3.874 1.493-6.211 1.493zm12.147-16.753c-2.217 0-4.298.497-5.861 1.399l-12.042 6.952c-1.502.868-2.33 1.998-2.33 3.182 0 1.173.815 2.289 2.293 3.142 1.538.889 3.596 1.378 5.792 1.378h.001c2.216 0 4.298-.497 5.861-1.399l12.041-6.953c1.502-.867 2.33-1.997 2.33-3.182 0-1.172-.814-2.288-2.292-3.142-1.539-.888-3.596-1.377-5.793-1.377z' fill='#607D8B'/><path d='M165.63 123.219l-5.734 3.311c-3.167 1.828-8.286 1.837-11.433.02-3.147-1.817-3.131-4.772.036-6.601l5.734-3.31 11.397 6.58' fill='#FAFAFA'/><path d='M154.233 117.448l9.995 5.771-4.682 2.704c-1.434.827-3.352 1.283-5.399 1.283-2.029 0-3.923-.449-5.333-1.263-1.29-.744-2-1.694-2-2.674 0-.991.723-1.955 2.036-2.713l5.383-3.108m0-.809l-5.734 3.31c-3.167 1.829-3.183 4.784-.036 6.601 1.568.905 3.623 1.357 5.684 1.357 2.077 0 4.159-.46 5.749-1.377l5.734-3.311-11.397-6.58M145.445 179.667c-1.773 0-3.241-.85-4.243-2.245-.067-.092-.057-.275.023-.356.08-.081.207-.12.3-.055.781.548 1.706.812 2.751.811 1.322 0 2.754-.446 4.256-1.313 5.31-3.066 9.631-10.522 9.631-16.615 0-1.927-.442-3.562-1.279-4.726a.235.235 0 0 1 .024-.301.232.232 0 0 1 .3-.027c1.67 1.172 2.59 3.38 2.59 6.219 0 6.242-4.425 13.987-9.865 17.127-1.573.908-3.083 1.481-4.488 1.481zM142.476 178c.814.651 1.82 1.002 2.969 1.002 1.322 0 2.753-.452 4.255-1.32 5.31-3.065 9.631-10.523 9.631-16.617 0-1.98-.463-3.63-1.325-4.793.411 1.035.624 2.26.624 3.62 0 6.242-4.425 13.875-9.865 17.015-1.573.909-3.084 1.376-4.489 1.376a5.49 5.49 0 0 1-1.8-.283z' fill='#607D8B'/><path d='M148.648 176.704c5.384-3.108 9.748-10.636 9.748-16.813 0-2.052-.483-3.693-1.322-4.861-1.785-1.252-4.375-1.194-7.258.471-5.383 3.108-9.748 10.636-9.748 16.813 0 2.051.484 3.692 1.323 4.86 1.785 1.253 4.374 1.195 7.257-.47' fill='#FAFAFA'/><path d='M144.276 178.276c-1.143 0-2.158-.307-3.019-.911a.217.217 0 0 1-.055-.054c-.895-1.244-1.367-2.972-1.367-4.997 0-6.241 4.425-13.875 9.865-17.016 1.573-.908 3.084-1.369 4.489-1.369 1.143 0 2.158.307 3.019.91a.24.24 0 0 1 .055.055c.894 1.244 1.367 2.971 1.367 4.997 0 6.241-4.425 13.875-9.865 17.016-1.573.908-3.084 1.369-4.489 1.369zm-2.718-1.172c.773.533 1.687.901 2.718.901 1.322 0 2.754-.538 4.256-1.405 5.31-3.066 9.631-10.567 9.631-16.661 0-1.908-.434-3.554-1.256-4.716-.774-.532-1.688-.814-2.718-.814-1.322 0-2.754.433-4.256 1.3-5.31 3.066-9.631 10.564-9.631 16.657 0 1.91.434 3.576 1.256 4.738z' fill='#607D8B'/><path d='M150.72 172.361l-.363-.295a24.105 24.105 0 0 0 2.148-3.128 24.05 24.05 0 0 0 1.977-4.375l.443.149a24.54 24.54 0 0 1-2.015 4.46 24.61 24.61 0 0 1-2.19 3.189M115.917 191.514l-.363-.294a24.174 24.174 0 0 0 2.148-3.128 24.038 24.038 0 0 0 1.976-4.375l.443.148a24.48 24.48 0 0 1-2.015 4.461 24.662 24.662 0 0 1-2.189 3.188M114 237.476V182.584 237.476' fill='#607D8B'/><g><path d='M81.822 37.474c.017-.135-.075-.28-.267-.392-.327-.188-.826-.21-1.109-.045l-6.012 3.471c-.131.076-.194.178-.191.285.002.132.002.461.002.578v.043l-.007.128-6.591 3.779c-.001 0-2.077 1.046-2.787 5.192 0 0-.912 6.961-.898 19.745.015 12.57.606 17.07 1.167 21.351.22 1.684 3.001 2.125 3.001 2.125.331.04.698-.027 1.08-.248l75.273-43.551c1.808-1.069 2.667-3.719 3.056-6.284 1.213-7.99 1.675-32.978-.275-39.878-.196-.693-.51-1.083-.868-1.282l-2.086-.79c-.727.028-1.416.467-1.534.535L82.032 37.072l-.21.402' fill='#FFF'/><path d='M144.311 1.701l2.085.79c.358.199.672.589.868 1.282 1.949 6.9 1.487 31.887.275 39.878-.39 2.565-1.249 5.215-3.056 6.284L69.21 93.486a1.78 1.78 0 0 1-.896.258l-.183-.011c0 .001-2.782-.44-3.003-2.124-.56-4.282-1.151-8.781-1.165-21.351-.015-12.784.897-19.745.897-19.745.71-4.146 2.787-5.192 2.787-5.192l6.591-3.779.007-.128v-.043c0-.117 0-.446-.002-.578-.003-.107.059-.21.191-.285l6.012-3.472a.98.98 0 0 1 .481-.11c.218 0 .449.053.627.156.193.112.285.258.268.392l.211-.402 60.744-34.836c.117-.068.806-.507 1.534-.535m0-.997l-.039.001c-.618.023-1.283.244-1.974.656l-.021.012-60.519 34.706a2.358 2.358 0 0 0-.831-.15c-.365 0-.704.084-.98.244l-6.012 3.471c-.442.255-.699.69-.689 1.166l.001.15-6.08 3.487c-.373.199-2.542 1.531-3.29 5.898l-.006.039c-.009.07-.92 7.173-.906 19.875.014 12.62.603 17.116 1.172 21.465l.002.015c.308 2.355 3.475 2.923 3.836 2.98l.034.004c.101.013.204.019.305.019a2.77 2.77 0 0 0 1.396-.392l75.273-43.552c1.811-1.071 2.999-3.423 3.542-6.997 1.186-7.814 1.734-33.096-.301-40.299-.253-.893-.704-1.527-1.343-1.882l-.132-.062-2.085-.789a.973.973 0 0 0-.353-.065' fill='#455A64'/><path d='M128.267 11.565l1.495.434-56.339 32.326' fill='#FFF'/><path d='M74.202 90.545a.5.5 0 0 1-.25-.931l18.437-10.645a.499.499 0 1 1 .499.864L74.451 90.478l-.249.067M75.764 42.654l-.108-.062.046-.171 5.135-2.964.17.045-.045.171-5.135 2.964-.063.017M70.52 90.375V46.421l.063-.036L137.84 7.554v43.954l-.062.036L70.52 90.375zm.25-43.811v43.38l66.821-38.579V7.985L70.77 46.564z' fill='#607D8B'/><path d='M86.986 83.182c-.23.149-.612.384-.849.523l-11.505 6.701c-.237.139-.206.252.068.252h.565c.275 0 .693-.113.93-.252L87.7 83.705c.237-.139.428-.253.425-.256a11.29 11.29 0 0 1-.006-.503c0-.274-.188-.377-.418-.227l-.715.463' fill='#607D8B'/><path d='M75.266 90.782H74.7c-.2 0-.316-.056-.346-.166-.03-.11.043-.217.215-.317l11.505-6.702c.236-.138.615-.371.844-.519l.715-.464a.488.488 0 0 1 .266-.089c.172 0 .345.13.345.421 0 .214.001.363.003.437l.006.004-.004.069c-.003.075-.003.075-.486.356l-11.505 6.702a2.282 2.282 0 0 1-.992.268zm-.6-.25l.034.001h.566c.252 0 .649-.108.866-.234l11.505-6.702c.168-.098.294-.173.361-.214-.004-.084-.004-.218-.004-.437l-.095-.171-.131.049-.714.463c-.232.15-.616.386-.854.525l-11.505 6.702-.029.018z' fill='#607D8B'/><path d='M75.266 89.871H74.7c-.2 0-.316-.056-.346-.166-.03-.11.043-.217.215-.317l11.505-6.702c.258-.151.694-.268.993-.268h.565c.2 0 .316.056.346.166.03.11-.043.217-.215.317l-11.505 6.702a2.282 2.282 0 0 1-.992.268zm-.6-.25l.034.001h.566c.252 0 .649-.107.866-.234l11.505-6.702.03-.018-.035-.001h-.565c-.252 0-.649.108-.867.234l-11.505 6.702-.029.018zM74.37 90.801v-1.247 1.247' fill='#607D8B'/><path d='M68.13 93.901c-.751-.093-1.314-.737-1.439-1.376-.831-4.238-1.151-8.782-1.165-21.352-.015-12.784.897-19.745.897-19.745.711-4.146 2.787-5.192 2.787-5.192l74.859-43.219c.223-.129 2.487-1.584 3.195.923 1.95 6.9 1.488 31.887.275 39.878-.389 2.565-1.248 5.215-3.056 6.283L69.21 93.653c-.382.221-.749.288-1.08.248 0 0-2.781-.441-3.001-2.125-.561-4.281-1.152-8.781-1.167-21.351-.014-12.784.898-19.745.898-19.745.71-4.146 2.787-5.191 2.787-5.191l6.598-3.81.871-.119 6.599-3.83.046-.461L68.13 93.901' fill='#FAFAFA'/><path d='M68.317 94.161l-.215-.013h-.001l-.244-.047c-.719-.156-2.772-.736-2.976-2.292-.568-4.34-1.154-8.813-1.168-21.384-.014-12.654.891-19.707.9-19.777.725-4.231 2.832-5.338 2.922-5.382l6.628-3.827.87-.119 6.446-3.742.034-.334a.248.248 0 0 1 .273-.223.248.248 0 0 1 .223.272l-.059.589-6.752 3.919-.87.118-6.556 3.785c-.031.016-1.99 1.068-2.666 5.018-.007.06-.908 7.086-.894 19.702.014 12.539.597 16.996 1.161 21.305.091.691.689 1.154 1.309 1.452a1.95 1.95 0 0 1-.236-.609c-.781-3.984-1.155-8.202-1.17-21.399-.014-12.653.891-19.707.9-19.777.725-4.231 2.832-5.337 2.922-5.382-.004.001 74.444-42.98 74.846-43.212l.028-.017c.904-.538 1.72-.688 2.36-.433.555.221.949.733 1.172 1.52 2.014 7.128 1.46 32.219.281 39.983-.507 3.341-1.575 5.515-3.175 6.462L69.335 93.869a2.023 2.023 0 0 1-1.018.292zm-.147-.507c.293.036.604-.037.915-.217l75.273-43.551c1.823-1.078 2.602-3.915 2.934-6.106 1.174-7.731 1.731-32.695-.268-39.772-.178-.631-.473-1.032-.876-1.192-.484-.193-1.166-.052-1.921.397l-.034.021-74.858 43.218c-.031.017-1.989 1.069-2.666 5.019-.007.059-.908 7.085-.894 19.702.015 13.155.386 17.351 1.161 21.303.09.461.476.983 1.037 1.139.114.025.185.037.196.039h.001z' fill='#455A64'/><path d='M69.317 68.982c.489-.281.885-.056.885.505 0 .56-.396 1.243-.885 1.525-.488.282-.884.057-.884-.504 0-.56.396-1.243.884-1.526' fill='#FFF'/><path d='M68.92 71.133c-.289 0-.487-.228-.487-.625 0-.56.396-1.243.884-1.526a.812.812 0 0 1 .397-.121c.289 0 .488.229.488.626 0 .56-.396 1.243-.885 1.525a.812.812 0 0 1-.397.121m.794-2.459a.976.976 0 0 0-.49.147c-.548.317-.978 1.058-.978 1.687 0 .486.271.812.674.812a.985.985 0 0 0 .491-.146c.548-.317.978-1.057.978-1.687 0-.486-.272-.813-.675-.813' fill='#8097A2'/><path d='M68.92 70.947c-.271 0-.299-.307-.299-.439 0-.491.361-1.116.79-1.363a.632.632 0 0 1 .303-.096c.272 0 .301.306.301.438 0 .491-.363 1.116-.791 1.364a.629.629 0 0 1-.304.096m.794-2.086a.812.812 0 0 0-.397.121c-.488.283-.884.966-.884 1.526 0 .397.198.625.487.625a.812.812 0 0 0 .397-.121c.489-.282.885-.965.885-1.525 0-.397-.199-.626-.488-.626' fill='#8097A2'/><path d='M69.444 85.35c.264-.152.477-.031.477.272 0 .303-.213.67-.477.822-.263.153-.477.031-.477-.271 0-.302.214-.671.477-.823' fill='#FFF'/><path d='M69.23 86.51c-.156 0-.263-.123-.263-.337 0-.302.214-.671.477-.823a.431.431 0 0 1 .214-.066c.156 0 .263.124.263.338 0 .303-.213.67-.477.822a.431.431 0 0 1-.214.066m.428-1.412c-.1 0-.203.029-.307.09-.32.185-.57.618-.57.985 0 .309.185.524.449.524a.63.63 0 0 0 .308-.09c.32-.185.57-.618.57-.985 0-.309-.185-.524-.45-.524' fill='#8097A2'/><path d='M69.23 86.322l-.076-.149c0-.235.179-.544.384-.661l.12-.041.076.151c0 .234-.179.542-.383.66l-.121.04m.428-1.038a.431.431 0 0 0-.214.066c-.263.152-.477.521-.477.823 0 .214.107.337.263.337a.431.431 0 0 0 .214-.066c.264-.152.477-.519.477-.822 0-.214-.107-.338-.263-.338' fill='#8097A2'/><path d='M139.278 7.769v43.667L72.208 90.16V46.493l67.07-38.724' fill='#455A64'/><path d='M72.083 90.375V46.421l.063-.036 67.257-38.831v43.954l-.062.036-67.258 38.831zm.25-43.811v43.38l66.821-38.579V7.985L72.333 46.564z' fill='#607D8B'/></g><path d='M125.737 88.647l-7.639 3.334V84l-11.459 4.713v8.269L99 100.315l13.369 3.646 13.368-15.314' fill='#455A64'/></g></svg>";
 function RotateInstructions() {
   this.loadIcon_();
-
   var overlay = document.createElement('div');
   var s = overlay.style;
   s.position = 'fixed';
@@ -4672,9 +2416,7 @@ function RotateInstructions() {
   s.left = 0;
   s.backgroundColor = 'gray';
   s.fontFamily = 'sans-serif';
-  // Force this to be above the fullscreen canvas, which is at zIndex: 999999.
   s.zIndex = 1000000;
-
   var img = document.createElement('img');
   img.src = this.icon;
   var s = img.style;
@@ -4682,7 +2424,6 @@ function RotateInstructions() {
   s.marginTop = '25%';
   s.width = '50%';
   overlay.appendChild(img);
-
   var text = document.createElement('div');
   var s = text.style;
   s.textAlign = 'center';
@@ -4692,7 +2433,6 @@ function RotateInstructions() {
   s.width = '50%';
   text.innerHTML = 'Place your phone into your Cardboard viewer.';
   overlay.appendChild(text);
-
   var snackbar = document.createElement('div');
   var s = snackbar.style;
   s.backgroundColor = '#CFD8DC';
@@ -4704,11 +2444,9 @@ function RotateInstructions() {
   s.boxSizing = 'border-box';
   s.color = '#656A6B';
   overlay.appendChild(snackbar);
-
   var snackbarText = document.createElement('div');
   snackbarText.style.float = 'left';
   snackbarText.innerHTML = 'No Cardboard viewer?';
-
   var snackbarButton = document.createElement('a');
   snackbarButton.href = 'https://www.google.com/get/cardboard/get-cardboard/';
   snackbarButton.innerHTML = 'get one';
@@ -4721,32 +2459,23 @@ function RotateInstructions() {
   s.paddingLeft = '24px';
   s.textDecoration = 'none';
   s.color = '#656A6B';
-
   snackbar.appendChild(snackbarText);
   snackbar.appendChild(snackbarButton);
-
   this.overlay = overlay;
   this.text = text;
-
   this.hide();
 }
-
-RotateInstructions.prototype.show = function(parent) {
+RotateInstructions.prototype.show = function (parent) {
   if (!parent && !this.overlay.parentElement) {
     document.body.appendChild(this.overlay);
   } else if (parent) {
-    if (this.overlay.parentElement && this.overlay.parentElement != parent)
-      this.overlay.parentElement.removeChild(this.overlay);
-
+    if (this.overlay.parentElement && this.overlay.parentElement != parent) this.overlay.parentElement.removeChild(this.overlay);
     parent.appendChild(this.overlay);
   }
-
   this.overlay.style.display = 'block';
-
   var img = this.overlay.querySelector('img');
   var s = img.style;
-
-  if (Util.isLandscapeMode()) {
+  if (isLandscapeMode()) {
     s.width = '20%';
     s.marginLeft = '40%';
     s.marginTop = '3%';
@@ -4756,1147 +2485,92 @@ RotateInstructions.prototype.show = function(parent) {
     s.marginTop = '25%';
   }
 };
-
-RotateInstructions.prototype.hide = function() {
+RotateInstructions.prototype.hide = function () {
   this.overlay.style.display = 'none';
 };
-
-RotateInstructions.prototype.showTemporarily = function(ms, parent) {
+RotateInstructions.prototype.showTemporarily = function (ms, parent) {
   this.show(parent);
   this.timer = setTimeout(this.hide.bind(this), ms);
 };
-
-RotateInstructions.prototype.disableShowTemporarily = function() {
+RotateInstructions.prototype.disableShowTemporarily = function () {
   clearTimeout(this.timer);
 };
-
-RotateInstructions.prototype.update = function() {
+RotateInstructions.prototype.update = function () {
   this.disableShowTemporarily();
-  // In portrait VR mode, tell the user to rotate to landscape. Otherwise, hide
-  // the instructions.
-  if (!Util.isLandscapeMode() && Util.isMobile()) {
+  if (!isLandscapeMode() && isMobile()) {
     this.show();
   } else {
     this.hide();
   }
 };
-
-RotateInstructions.prototype.loadIcon_ = function() {
-  // Encoded asset_src/rotate-instructions.svg
-  this.icon = Util.base64('image/svg+xml', 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+Cjxzdmcgd2lkdGg9IjE5OHB4IiBoZWlnaHQ9IjI0MHB4IiB2aWV3Qm94PSIwIDAgMTk4IDI0MCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxuczpza2V0Y2g9Imh0dHA6Ly93d3cuYm9oZW1pYW5jb2RpbmcuY29tL3NrZXRjaC9ucyI+CiAgICA8IS0tIEdlbmVyYXRvcjogU2tldGNoIDMuMy4zICgxMjA4MSkgLSBodHRwOi8vd3d3LmJvaGVtaWFuY29kaW5nLmNvbS9za2V0Y2ggLS0+CiAgICA8dGl0bGU+dHJhbnNpdGlvbjwvdGl0bGU+CiAgICA8ZGVzYz5DcmVhdGVkIHdpdGggU2tldGNoLjwvZGVzYz4KICAgIDxkZWZzPjwvZGVmcz4KICAgIDxnIGlkPSJQYWdlLTEiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHNrZXRjaDp0eXBlPSJNU1BhZ2UiPgogICAgICAgIDxnIGlkPSJ0cmFuc2l0aW9uIiBza2V0Y2g6dHlwZT0iTVNBcnRib2FyZEdyb3VwIj4KICAgICAgICAgICAgPGcgaWQ9IkltcG9ydGVkLUxheWVycy1Db3B5LTQtKy1JbXBvcnRlZC1MYXllcnMtQ29weS0rLUltcG9ydGVkLUxheWVycy1Db3B5LTItQ29weSIgc2tldGNoOnR5cGU9Ik1TTGF5ZXJHcm91cCI+CiAgICAgICAgICAgICAgICA8ZyBpZD0iSW1wb3J0ZWQtTGF5ZXJzLUNvcHktNCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMDAwMDAsIDEwNy4wMDAwMDApIiBza2V0Y2g6dHlwZT0iTVNTaGFwZUdyb3VwIj4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTQ5LjYyNSwyLjUyNyBDMTQ5LjYyNSwyLjUyNyAxNTUuODA1LDYuMDk2IDE1Ni4zNjIsNi40MTggTDE1Ni4zNjIsNy4zMDQgQzE1Ni4zNjIsNy40ODEgMTU2LjM3NSw3LjY2NCAxNTYuNCw3Ljg1MyBDMTU2LjQxLDcuOTM0IDE1Ni40Miw4LjAxNSAxNTYuNDI3LDguMDk1IEMxNTYuNTY3LDkuNTEgMTU3LjQwMSwxMS4wOTMgMTU4LjUzMiwxMi4wOTQgTDE2NC4yNTIsMTcuMTU2IEwxNjQuMzMzLDE3LjA2NiBDMTY0LjMzMywxNy4wNjYgMTY4LjcxNSwxNC41MzYgMTY5LjU2OCwxNC4wNDIgQzE3MS4wMjUsMTQuODgzIDE5NS41MzgsMjkuMDM1IDE5NS41MzgsMjkuMDM1IEwxOTUuNTM4LDgzLjAzNiBDMTk1LjUzOCw4My44MDcgMTk1LjE1Miw4NC4yNTMgMTk0LjU5LDg0LjI1MyBDMTk0LjM1Nyw4NC4yNTMgMTk0LjA5NSw4NC4xNzcgMTkzLjgxOCw4NC4wMTcgTDE2OS44NTEsNzAuMTc5IEwxNjkuODM3LDcwLjIwMyBMMTQyLjUxNSw4NS45NzggTDE0MS42NjUsODQuNjU1IEMxMzYuOTM0LDgzLjEyNiAxMzEuOTE3LDgxLjkxNSAxMjYuNzE0LDgxLjA0NSBDMTI2LjcwOSw4MS4wNiAxMjYuNzA3LDgxLjA2OSAxMjYuNzA3LDgxLjA2OSBMMTIxLjY0LDk4LjAzIEwxMTMuNzQ5LDEwMi41ODYgTDExMy43MTIsMTAyLjUyMyBMMTEzLjcxMiwxMzAuMTEzIEMxMTMuNzEyLDEzMC44ODUgMTEzLjMyNiwxMzEuMzMgMTEyLjc2NCwxMzEuMzMgQzExMi41MzIsMTMxLjMzIDExMi4yNjksMTMxLjI1NCAxMTEuOTkyLDEzMS4wOTQgTDY5LjUxOSwxMDYuNTcyIEM2OC41NjksMTA2LjAyMyA2Ny43OTksMTA0LjY5NSA2Ny43OTksMTAzLjYwNSBMNjcuNzk5LDEwMi41NyBMNjcuNzc4LDEwMi42MTcgQzY3LjI3LDEwMi4zOTMgNjYuNjQ4LDEwMi4yNDkgNjUuOTYyLDEwMi4yMTggQzY1Ljg3NSwxMDIuMjE0IDY1Ljc4OCwxMDIuMjEyIDY1LjcwMSwxMDIuMjEyIEM2NS42MDYsMTAyLjIxMiA2NS41MTEsMTAyLjIxNSA2NS40MTYsMTAyLjIxOSBDNjUuMTk1LDEwMi4yMjkgNjQuOTc0LDEwMi4yMzUgNjQuNzU0LDEwMi4yMzUgQzY0LjMzMSwxMDIuMjM1IDYzLjkxMSwxMDIuMjE2IDYzLjQ5OCwxMDIuMTc4IEM2MS44NDMsMTAyLjAyNSA2MC4yOTgsMTAxLjU3OCA1OS4wOTQsMTAwLjg4MiBMMTIuNTE4LDczLjk5MiBMMTIuNTIzLDc0LjAwNCBMMi4yNDUsNTUuMjU0IEMxLjI0NCw1My40MjcgMi4wMDQsNTEuMDM4IDMuOTQzLDQ5LjkxOCBMNTkuOTU0LDE3LjU3MyBDNjAuNjI2LDE3LjE4NSA2MS4zNSwxNy4wMDEgNjIuMDUzLDE3LjAwMSBDNjMuMzc5LDE3LjAwMSA2NC42MjUsMTcuNjYgNjUuMjgsMTguODU0IEw2NS4yODUsMTguODUxIEw2NS41MTIsMTkuMjY0IEw2NS41MDYsMTkuMjY4IEM2NS45MDksMjAuMDAzIDY2LjQwNSwyMC42OCA2Ni45ODMsMjEuMjg2IEw2Ny4yNiwyMS41NTYgQzY5LjE3NCwyMy40MDYgNzEuNzI4LDI0LjM1NyA3NC4zNzMsMjQuMzU3IEM3Ni4zMjIsMjQuMzU3IDc4LjMyMSwyMy44NCA4MC4xNDgsMjIuNzg1IEM4MC4xNjEsMjIuNzg1IDg3LjQ2NywxOC41NjYgODcuNDY3LDE4LjU2NiBDODguMTM5LDE4LjE3OCA4OC44NjMsMTcuOTk0IDg5LjU2NiwxNy45OTQgQzkwLjg5MiwxNy45OTQgOTIuMTM4LDE4LjY1MiA5Mi43OTIsMTkuODQ3IEw5Ni4wNDIsMjUuNzc1IEw5Ni4wNjQsMjUuNzU3IEwxMDIuODQ5LDI5LjY3NCBMMTAyLjc0NCwyOS40OTIgTDE0OS42MjUsMi41MjcgTTE0OS42MjUsMC44OTIgQzE0OS4zNDMsMC44OTIgMTQ5LjA2MiwwLjk2NSAxNDguODEsMS4xMSBMMTAyLjY0MSwyNy42NjYgTDk3LjIzMSwyNC41NDIgTDk0LjIyNiwxOS4wNjEgQzkzLjMxMywxNy4zOTQgOTEuNTI3LDE2LjM1OSA4OS41NjYsMTYuMzU4IEM4OC41NTUsMTYuMzU4IDg3LjU0NiwxNi42MzIgODYuNjQ5LDE3LjE1IEM4My44NzgsMTguNzUgNzkuNjg3LDIxLjE2OSA3OS4zNzQsMjEuMzQ1IEM3OS4zNTksMjEuMzUzIDc5LjM0NSwyMS4zNjEgNzkuMzMsMjEuMzY5IEM3Ny43OTgsMjIuMjU0IDc2LjA4NCwyMi43MjIgNzQuMzczLDIyLjcyMiBDNzIuMDgxLDIyLjcyMiA2OS45NTksMjEuODkgNjguMzk3LDIwLjM4IEw2OC4xNDUsMjAuMTM1IEM2Ny43MDYsMTkuNjcyIDY3LjMyMywxOS4xNTYgNjcuMDA2LDE4LjYwMSBDNjYuOTg4LDE4LjU1OSA2Ni45NjgsMTguNTE5IDY2Ljk0NiwxOC40NzkgTDY2LjcxOSwxOC4wNjUgQzY2LjY5LDE4LjAxMiA2Ni42NTgsMTcuOTYgNjYuNjI0LDE3LjkxMSBDNjUuNjg2LDE2LjMzNyA2My45NTEsMTUuMzY2IDYyLjA1MywxNS4zNjYgQzYxLjA0MiwxNS4zNjYgNjAuMDMzLDE1LjY0IDU5LjEzNiwxNi4xNTggTDMuMTI1LDQ4LjUwMiBDMC40MjYsNTAuMDYxIC0wLjYxMyw1My40NDIgMC44MTEsNTYuMDQgTDExLjA4OSw3NC43OSBDMTEuMjY2LDc1LjExMyAxMS41MzcsNzUuMzUzIDExLjg1LDc1LjQ5NCBMNTguMjc2LDEwMi4yOTggQzU5LjY3OSwxMDMuMTA4IDYxLjQzMywxMDMuNjMgNjMuMzQ4LDEwMy44MDYgQzYzLjgxMiwxMDMuODQ4IDY0LjI4NSwxMDMuODcgNjQuNzU0LDEwMy44NyBDNjUsMTAzLjg3IDY1LjI0OSwxMDMuODY0IDY1LjQ5NCwxMDMuODUyIEM2NS41NjMsMTAzLjg0OSA2NS42MzIsMTAzLjg0NyA2NS43MDEsMTAzLjg0NyBDNjUuNzY0LDEwMy44NDcgNjUuODI4LDEwMy44NDkgNjUuODksMTAzLjg1MiBDNjUuOTg2LDEwMy44NTYgNjYuMDgsMTAzLjg2MyA2Ni4xNzMsMTAzLjg3NCBDNjYuMjgyLDEwNS40NjcgNjcuMzMyLDEwNy4xOTcgNjguNzAyLDEwNy45ODggTDExMS4xNzQsMTMyLjUxIEMxMTEuNjk4LDEzMi44MTIgMTEyLjIzMiwxMzIuOTY1IDExMi43NjQsMTMyLjk2NSBDMTE0LjI2MSwxMzIuOTY1IDExNS4zNDcsMTMxLjc2NSAxMTUuMzQ3LDEzMC4xMTMgTDExNS4zNDcsMTAzLjU1MSBMMTIyLjQ1OCw5OS40NDYgQzEyMi44MTksOTkuMjM3IDEyMy4wODcsOTguODk4IDEyMy4yMDcsOTguNDk4IEwxMjcuODY1LDgyLjkwNSBDMTMyLjI3OSw4My43MDIgMTM2LjU1Nyw4NC43NTMgMTQwLjYwNyw4Ni4wMzMgTDE0MS4xNCw4Ni44NjIgQzE0MS40NTEsODcuMzQ2IDE0MS45NzcsODcuNjEzIDE0Mi41MTYsODcuNjEzIEMxNDIuNzk0LDg3LjYxMyAxNDMuMDc2LDg3LjU0MiAxNDMuMzMzLDg3LjM5MyBMMTY5Ljg2NSw3Mi4wNzYgTDE5Myw4NS40MzMgQzE5My41MjMsODUuNzM1IDE5NC4wNTgsODUuODg4IDE5NC41OSw4NS44ODggQzE5Ni4wODcsODUuODg4IDE5Ny4xNzMsODQuNjg5IDE5Ny4xNzMsODMuMDM2IEwxOTcuMTczLDI5LjAzNSBDMTk3LjE3MywyOC40NTEgMTk2Ljg2MSwyNy45MTEgMTk2LjM1NSwyNy42MTkgQzE5Ni4zNTUsMjcuNjE5IDE3MS44NDMsMTMuNDY3IDE3MC4zODUsMTIuNjI2IEMxNzAuMTMyLDEyLjQ4IDE2OS44NSwxMi40MDcgMTY5LjU2OCwxMi40MDcgQzE2OS4yODUsMTIuNDA3IDE2OS4wMDIsMTIuNDgxIDE2OC43NDksMTIuNjI3IEMxNjguMTQzLDEyLjk3OCAxNjUuNzU2LDE0LjM1NyAxNjQuNDI0LDE1LjEyNSBMMTU5LjYxNSwxMC44NyBDMTU4Ljc5NiwxMC4xNDUgMTU4LjE1NCw4LjkzNyAxNTguMDU0LDcuOTM0IEMxNTguMDQ1LDcuODM3IDE1OC4wMzQsNy43MzkgMTU4LjAyMSw3LjY0IEMxNTguMDA1LDcuNTIzIDE1Ny45OTgsNy40MSAxNTcuOTk4LDcuMzA0IEwxNTcuOTk4LDYuNDE4IEMxNTcuOTk4LDUuODM0IDE1Ny42ODYsNS4yOTUgMTU3LjE4MSw1LjAwMiBDMTU2LjYyNCw0LjY4IDE1MC40NDIsMS4xMTEgMTUwLjQ0MiwxLjExMSBDMTUwLjE4OSwwLjk2NSAxNDkuOTA3LDAuODkyIDE0OS42MjUsMC44OTIiIGlkPSJGaWxsLTEiIGZpbGw9IiM0NTVBNjQiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNOTYuMDI3LDI1LjYzNiBMMTQyLjYwMyw1Mi41MjcgQzE0My44MDcsNTMuMjIyIDE0NC41ODIsNTQuMTE0IDE0NC44NDUsNTUuMDY4IEwxNDQuODM1LDU1LjA3NSBMNjMuNDYxLDEwMi4wNTcgTDYzLjQ2LDEwMi4wNTcgQzYxLjgwNiwxMDEuOTA1IDYwLjI2MSwxMDEuNDU3IDU5LjA1NywxMDAuNzYyIEwxMi40ODEsNzMuODcxIEw5Ni4wMjcsMjUuNjM2IiBpZD0iRmlsbC0yIiBmaWxsPSIjRkFGQUZBIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTYzLjQ2MSwxMDIuMTc0IEM2My40NTMsMTAyLjE3NCA2My40NDYsMTAyLjE3NCA2My40MzksMTAyLjE3MiBDNjEuNzQ2LDEwMi4wMTYgNjAuMjExLDEwMS41NjMgNTguOTk4LDEwMC44NjMgTDEyLjQyMiw3My45NzMgQzEyLjM4Niw3My45NTIgMTIuMzY0LDczLjkxNCAxMi4zNjQsNzMuODcxIEMxMi4zNjQsNzMuODMgMTIuMzg2LDczLjc5MSAxMi40MjIsNzMuNzcgTDk1Ljk2OCwyNS41MzUgQzk2LjAwNCwyNS41MTQgOTYuMDQ5LDI1LjUxNCA5Ni4wODUsMjUuNTM1IEwxNDIuNjYxLDUyLjQyNiBDMTQzLjg4OCw1My4xMzQgMTQ0LjY4Miw1NC4wMzggMTQ0Ljk1Nyw1NS4wMzcgQzE0NC45Nyw1NS4wODMgMTQ0Ljk1Myw1NS4xMzMgMTQ0LjkxNSw1NS4xNjEgQzE0NC45MTEsNTUuMTY1IDE0NC44OTgsNTUuMTc0IDE0NC44OTQsNTUuMTc3IEw2My41MTksMTAyLjE1OCBDNjMuNTAxLDEwMi4xNjkgNjMuNDgxLDEwMi4xNzQgNjMuNDYxLDEwMi4xNzQgTDYzLjQ2MSwxMDIuMTc0IFogTTEyLjcxNCw3My44NzEgTDU5LjExNSwxMDAuNjYxIEM2MC4yOTMsMTAxLjM0MSA2MS43ODYsMTAxLjc4MiA2My40MzUsMTAxLjkzNyBMMTQ0LjcwNyw1NS4wMTUgQzE0NC40MjgsNTQuMTA4IDE0My42ODIsNTMuMjg1IDE0Mi41NDQsNTIuNjI4IEw5Ni4wMjcsMjUuNzcxIEwxMi43MTQsNzMuODcxIEwxMi43MTQsNzMuODcxIFoiIGlkPSJGaWxsLTMiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTQ4LjMyNyw1OC40NzEgQzE0OC4xNDUsNTguNDggMTQ3Ljk2Miw1OC40OCAxNDcuNzgxLDU4LjQ3MiBDMTQ1Ljg4Nyw1OC4zODkgMTQ0LjQ3OSw1Ny40MzQgMTQ0LjYzNiw1Ni4zNCBDMTQ0LjY4OSw1NS45NjcgMTQ0LjY2NCw1NS41OTcgMTQ0LjU2NCw1NS4yMzUgTDYzLjQ2MSwxMDIuMDU3IEM2NC4wODksMTAyLjExNSA2NC43MzMsMTAyLjEzIDY1LjM3OSwxMDIuMDk5IEM2NS41NjEsMTAyLjA5IDY1Ljc0MywxMDIuMDkgNjUuOTI1LDEwMi4wOTggQzY3LjgxOSwxMDIuMTgxIDY5LjIyNywxMDMuMTM2IDY5LjA3LDEwNC4yMyBMMTQ4LjMyNyw1OC40NzEiIGlkPSJGaWxsLTQiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNjkuMDcsMTA0LjM0NyBDNjkuMDQ4LDEwNC4zNDcgNjkuMDI1LDEwNC4zNCA2OS4wMDUsMTA0LjMyNyBDNjguOTY4LDEwNC4zMDEgNjguOTQ4LDEwNC4yNTcgNjguOTU1LDEwNC4yMTMgQzY5LDEwMy44OTYgNjguODk4LDEwMy41NzYgNjguNjU4LDEwMy4yODggQzY4LjE1MywxMDIuNjc4IDY3LjEwMywxMDIuMjY2IDY1LjkyLDEwMi4yMTQgQzY1Ljc0MiwxMDIuMjA2IDY1LjU2MywxMDIuMjA3IDY1LjM4NSwxMDIuMjE1IEM2NC43NDIsMTAyLjI0NiA2NC4wODcsMTAyLjIzMiA2My40NSwxMDIuMTc0IEM2My4zOTksMTAyLjE2OSA2My4zNTgsMTAyLjEzMiA2My4zNDcsMTAyLjA4MiBDNjMuMzM2LDEwMi4wMzMgNjMuMzU4LDEwMS45ODEgNjMuNDAyLDEwMS45NTYgTDE0NC41MDYsNTUuMTM0IEMxNDQuNTM3LDU1LjExNiAxNDQuNTc1LDU1LjExMyAxNDQuNjA5LDU1LjEyNyBDMTQ0LjY0Miw1NS4xNDEgMTQ0LjY2OCw1NS4xNyAxNDQuNjc3LDU1LjIwNCBDMTQ0Ljc4MSw1NS41ODUgMTQ0LjgwNiw1NS45NzIgMTQ0Ljc1MSw1Ni4zNTcgQzE0NC43MDYsNTYuNjczIDE0NC44MDgsNTYuOTk0IDE0NS4wNDcsNTcuMjgyIEMxNDUuNTUzLDU3Ljg5MiAxNDYuNjAyLDU4LjMwMyAxNDcuNzg2LDU4LjM1NSBDMTQ3Ljk2NCw1OC4zNjMgMTQ4LjE0Myw1OC4zNjMgMTQ4LjMyMSw1OC4zNTQgQzE0OC4zNzcsNTguMzUyIDE0OC40MjQsNTguMzg3IDE0OC40MzksNTguNDM4IEMxNDguNDU0LDU4LjQ5IDE0OC40MzIsNTguNTQ1IDE0OC4zODUsNTguNTcyIEw2OS4xMjksMTA0LjMzMSBDNjkuMTExLDEwNC4zNDIgNjkuMDksMTA0LjM0NyA2OS4wNywxMDQuMzQ3IEw2OS4wNywxMDQuMzQ3IFogTTY1LjY2NSwxMDEuOTc1IEM2NS43NTQsMTAxLjk3NSA2NS44NDIsMTAxLjk3NyA2NS45MywxMDEuOTgxIEM2Ny4xOTYsMTAyLjAzNyA2OC4yODMsMTAyLjQ2OSA2OC44MzgsMTAzLjEzOSBDNjkuMDY1LDEwMy40MTMgNjkuMTg4LDEwMy43MTQgNjkuMTk4LDEwNC4wMjEgTDE0Ny44ODMsNTguNTkyIEMxNDcuODQ3LDU4LjU5MiAxNDcuODExLDU4LjU5MSAxNDcuNzc2LDU4LjU4OSBDMTQ2LjUwOSw1OC41MzMgMTQ1LjQyMiw1OC4xIDE0NC44NjcsNTcuNDMxIEMxNDQuNTg1LDU3LjA5MSAxNDQuNDY1LDU2LjcwNyAxNDQuNTIsNTYuMzI0IEMxNDQuNTYzLDU2LjAyMSAxNDQuNTUyLDU1LjcxNiAxNDQuNDg4LDU1LjQxNCBMNjMuODQ2LDEwMS45NyBDNjQuMzUzLDEwMi4wMDIgNjQuODY3LDEwMi4wMDYgNjUuMzc0LDEwMS45ODIgQzY1LjQ3MSwxMDEuOTc3IDY1LjU2OCwxMDEuOTc1IDY1LjY2NSwxMDEuOTc1IEw2NS42NjUsMTAxLjk3NSBaIiBpZD0iRmlsbC01IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTIuMjA4LDU1LjEzNCBDMS4yMDcsNTMuMzA3IDEuOTY3LDUwLjkxNyAzLjkwNiw0OS43OTcgTDU5LjkxNywxNy40NTMgQzYxLjg1NiwxNi4zMzMgNjQuMjQxLDE2LjkwNyA2NS4yNDMsMTguNzM0IEw2NS40NzUsMTkuMTQ0IEM2NS44NzIsMTkuODgyIDY2LjM2OCwyMC41NiA2Ni45NDUsMjEuMTY1IEw2Ny4yMjMsMjEuNDM1IEM3MC41NDgsMjQuNjQ5IDc1LjgwNiwyNS4xNTEgODAuMTExLDIyLjY2NSBMODcuNDMsMTguNDQ1IEM4OS4zNywxNy4zMjYgOTEuNzU0LDE3Ljg5OSA5Mi43NTUsMTkuNzI3IEw5Ni4wMDUsMjUuNjU1IEwxMi40ODYsNzMuODg0IEwyLjIwOCw1NS4xMzQgWiIgaWQ9IkZpbGwtNiIgZmlsbD0iI0ZBRkFGQSI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMi40ODYsNzQuMDAxIEMxMi40NzYsNzQuMDAxIDEyLjQ2NSw3My45OTkgMTIuNDU1LDczLjk5NiBDMTIuNDI0LDczLjk4OCAxMi4zOTksNzMuOTY3IDEyLjM4NCw3My45NCBMMi4xMDYsNTUuMTkgQzEuMDc1LDUzLjMxIDEuODU3LDUwLjg0NSAzLjg0OCw0OS42OTYgTDU5Ljg1OCwxNy4zNTIgQzYwLjUyNSwxNi45NjcgNjEuMjcxLDE2Ljc2NCA2Mi4wMTYsMTYuNzY0IEM2My40MzEsMTYuNzY0IDY0LjY2NiwxNy40NjYgNjUuMzI3LDE4LjY0NiBDNjUuMzM3LDE4LjY1NCA2NS4zNDUsMTguNjYzIDY1LjM1MSwxOC42NzQgTDY1LjU3OCwxOS4wODggQzY1LjU4NCwxOS4xIDY1LjU4OSwxOS4xMTIgNjUuNTkxLDE5LjEyNiBDNjUuOTg1LDE5LjgzOCA2Ni40NjksMjAuNDk3IDY3LjAzLDIxLjA4NSBMNjcuMzA1LDIxLjM1MSBDNjkuMTUxLDIzLjEzNyA3MS42NDksMjQuMTIgNzQuMzM2LDI0LjEyIEM3Ni4zMTMsMjQuMTIgNzguMjksMjMuNTgyIDgwLjA1MywyMi41NjMgQzgwLjA2NCwyMi41NTcgODAuMDc2LDIyLjU1MyA4MC4wODgsMjIuNTUgTDg3LjM3MiwxOC4zNDQgQzg4LjAzOCwxNy45NTkgODguNzg0LDE3Ljc1NiA4OS41MjksMTcuNzU2IEM5MC45NTYsMTcuNzU2IDkyLjIwMSwxOC40NzIgOTIuODU4LDE5LjY3IEw5Ni4xMDcsMjUuNTk5IEM5Ni4xMzgsMjUuNjU0IDk2LjExOCwyNS43MjQgOTYuMDYzLDI1Ljc1NiBMMTIuNTQ1LDczLjk4NSBDMTIuNTI2LDczLjk5NiAxMi41MDYsNzQuMDAxIDEyLjQ4Niw3NC4wMDEgTDEyLjQ4Niw3NC4wMDEgWiBNNjIuMDE2LDE2Ljk5NyBDNjEuMzEyLDE2Ljk5NyA2MC42MDYsMTcuMTkgNTkuOTc1LDE3LjU1NCBMMy45NjUsNDkuODk5IEMyLjA4Myw1MC45ODUgMS4zNDEsNTMuMzA4IDIuMzEsNTUuMDc4IEwxMi41MzEsNzMuNzIzIEw5NS44NDgsMjUuNjExIEw5Mi42NTMsMTkuNzgyIEM5Mi4wMzgsMTguNjYgOTAuODcsMTcuOTkgODkuNTI5LDE3Ljk5IEM4OC44MjUsMTcuOTkgODguMTE5LDE4LjE4MiA4Ny40ODksMTguNTQ3IEw4MC4xNzIsMjIuNzcyIEM4MC4xNjEsMjIuNzc4IDgwLjE0OSwyMi43ODIgODAuMTM3LDIyLjc4NSBDNzguMzQ2LDIzLjgxMSA3Ni4zNDEsMjQuMzU0IDc0LjMzNiwyNC4zNTQgQzcxLjU4OCwyNC4zNTQgNjkuMDMzLDIzLjM0NyA2Ny4xNDIsMjEuNTE5IEw2Ni44NjQsMjEuMjQ5IEM2Ni4yNzcsMjAuNjM0IDY1Ljc3NCwxOS45NDcgNjUuMzY3LDE5LjIwMyBDNjUuMzYsMTkuMTkyIDY1LjM1NiwxOS4xNzkgNjUuMzU0LDE5LjE2NiBMNjUuMTYzLDE4LjgxOSBDNjUuMTU0LDE4LjgxMSA2NS4xNDYsMTguODAxIDY1LjE0LDE4Ljc5IEM2NC41MjUsMTcuNjY3IDYzLjM1NywxNi45OTcgNjIuMDE2LDE2Ljk5NyBMNjIuMDE2LDE2Ljk5NyBaIiBpZD0iRmlsbC03IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTQyLjQzNCw0OC44MDggTDQyLjQzNCw0OC44MDggQzM5LjkyNCw0OC44MDcgMzcuNzM3LDQ3LjU1IDM2LjU4Miw0NS40NDMgQzM0Ljc3MSw0Mi4xMzkgMzYuMTQ0LDM3LjgwOSAzOS42NDEsMzUuNzg5IEw1MS45MzIsMjguNjkxIEM1My4xMDMsMjguMDE1IDU0LjQxMywyNy42NTggNTUuNzIxLDI3LjY1OCBDNTguMjMxLDI3LjY1OCA2MC40MTgsMjguOTE2IDYxLjU3MywzMS4wMjMgQzYzLjM4NCwzNC4zMjcgNjIuMDEyLDM4LjY1NyA1OC41MTQsNDAuNjc3IEw0Ni4yMjMsNDcuNzc1IEM0NS4wNTMsNDguNDUgNDMuNzQyLDQ4LjgwOCA0Mi40MzQsNDguODA4IEw0Mi40MzQsNDguODA4IFogTTU1LjcyMSwyOC4xMjUgQzU0LjQ5NSwyOC4xMjUgNTMuMjY1LDI4LjQ2MSA1Mi4xNjYsMjkuMDk2IEwzOS44NzUsMzYuMTk0IEMzNi41OTYsMzguMDg3IDM1LjMwMiw0Mi4xMzYgMzYuOTkyLDQ1LjIxOCBDMzguMDYzLDQ3LjE3MyA0MC4wOTgsNDguMzQgNDIuNDM0LDQ4LjM0IEM0My42NjEsNDguMzQgNDQuODksNDguMDA1IDQ1Ljk5LDQ3LjM3IEw1OC4yODEsNDAuMjcyIEM2MS41NiwzOC4zNzkgNjIuODUzLDM0LjMzIDYxLjE2NCwzMS4yNDggQzYwLjA5MiwyOS4yOTMgNTguMDU4LDI4LjEyNSA1NS43MjEsMjguMTI1IEw1NS43MjEsMjguMTI1IFoiIGlkPSJGaWxsLTgiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTQ5LjU4OCwyLjQwNyBDMTQ5LjU4OCwyLjQwNyAxNTUuNzY4LDUuOTc1IDE1Ni4zMjUsNi4yOTcgTDE1Ni4zMjUsNy4xODQgQzE1Ni4zMjUsNy4zNiAxNTYuMzM4LDcuNTQ0IDE1Ni4zNjIsNy43MzMgQzE1Ni4zNzMsNy44MTQgMTU2LjM4Miw3Ljg5NCAxNTYuMzksNy45NzUgQzE1Ni41Myw5LjM5IDE1Ny4zNjMsMTAuOTczIDE1OC40OTUsMTEuOTc0IEwxNjUuODkxLDE4LjUxOSBDMTY2LjA2OCwxOC42NzUgMTY2LjI0OSwxOC44MTQgMTY2LjQzMiwxOC45MzQgQzE2OC4wMTEsMTkuOTc0IDE2OS4zODIsMTkuNCAxNjkuNDk0LDE3LjY1MiBDMTY5LjU0MywxNi44NjggMTY5LjU1MSwxNi4wNTcgMTY5LjUxNywxNS4yMjMgTDE2OS41MTQsMTUuMDYzIEwxNjkuNTE0LDEzLjkxMiBDMTcwLjc4LDE0LjY0MiAxOTUuNTAxLDI4LjkxNSAxOTUuNTAxLDI4LjkxNSBMMTk1LjUwMSw4Mi45MTUgQzE5NS41MDEsODQuMDA1IDE5NC43MzEsODQuNDQ1IDE5My43ODEsODMuODk3IEwxNTEuMzA4LDU5LjM3NCBDMTUwLjM1OCw1OC44MjYgMTQ5LjU4OCw1Ny40OTcgMTQ5LjU4OCw1Ni40MDggTDE0OS41ODgsMjIuMzc1IiBpZD0iRmlsbC05IiBmaWxsPSIjRkFGQUZBIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE5NC41NTMsODQuMjUgQzE5NC4yOTYsODQuMjUgMTk0LjAxMyw4NC4xNjUgMTkzLjcyMiw4My45OTcgTDE1MS4yNSw1OS40NzYgQzE1MC4yNjksNTguOTA5IDE0OS40NzEsNTcuNTMzIDE0OS40NzEsNTYuNDA4IEwxNDkuNDcxLDIyLjM3NSBMMTQ5LjcwNSwyMi4zNzUgTDE0OS43MDUsNTYuNDA4IEMxNDkuNzA1LDU3LjQ1OSAxNTAuNDUsNTguNzQ0IDE1MS4zNjYsNTkuMjc0IEwxOTMuODM5LDgzLjc5NSBDMTk0LjI2Myw4NC4wNCAxOTQuNjU1LDg0LjA4MyAxOTQuOTQyLDgzLjkxNyBDMTk1LjIyNyw4My43NTMgMTk1LjM4NCw4My4zOTcgMTk1LjM4NCw4Mi45MTUgTDE5NS4zODQsMjguOTgyIEMxOTQuMTAyLDI4LjI0MiAxNzIuMTA0LDE1LjU0MiAxNjkuNjMxLDE0LjExNCBMMTY5LjYzNCwxNS4yMiBDMTY5LjY2OCwxNi4wNTIgMTY5LjY2LDE2Ljg3NCAxNjkuNjEsMTcuNjU5IEMxNjkuNTU2LDE4LjUwMyAxNjkuMjE0LDE5LjEyMyAxNjguNjQ3LDE5LjQwNSBDMTY4LjAyOCwxOS43MTQgMTY3LjE5NywxOS41NzggMTY2LjM2NywxOS4wMzIgQzE2Ni4xODEsMTguOTA5IDE2NS45OTUsMTguNzY2IDE2NS44MTQsMTguNjA2IEwxNTguNDE3LDEyLjA2MiBDMTU3LjI1OSwxMS4wMzYgMTU2LjQxOCw5LjQzNyAxNTYuMjc0LDcuOTg2IEMxNTYuMjY2LDcuOTA3IDE1Ni4yNTcsNy44MjcgMTU2LjI0Nyw3Ljc0OCBDMTU2LjIyMSw3LjU1NSAxNTYuMjA5LDcuMzY1IDE1Ni4yMDksNy4xODQgTDE1Ni4yMDksNi4zNjQgQzE1NS4zNzUsNS44ODMgMTQ5LjUyOSwyLjUwOCAxNDkuNTI5LDIuNTA4IEwxNDkuNjQ2LDIuMzA2IEMxNDkuNjQ2LDIuMzA2IDE1NS44MjcsNS44NzQgMTU2LjM4NCw2LjE5NiBMMTU2LjQ0Miw2LjIzIEwxNTYuNDQyLDcuMTg0IEMxNTYuNDQyLDcuMzU1IDE1Ni40NTQsNy41MzUgMTU2LjQ3OCw3LjcxNyBDMTU2LjQ4OSw3LjggMTU2LjQ5OSw3Ljg4MiAxNTYuNTA3LDcuOTYzIEMxNTYuNjQ1LDkuMzU4IDE1Ny40NTUsMTAuODk4IDE1OC41NzIsMTEuODg2IEwxNjUuOTY5LDE4LjQzMSBDMTY2LjE0MiwxOC41ODQgMTY2LjMxOSwxOC43MiAxNjYuNDk2LDE4LjgzNyBDMTY3LjI1NCwxOS4zMzYgMTY4LDE5LjQ2NyAxNjguNTQzLDE5LjE5NiBDMTY5LjAzMywxOC45NTMgMTY5LjMyOSwxOC40MDEgMTY5LjM3NywxNy42NDUgQzE2OS40MjcsMTYuODY3IDE2OS40MzQsMTYuMDU0IDE2OS40MDEsMTUuMjI4IEwxNjkuMzk3LDE1LjA2NSBMMTY5LjM5NywxMy43MSBMMTY5LjU3MiwxMy44MSBDMTcwLjgzOSwxNC41NDEgMTk1LjU1OSwyOC44MTQgMTk1LjU1OSwyOC44MTQgTDE5NS42MTgsMjguODQ3IEwxOTUuNjE4LDgyLjkxNSBDMTk1LjYxOCw4My40ODQgMTk1LjQyLDgzLjkxMSAxOTUuMDU5LDg0LjExOSBDMTk0LjkwOCw4NC4yMDYgMTk0LjczNyw4NC4yNSAxOTQuNTUzLDg0LjI1IiBpZD0iRmlsbC0xMCIgZmlsbD0iIzYwN0Q4QiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xNDUuNjg1LDU2LjE2MSBMMTY5LjgsNzAuMDgzIEwxNDMuODIyLDg1LjA4MSBMMTQyLjM2LDg0Ljc3NCBDMTM1LjgyNiw4Mi42MDQgMTI4LjczMiw4MS4wNDYgMTIxLjM0MSw4MC4xNTggQzExNi45NzYsNzkuNjM0IDExMi42NzgsODEuMjU0IDExMS43NDMsODMuNzc4IEMxMTEuNTA2LDg0LjQxNCAxMTEuNTAzLDg1LjA3MSAxMTEuNzMyLDg1LjcwNiBDMTEzLjI3LDg5Ljk3MyAxMTUuOTY4LDk0LjA2OSAxMTkuNzI3LDk3Ljg0MSBMMTIwLjI1OSw5OC42ODYgQzEyMC4yNiw5OC42ODUgOTQuMjgyLDExMy42ODMgOTQuMjgyLDExMy42ODMgTDcwLjE2Nyw5OS43NjEgTDE0NS42ODUsNTYuMTYxIiBpZD0iRmlsbC0xMSIgZmlsbD0iI0ZGRkZGRiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik05NC4yODIsMTEzLjgxOCBMOTQuMjIzLDExMy43ODUgTDY5LjkzMyw5OS43NjEgTDcwLjEwOCw5OS42NiBMMTQ1LjY4NSw1Ni4wMjYgTDE0NS43NDMsNTYuMDU5IEwxNzAuMDMzLDcwLjA4MyBMMTQzLjg0Miw4NS4yMDUgTDE0My43OTcsODUuMTk1IEMxNDMuNzcyLDg1LjE5IDE0Mi4zMzYsODQuODg4IDE0Mi4zMzYsODQuODg4IEMxMzUuNzg3LDgyLjcxNCAxMjguNzIzLDgxLjE2MyAxMjEuMzI3LDgwLjI3NCBDMTIwLjc4OCw4MC4yMDkgMTIwLjIzNiw4MC4xNzcgMTE5LjY4OSw4MC4xNzcgQzExNS45MzEsODAuMTc3IDExMi42MzUsODEuNzA4IDExMS44NTIsODMuODE5IEMxMTEuNjI0LDg0LjQzMiAxMTEuNjIxLDg1LjA1MyAxMTEuODQyLDg1LjY2NyBDMTEzLjM3Nyw4OS45MjUgMTE2LjA1OCw5My45OTMgMTE5LjgxLDk3Ljc1OCBMMTE5LjgyNiw5Ny43NzkgTDEyMC4zNTIsOTguNjE0IEMxMjAuMzU0LDk4LjYxNyAxMjAuMzU2LDk4LjYyIDEyMC4zNTgsOTguNjI0IEwxMjAuNDIyLDk4LjcyNiBMMTIwLjMxNyw5OC43ODcgQzEyMC4yNjQsOTguODE4IDk0LjU5OSwxMTMuNjM1IDk0LjM0LDExMy43ODUgTDk0LjI4MiwxMTMuODE4IEw5NC4yODIsMTEzLjgxOCBaIE03MC40MDEsOTkuNzYxIEw5NC4yODIsMTEzLjU0OSBMMTE5LjA4NCw5OS4yMjkgQzExOS42Myw5OC45MTQgMTE5LjkzLDk4Ljc0IDEyMC4xMDEsOTguNjU0IEwxMTkuNjM1LDk3LjkxNCBDMTE1Ljg2NCw5NC4xMjcgMTEzLjE2OCw5MC4wMzMgMTExLjYyMiw4NS43NDYgQzExMS4zODIsODUuMDc5IDExMS4zODYsODQuNDA0IDExMS42MzMsODMuNzM4IEMxMTIuNDQ4LDgxLjUzOSAxMTUuODM2LDc5Ljk0MyAxMTkuNjg5LDc5Ljk0MyBDMTIwLjI0Niw3OS45NDMgMTIwLjgwNiw3OS45NzYgMTIxLjM1NSw4MC4wNDIgQzEyOC43NjcsODAuOTMzIDEzNS44NDYsODIuNDg3IDE0Mi4zOTYsODQuNjYzIEMxNDMuMjMyLDg0LjgzOCAxNDMuNjExLDg0LjkxNyAxNDMuNzg2LDg0Ljk2NyBMMTY5LjU2Niw3MC4wODMgTDE0NS42ODUsNTYuMjk1IEw3MC40MDEsOTkuNzYxIEw3MC40MDEsOTkuNzYxIFoiIGlkPSJGaWxsLTEyIiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE2Ny4yMywxOC45NzkgTDE2Ny4yMyw2OS44NSBMMTM5LjkwOSw4NS42MjMgTDEzMy40NDgsNzEuNDU2IEMxMzIuNTM4LDY5LjQ2IDEzMC4wMiw2OS43MTggMTI3LjgyNCw3Mi4wMyBDMTI2Ljc2OSw3My4xNCAxMjUuOTMxLDc0LjU4NSAxMjUuNDk0LDc2LjA0OCBMMTE5LjAzNCw5Ny42NzYgTDkxLjcxMiwxMTMuNDUgTDkxLjcxMiw2Mi41NzkgTDE2Ny4yMywxOC45NzkiIGlkPSJGaWxsLTEzIiBmaWxsPSIjRkZGRkZGIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTkxLjcxMiwxMTMuNTY3IEM5MS42OTIsMTEzLjU2NyA5MS42NzIsMTEzLjU2MSA5MS42NTMsMTEzLjU1MSBDOTEuNjE4LDExMy41MyA5MS41OTUsMTEzLjQ5MiA5MS41OTUsMTEzLjQ1IEw5MS41OTUsNjIuNTc5IEM5MS41OTUsNjIuNTM3IDkxLjYxOCw2Mi40OTkgOTEuNjUzLDYyLjQ3OCBMMTY3LjE3MiwxOC44NzggQzE2Ny4yMDgsMTguODU3IDE2Ny4yNTIsMTguODU3IDE2Ny4yODgsMTguODc4IEMxNjcuMzI0LDE4Ljg5OSAxNjcuMzQ3LDE4LjkzNyAxNjcuMzQ3LDE4Ljk3OSBMMTY3LjM0Nyw2OS44NSBDMTY3LjM0Nyw2OS44OTEgMTY3LjMyNCw2OS45MyAxNjcuMjg4LDY5Ljk1IEwxMzkuOTY3LDg1LjcyNSBDMTM5LjkzOSw4NS43NDEgMTM5LjkwNSw4NS43NDUgMTM5Ljg3Myw4NS43MzUgQzEzOS44NDIsODUuNzI1IDEzOS44MTYsODUuNzAyIDEzOS44MDIsODUuNjcyIEwxMzMuMzQyLDcxLjUwNCBDMTMyLjk2Nyw3MC42ODIgMTMyLjI4LDcwLjIyOSAxMzEuNDA4LDcwLjIyOSBDMTMwLjMxOSw3MC4yMjkgMTI5LjA0NCw3MC45MTUgMTI3LjkwOCw3Mi4xMSBDMTI2Ljg3NCw3My4yIDEyNi4wMzQsNzQuNjQ3IDEyNS42MDYsNzYuMDgyIEwxMTkuMTQ2LDk3LjcwOSBDMTE5LjEzNyw5Ny43MzggMTE5LjExOCw5Ny43NjIgMTE5LjA5Miw5Ny43NzcgTDkxLjc3LDExMy41NTEgQzkxLjc1MiwxMTMuNTYxIDkxLjczMiwxMTMuNTY3IDkxLjcxMiwxMTMuNTY3IEw5MS43MTIsMTEzLjU2NyBaIE05MS44MjksNjIuNjQ3IEw5MS44MjksMTEzLjI0OCBMMTE4LjkzNSw5Ny41OTggTDEyNS4zODIsNzYuMDE1IEMxMjUuODI3LDc0LjUyNSAxMjYuNjY0LDczLjA4MSAxMjcuNzM5LDcxLjk1IEMxMjguOTE5LDcwLjcwOCAxMzAuMjU2LDY5Ljk5NiAxMzEuNDA4LDY5Ljk5NiBDMTMyLjM3Nyw2OS45OTYgMTMzLjEzOSw3MC40OTcgMTMzLjU1NCw3MS40MDcgTDEzOS45NjEsODUuNDU4IEwxNjcuMTEzLDY5Ljc4MiBMMTY3LjExMywxOS4xODEgTDkxLjgyOSw2Mi42NDcgTDkxLjgyOSw2Mi42NDcgWiIgaWQ9IkZpbGwtMTQiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTY4LjU0MywxOS4yMTMgTDE2OC41NDMsNzAuMDgzIEwxNDEuMjIxLDg1Ljg1NyBMMTM0Ljc2MSw3MS42ODkgQzEzMy44NTEsNjkuNjk0IDEzMS4zMzMsNjkuOTUxIDEyOS4xMzcsNzIuMjYzIEMxMjguMDgyLDczLjM3NCAxMjcuMjQ0LDc0LjgxOSAxMjYuODA3LDc2LjI4MiBMMTIwLjM0Niw5Ny45MDkgTDkzLjAyNSwxMTMuNjgzIEw5My4wMjUsNjIuODEzIEwxNjguNTQzLDE5LjIxMyIgaWQ9IkZpbGwtMTUiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNOTMuMDI1LDExMy44IEM5My4wMDUsMTEzLjggOTIuOTg0LDExMy43OTUgOTIuOTY2LDExMy43ODUgQzkyLjkzMSwxMTMuNzY0IDkyLjkwOCwxMTMuNzI1IDkyLjkwOCwxMTMuNjg0IEw5Mi45MDgsNjIuODEzIEM5Mi45MDgsNjIuNzcxIDkyLjkzMSw2Mi43MzMgOTIuOTY2LDYyLjcxMiBMMTY4LjQ4NCwxOS4xMTIgQzE2OC41MiwxOS4wOSAxNjguNTY1LDE5LjA5IDE2OC42MDEsMTkuMTEyIEMxNjguNjM3LDE5LjEzMiAxNjguNjYsMTkuMTcxIDE2OC42NiwxOS4yMTIgTDE2OC42Niw3MC4wODMgQzE2OC42Niw3MC4xMjUgMTY4LjYzNyw3MC4xNjQgMTY4LjYwMSw3MC4xODQgTDE0MS4yOCw4NS45NTggQzE0MS4yNTEsODUuOTc1IDE0MS4yMTcsODUuOTc5IDE0MS4xODYsODUuOTY4IEMxNDEuMTU0LDg1Ljk1OCAxNDEuMTI5LDg1LjkzNiAxNDEuMTE1LDg1LjkwNiBMMTM0LjY1NSw3MS43MzggQzEzNC4yOCw3MC45MTUgMTMzLjU5Myw3MC40NjMgMTMyLjcyLDcwLjQ2MyBDMTMxLjYzMiw3MC40NjMgMTMwLjM1Nyw3MS4xNDggMTI5LjIyMSw3Mi4zNDQgQzEyOC4xODYsNzMuNDMzIDEyNy4zNDcsNzQuODgxIDEyNi45MTksNzYuMzE1IEwxMjAuNDU4LDk3Ljk0MyBDMTIwLjQ1LDk3Ljk3MiAxMjAuNDMxLDk3Ljk5NiAxMjAuNDA1LDk4LjAxIEw5My4wODMsMTEzLjc4NSBDOTMuMDY1LDExMy43OTUgOTMuMDQ1LDExMy44IDkzLjAyNSwxMTMuOCBMOTMuMDI1LDExMy44IFogTTkzLjE0Miw2Mi44ODEgTDkzLjE0MiwxMTMuNDgxIEwxMjAuMjQ4LDk3LjgzMiBMMTI2LjY5NSw3Ni4yNDggQzEyNy4xNCw3NC43NTggMTI3Ljk3Nyw3My4zMTUgMTI5LjA1Miw3Mi4xODMgQzEzMC4yMzEsNzAuOTQyIDEzMS41NjgsNzAuMjI5IDEzMi43Miw3MC4yMjkgQzEzMy42ODksNzAuMjI5IDEzNC40NTIsNzAuNzMxIDEzNC44NjcsNzEuNjQxIEwxNDEuMjc0LDg1LjY5MiBMMTY4LjQyNiw3MC4wMTYgTDE2OC40MjYsMTkuNDE1IEw5My4xNDIsNjIuODgxIEw5My4xNDIsNjIuODgxIFoiIGlkPSJGaWxsLTE2IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE2OS44LDcwLjA4MyBMMTQyLjQ3OCw4NS44NTcgTDEzNi4wMTgsNzEuNjg5IEMxMzUuMTA4LDY5LjY5NCAxMzIuNTksNjkuOTUxIDEzMC4zOTMsNzIuMjYzIEMxMjkuMzM5LDczLjM3NCAxMjguNSw3NC44MTkgMTI4LjA2NCw3Ni4yODIgTDEyMS42MDMsOTcuOTA5IEw5NC4yODIsMTEzLjY4MyBMOTQuMjgyLDYyLjgxMyBMMTY5LjgsMTkuMjEzIEwxNjkuOCw3MC4wODMgWiIgaWQ9IkZpbGwtMTciIGZpbGw9IiNGQUZBRkEiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNOTQuMjgyLDExMy45MTcgQzk0LjI0MSwxMTMuOTE3IDk0LjIwMSwxMTMuOTA3IDk0LjE2NSwxMTMuODg2IEM5NC4wOTMsMTEzLjg0NSA5NC4wNDgsMTEzLjc2NyA5NC4wNDgsMTEzLjY4NCBMOTQuMDQ4LDYyLjgxMyBDOTQuMDQ4LDYyLjczIDk0LjA5Myw2Mi42NTIgOTQuMTY1LDYyLjYxMSBMMTY5LjY4MywxOS4wMSBDMTY5Ljc1NSwxOC45NjkgMTY5Ljg0NCwxOC45NjkgMTY5LjkxNywxOS4wMSBDMTY5Ljk4OSwxOS4wNTIgMTcwLjAzMywxOS4xMjkgMTcwLjAzMywxOS4yMTIgTDE3MC4wMzMsNzAuMDgzIEMxNzAuMDMzLDcwLjE2NiAxNjkuOTg5LDcwLjI0NCAxNjkuOTE3LDcwLjI4NSBMMTQyLjU5NSw4Ni4wNiBDMTQyLjUzOCw4Ni4wOTIgMTQyLjQ2OSw4Ni4xIDE0Mi40MDcsODYuMDggQzE0Mi4zNDQsODYuMDYgMTQyLjI5Myw4Ni4wMTQgMTQyLjI2Niw4NS45NTQgTDEzNS44MDUsNzEuNzg2IEMxMzUuNDQ1LDcwLjk5NyAxMzQuODEzLDcwLjU4IDEzMy45NzcsNzAuNTggQzEzMi45MjEsNzAuNTggMTMxLjY3Niw3MS4yNTIgMTMwLjU2Miw3Mi40MjQgQzEyOS41NCw3My41MDEgMTI4LjcxMSw3NC45MzEgMTI4LjI4Nyw3Ni4zNDggTDEyMS44MjcsOTcuOTc2IEMxMjEuODEsOTguMDM0IDEyMS43NzEsOTguMDgyIDEyMS43Miw5OC4xMTIgTDk0LjM5OCwxMTMuODg2IEM5NC4zNjIsMTEzLjkwNyA5NC4zMjIsMTEzLjkxNyA5NC4yODIsMTEzLjkxNyBMOTQuMjgyLDExMy45MTcgWiBNOTQuNTE1LDYyLjk0OCBMOTQuNTE1LDExMy4yNzkgTDEyMS40MDYsOTcuNzU0IEwxMjcuODQsNzYuMjE1IEMxMjguMjksNzQuNzA4IDEyOS4xMzcsNzMuMjQ3IDEzMC4yMjQsNzIuMTAzIEMxMzEuNDI1LDcwLjgzOCAxMzIuNzkzLDcwLjExMiAxMzMuOTc3LDcwLjExMiBDMTM0Ljk5NSw3MC4xMTIgMTM1Ljc5NSw3MC42MzggMTM2LjIzLDcxLjU5MiBMMTQyLjU4NCw4NS41MjYgTDE2OS41NjYsNjkuOTQ4IEwxNjkuNTY2LDE5LjYxNyBMOTQuNTE1LDYyLjk0OCBMOTQuNTE1LDYyLjk0OCBaIiBpZD0iRmlsbC0xOCIgZmlsbD0iIzYwN0Q4QiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMDkuODk0LDkyLjk0MyBMMTA5Ljg5NCw5Mi45NDMgQzEwOC4xMiw5Mi45NDMgMTA2LjY1Myw5Mi4yMTggMTA1LjY1LDkwLjgyMyBDMTA1LjU4Myw5MC43MzEgMTA1LjU5Myw5MC42MSAxMDUuNjczLDkwLjUyOSBDMTA1Ljc1Myw5MC40NDggMTA1Ljg4LDkwLjQ0IDEwNS45NzQsOTAuNTA2IEMxMDYuNzU0LDkxLjA1MyAxMDcuNjc5LDkxLjMzMyAxMDguNzI0LDkxLjMzMyBDMTEwLjA0Nyw5MS4zMzMgMTExLjQ3OCw5MC44OTQgMTEyLjk4LDkwLjAyNyBDMTE4LjI5MSw4Ni45NiAxMjIuNjExLDc5LjUwOSAxMjIuNjExLDczLjQxNiBDMTIyLjYxMSw3MS40ODkgMTIyLjE2OSw2OS44NTYgMTIxLjMzMyw2OC42OTIgQzEyMS4yNjYsNjguNiAxMjEuMjc2LDY4LjQ3MyAxMjEuMzU2LDY4LjM5MiBDMTIxLjQzNiw2OC4zMTEgMTIxLjU2Myw2OC4yOTkgMTIxLjY1Niw2OC4zNjUgQzEyMy4zMjcsNjkuNTM3IDEyNC4yNDcsNzEuNzQ2IDEyNC4yNDcsNzQuNTg0IEMxMjQuMjQ3LDgwLjgyNiAxMTkuODIxLDg4LjQ0NyAxMTQuMzgyLDkxLjU4NyBDMTEyLjgwOCw5Mi40OTUgMTExLjI5OCw5Mi45NDMgMTA5Ljg5NCw5Mi45NDMgTDEwOS44OTQsOTIuOTQzIFogTTEwNi45MjUsOTEuNDAxIEMxMDcuNzM4LDkyLjA1MiAxMDguNzQ1LDkyLjI3OCAxMDkuODkzLDkyLjI3OCBMMTA5Ljg5NCw5Mi4yNzggQzExMS4yMTUsOTIuMjc4IDExMi42NDcsOTEuOTUxIDExNC4xNDgsOTEuMDg0IEMxMTkuNDU5LDg4LjAxNyAxMjMuNzgsODAuNjIxIDEyMy43OCw3NC41MjggQzEyMy43OCw3Mi41NDkgMTIzLjMxNyw3MC45MjkgMTIyLjQ1NCw2OS43NjcgQzEyMi44NjUsNzAuODAyIDEyMy4wNzksNzIuMDQyIDEyMy4wNzksNzMuNDAyIEMxMjMuMDc5LDc5LjY0NSAxMTguNjUzLDg3LjI4NSAxMTMuMjE0LDkwLjQyNSBDMTExLjY0LDkxLjMzNCAxMTAuMTMsOTEuNzQyIDEwOC43MjQsOTEuNzQyIEMxMDguMDgzLDkxLjc0MiAxMDcuNDgxLDkxLjU5MyAxMDYuOTI1LDkxLjQwMSBMMTA2LjkyNSw5MS40MDEgWiIgaWQ9IkZpbGwtMTkiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTEzLjA5Nyw5MC4yMyBDMTE4LjQ4MSw4Ny4xMjIgMTIyLjg0NSw3OS41OTQgMTIyLjg0NSw3My40MTYgQzEyMi44NDUsNzEuMzY1IDEyMi4zNjIsNjkuNzI0IDEyMS41MjIsNjguNTU2IEMxMTkuNzM4LDY3LjMwNCAxMTcuMTQ4LDY3LjM2MiAxMTQuMjY1LDY5LjAyNiBDMTA4Ljg4MSw3Mi4xMzQgMTA0LjUxNyw3OS42NjIgMTA0LjUxNyw4NS44NCBDMTA0LjUxNyw4Ny44OTEgMTA1LDg5LjUzMiAxMDUuODQsOTAuNyBDMTA3LjYyNCw5MS45NTIgMTEwLjIxNCw5MS44OTQgMTEzLjA5Nyw5MC4yMyIgaWQ9IkZpbGwtMjAiIGZpbGw9IiNGQUZBRkEiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTA4LjcyNCw5MS42MTQgTDEwOC43MjQsOTEuNjE0IEMxMDcuNTgyLDkxLjYxNCAxMDYuNTY2LDkxLjQwMSAxMDUuNzA1LDkwLjc5NyBDMTA1LjY4NCw5MC43ODMgMTA1LjY2NSw5MC44MTEgMTA1LjY1LDkwLjc5IEMxMDQuNzU2LDg5LjU0NiAxMDQuMjgzLDg3Ljg0MiAxMDQuMjgzLDg1LjgxNyBDMTA0LjI4Myw3OS41NzUgMTA4LjcwOSw3MS45NTMgMTE0LjE0OCw2OC44MTIgQzExNS43MjIsNjcuOTA0IDExNy4yMzIsNjcuNDQ5IDExOC42MzgsNjcuNDQ5IEMxMTkuNzgsNjcuNDQ5IDEyMC43OTYsNjcuNzU4IDEyMS42NTYsNjguMzYyIEMxMjEuNjc4LDY4LjM3NyAxMjEuNjk3LDY4LjM5NyAxMjEuNzEyLDY4LjQxOCBDMTIyLjYwNiw2OS42NjIgMTIzLjA3OSw3MS4zOSAxMjMuMDc5LDczLjQxNSBDMTIzLjA3OSw3OS42NTggMTE4LjY1Myw4Ny4xOTggMTEzLjIxNCw5MC4zMzggQzExMS42NCw5MS4yNDcgMTEwLjEzLDkxLjYxNCAxMDguNzI0LDkxLjYxNCBMMTA4LjcyNCw5MS42MTQgWiBNMTA2LjAwNiw5MC41MDUgQzEwNi43OCw5MS4wMzcgMTA3LjY5NCw5MS4yODEgMTA4LjcyNCw5MS4yODEgQzExMC4wNDcsOTEuMjgxIDExMS40NzgsOTAuODY4IDExMi45OCw5MC4wMDEgQzExOC4yOTEsODYuOTM1IDEyMi42MTEsNzkuNDk2IDEyMi42MTEsNzMuNDAzIEMxMjIuNjExLDcxLjQ5NCAxMjIuMTc3LDY5Ljg4IDEyMS4zNTYsNjguNzE4IEMxMjAuNTgyLDY4LjE4NSAxMTkuNjY4LDY3LjkxOSAxMTguNjM4LDY3LjkxOSBDMTE3LjMxNSw2Ny45MTkgMTE1Ljg4Myw2OC4zNiAxMTQuMzgyLDY5LjIyNyBDMTA5LjA3MSw3Mi4yOTMgMTA0Ljc1MSw3OS43MzMgMTA0Ljc1MSw4NS44MjYgQzEwNC43NTEsODcuNzM1IDEwNS4xODUsODkuMzQzIDEwNi4wMDYsOTAuNTA1IEwxMDYuMDA2LDkwLjUwNSBaIiBpZD0iRmlsbC0yMSIgZmlsbD0iIzYwN0Q4QiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xNDkuMzE4LDcuMjYyIEwxMzkuMzM0LDE2LjE0IEwxNTUuMjI3LDI3LjE3MSBMMTYwLjgxNiwyMS4wNTkgTDE0OS4zMTgsNy4yNjIiIGlkPSJGaWxsLTIyIiBmaWxsPSIjRkFGQUZBIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE2OS42NzYsMTMuODQgTDE1OS45MjgsMTkuNDY3IEMxNTYuMjg2LDIxLjU3IDE1MC40LDIxLjU4IDE0Ni43ODEsMTkuNDkxIEMxNDMuMTYxLDE3LjQwMiAxNDMuMTgsMTQuMDAzIDE0Ni44MjIsMTEuOSBMMTU2LjMxNyw2LjI5MiBMMTQ5LjU4OCwyLjQwNyBMNjcuNzUyLDQ5LjQ3OCBMMTEzLjY3NSw3NS45OTIgTDExNi43NTYsNzQuMjEzIEMxMTcuMzg3LDczLjg0OCAxMTcuNjI1LDczLjMxNSAxMTcuMzc0LDcyLjgyMyBDMTE1LjAxNyw2OC4xOTEgMTE0Ljc4MSw2My4yNzcgMTE2LjY5MSw1OC41NjEgQzEyMi4zMjksNDQuNjQxIDE0MS4yLDMzLjc0NiAxNjUuMzA5LDMwLjQ5MSBDMTczLjQ3OCwyOS4zODggMTgxLjk4OSwyOS41MjQgMTkwLjAxMywzMC44ODUgQzE5MC44NjUsMzEuMDMgMTkxLjc4OSwzMC44OTMgMTkyLjQyLDMwLjUyOCBMMTk1LjUwMSwyOC43NSBMMTY5LjY3NiwxMy44NCIgaWQ9IkZpbGwtMjMiIGZpbGw9IiNGQUZBRkEiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTEzLjY3NSw3Ni40NTkgQzExMy41OTQsNzYuNDU5IDExMy41MTQsNzYuNDM4IDExMy40NDIsNzYuMzk3IEw2Ny41MTgsNDkuODgyIEM2Ny4zNzQsNDkuNzk5IDY3LjI4NCw0OS42NDUgNjcuMjg1LDQ5LjQ3OCBDNjcuMjg1LDQ5LjMxMSA2Ny4zNzQsNDkuMTU3IDY3LjUxOSw0OS4wNzMgTDE0OS4zNTUsMi4wMDIgQzE0OS40OTksMS45MTkgMTQ5LjY3NywxLjkxOSAxNDkuODIxLDIuMDAyIEwxNTYuNTUsNS44ODcgQzE1Ni43NzQsNi4wMTcgMTU2Ljg1LDYuMzAyIDE1Ni43MjIsNi41MjYgQzE1Ni41OTIsNi43NDkgMTU2LjMwNyw2LjgyNiAxNTYuMDgzLDYuNjk2IEwxNDkuNTg3LDIuOTQ2IEw2OC42ODcsNDkuNDc5IEwxMTMuNjc1LDc1LjQ1MiBMMTE2LjUyMyw3My44MDggQzExNi43MTUsNzMuNjk3IDExNy4xNDMsNzMuMzk5IDExNi45NTgsNzMuMDM1IEMxMTQuNTQyLDY4LjI4NyAxMTQuMyw2My4yMjEgMTE2LjI1OCw1OC4zODUgQzExOS4wNjQsNTEuNDU4IDEyNS4xNDMsNDUuMTQzIDEzMy44NCw0MC4xMjIgQzE0Mi40OTcsMzUuMTI0IDE1My4zNTgsMzEuNjMzIDE2NS4yNDcsMzAuMDI4IEMxNzMuNDQ1LDI4LjkyMSAxODIuMDM3LDI5LjA1OCAxOTAuMDkxLDMwLjQyNSBDMTkwLjgzLDMwLjU1IDE5MS42NTIsMzAuNDMyIDE5Mi4xODYsMzAuMTI0IEwxOTQuNTY3LDI4Ljc1IEwxNjkuNDQyLDE0LjI0NCBDMTY5LjIxOSwxNC4xMTUgMTY5LjE0MiwxMy44MjkgMTY5LjI3MSwxMy42MDYgQzE2OS40LDEzLjM4MiAxNjkuNjg1LDEzLjMwNiAxNjkuOTA5LDEzLjQzNSBMMTk1LjczNCwyOC4zNDUgQzE5NS44NzksMjguNDI4IDE5NS45NjgsMjguNTgzIDE5NS45NjgsMjguNzUgQzE5NS45NjgsMjguOTE2IDE5NS44NzksMjkuMDcxIDE5NS43MzQsMjkuMTU0IEwxOTIuNjUzLDMwLjkzMyBDMTkxLjkzMiwzMS4zNSAxOTAuODksMzEuNTA4IDE4OS45MzUsMzEuMzQ2IEMxODEuOTcyLDI5Ljk5NSAxNzMuNDc4LDI5Ljg2IDE2NS4zNzIsMzAuOTU0IEMxNTMuNjAyLDMyLjU0MyAxNDIuODYsMzUuOTkzIDEzNC4zMDcsNDAuOTMxIEMxMjUuNzkzLDQ1Ljg0NyAxMTkuODUxLDUyLjAwNCAxMTcuMTI0LDU4LjczNiBDMTE1LjI3LDYzLjMxNCAxMTUuNTAxLDY4LjExMiAxMTcuNzksNzIuNjExIEMxMTguMTYsNzMuMzM2IDExNy44NDUsNzQuMTI0IDExNi45OSw3NC42MTcgTDExMy45MDksNzYuMzk3IEMxMTMuODM2LDc2LjQzOCAxMTMuNzU2LDc2LjQ1OSAxMTMuNjc1LDc2LjQ1OSIgaWQ9IkZpbGwtMjQiIGZpbGw9IiM0NTVBNjQiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTUzLjMxNiwyMS4yNzkgQzE1MC45MDMsMjEuMjc5IDE0OC40OTUsMjAuNzUxIDE0Ni42NjQsMTkuNjkzIEMxNDQuODQ2LDE4LjY0NCAxNDMuODQ0LDE3LjIzMiAxNDMuODQ0LDE1LjcxOCBDMTQzLjg0NCwxNC4xOTEgMTQ0Ljg2LDEyLjc2MyAxNDYuNzA1LDExLjY5OCBMMTU2LjE5OCw2LjA5MSBDMTU2LjMwOSw2LjAyNSAxNTYuNDUyLDYuMDYyIDE1Ni41MTgsNi4xNzMgQzE1Ni41ODMsNi4yODQgMTU2LjU0Nyw2LjQyNyAxNTYuNDM2LDYuNDkzIEwxNDYuOTQsMTIuMTAyIEMxNDUuMjQ0LDEzLjA4MSAxNDQuMzEyLDE0LjM2NSAxNDQuMzEyLDE1LjcxOCBDMTQ0LjMxMiwxNy4wNTggMTQ1LjIzLDE4LjMyNiAxNDYuODk3LDE5LjI4OSBDMTUwLjQ0NiwyMS4zMzggMTU2LjI0LDIxLjMyNyAxNTkuODExLDE5LjI2NSBMMTY5LjU1OSwxMy42MzcgQzE2OS42NywxMy41NzMgMTY5LjgxMywxMy42MTEgMTY5Ljg3OCwxMy43MjMgQzE2OS45NDMsMTMuODM0IDE2OS45MDQsMTMuOTc3IDE2OS43OTMsMTQuMDQyIEwxNjAuMDQ1LDE5LjY3IEMxNTguMTg3LDIwLjc0MiAxNTUuNzQ5LDIxLjI3OSAxNTMuMzE2LDIxLjI3OSIgaWQ9IkZpbGwtMjUiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTEzLjY3NSw3NS45OTIgTDY3Ljc2Miw0OS40ODQiIGlkPSJGaWxsLTI2IiBmaWxsPSIjNDU1QTY0Ij48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTExMy42NzUsNzYuMzQyIEMxMTMuNjE1LDc2LjM0MiAxMTMuNTU1LDc2LjMyNyAxMTMuNSw3Ni4yOTUgTDY3LjU4Nyw0OS43ODcgQzY3LjQxOSw0OS42OSA2Ny4zNjIsNDkuNDc2IDY3LjQ1OSw0OS4zMDkgQzY3LjU1Niw0OS4xNDEgNjcuNzcsNDkuMDgzIDY3LjkzNyw0OS4xOCBMMTEzLjg1LDc1LjY4OCBDMTE0LjAxOCw3NS43ODUgMTE0LjA3NSw3NiAxMTMuOTc4LDc2LjE2NyBDMTEzLjkxNCw3Ni4yNzkgMTEzLjc5Niw3Ni4zNDIgMTEzLjY3NSw3Ni4zNDIiIGlkPSJGaWxsLTI3IiBmaWxsPSIjNDU1QTY0Ij48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTY3Ljc2Miw0OS40ODQgTDY3Ljc2MiwxMDMuNDg1IEM2Ny43NjIsMTA0LjU3NSA2OC41MzIsMTA1LjkwMyA2OS40ODIsMTA2LjQ1MiBMMTExLjk1NSwxMzAuOTczIEMxMTIuOTA1LDEzMS41MjIgMTEzLjY3NSwxMzEuMDgzIDExMy42NzUsMTI5Ljk5MyBMMTEzLjY3NSw3NS45OTIiIGlkPSJGaWxsLTI4IiBmaWxsPSIjRkFGQUZBIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTExMi43MjcsMTMxLjU2MSBDMTEyLjQzLDEzMS41NjEgMTEyLjEwNywxMzEuNDY2IDExMS43OCwxMzEuMjc2IEw2OS4zMDcsMTA2Ljc1NSBDNjguMjQ0LDEwNi4xNDIgNjcuNDEyLDEwNC43MDUgNjcuNDEyLDEwMy40ODUgTDY3LjQxMiw0OS40ODQgQzY3LjQxMiw0OS4yOSA2Ny41NjksNDkuMTM0IDY3Ljc2Miw0OS4xMzQgQzY3Ljk1Niw0OS4xMzQgNjguMTEzLDQ5LjI5IDY4LjExMyw0OS40ODQgTDY4LjExMywxMDMuNDg1IEM2OC4xMTMsMTA0LjQ0NSA2OC44MiwxMDUuNjY1IDY5LjY1NywxMDYuMTQ4IEwxMTIuMTMsMTMwLjY3IEMxMTIuNDc0LDEzMC44NjggMTEyLjc5MSwxMzAuOTEzIDExMywxMzAuNzkyIEMxMTMuMjA2LDEzMC42NzMgMTEzLjMyNSwxMzAuMzgxIDExMy4zMjUsMTI5Ljk5MyBMMTEzLjMyNSw3NS45OTIgQzExMy4zMjUsNzUuNzk4IDExMy40ODIsNzUuNjQxIDExMy42NzUsNzUuNjQxIEMxMTMuODY5LDc1LjY0MSAxMTQuMDI1LDc1Ljc5OCAxMTQuMDI1LDc1Ljk5MiBMMTE0LjAyNSwxMjkuOTkzIEMxMTQuMDI1LDEzMC42NDggMTEzLjc4NiwxMzEuMTQ3IDExMy4zNSwxMzEuMzk5IEMxMTMuMTYyLDEzMS41MDcgMTEyLjk1MiwxMzEuNTYxIDExMi43MjcsMTMxLjU2MSIgaWQ9IkZpbGwtMjkiIGZpbGw9IiM0NTVBNjQiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTEyLjg2LDQwLjUxMiBDMTEyLjg2LDQwLjUxMiAxMTIuODYsNDAuNTEyIDExMi44NTksNDAuNTEyIEMxMTAuNTQxLDQwLjUxMiAxMDguMzYsMzkuOTkgMTA2LjcxNywzOS4wNDEgQzEwNS4wMTIsMzguMDU3IDEwNC4wNzQsMzYuNzI2IDEwNC4wNzQsMzUuMjkyIEMxMDQuMDc0LDMzLjg0NyAxMDUuMDI2LDMyLjUwMSAxMDYuNzU0LDMxLjUwNCBMMTE4Ljc5NSwyNC41NTEgQzEyMC40NjMsMjMuNTg5IDEyMi42NjksMjMuMDU4IDEyNS4wMDcsMjMuMDU4IEMxMjcuMzI1LDIzLjA1OCAxMjkuNTA2LDIzLjU4MSAxMzEuMTUsMjQuNTMgQzEzMi44NTQsMjUuNTE0IDEzMy43OTMsMjYuODQ1IDEzMy43OTMsMjguMjc4IEMxMzMuNzkzLDI5LjcyNCAxMzIuODQxLDMxLjA2OSAxMzEuMTEzLDMyLjA2NyBMMTE5LjA3MSwzOS4wMTkgQzExNy40MDMsMzkuOTgyIDExNS4xOTcsNDAuNTEyIDExMi44Niw0MC41MTIgTDExMi44Niw0MC41MTIgWiBNMTI1LjAwNywyMy43NTkgQzEyMi43OSwyMy43NTkgMTIwLjcwOSwyNC4yNTYgMTE5LjE0NiwyNS4xNTggTDEwNy4xMDQsMzIuMTEgQzEwNS42MDIsMzIuOTc4IDEwNC43NzQsMzQuMTA4IDEwNC43NzQsMzUuMjkyIEMxMDQuNzc0LDM2LjQ2NSAxMDUuNTg5LDM3LjU4MSAxMDcuMDY3LDM4LjQzNCBDMTA4LjYwNSwzOS4zMjMgMTEwLjY2MywzOS44MTIgMTEyLjg1OSwzOS44MTIgTDExMi44NiwzOS44MTIgQzExNS4wNzYsMzkuODEyIDExNy4xNTgsMzkuMzE1IDExOC43MjEsMzguNDEzIEwxMzAuNzYyLDMxLjQ2IEMxMzIuMjY0LDMwLjU5MyAxMzMuMDkyLDI5LjQ2MyAxMzMuMDkyLDI4LjI3OCBDMTMzLjA5MiwyNy4xMDYgMTMyLjI3OCwyNS45OSAxMzAuOCwyNS4xMzYgQzEyOS4yNjEsMjQuMjQ4IDEyNy4yMDQsMjMuNzU5IDEyNS4wMDcsMjMuNzU5IEwxMjUuMDA3LDIzLjc1OSBaIiBpZD0iRmlsbC0zMCIgZmlsbD0iIzYwN0Q4QiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xNjUuNjMsMTYuMjE5IEwxNTkuODk2LDE5LjUzIEMxNTYuNzI5LDIxLjM1OCAxNTEuNjEsMjEuMzY3IDE0OC40NjMsMTkuNTUgQzE0NS4zMTYsMTcuNzMzIDE0NS4zMzIsMTQuNzc4IDE0OC40OTksMTIuOTQ5IEwxNTQuMjMzLDkuNjM5IEwxNjUuNjMsMTYuMjE5IiBpZD0iRmlsbC0zMSIgZmlsbD0iI0ZBRkFGQSI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xNTQuMjMzLDEwLjQ0OCBMMTY0LjIyOCwxNi4yMTkgTDE1OS41NDYsMTguOTIzIEMxNTguMTEyLDE5Ljc1IDE1Ni4xOTQsMjAuMjA2IDE1NC4xNDcsMjAuMjA2IEMxNTIuMTE4LDIwLjIwNiAxNTAuMjI0LDE5Ljc1NyAxNDguODE0LDE4Ljk0MyBDMTQ3LjUyNCwxOC4xOTkgMTQ2LjgxNCwxNy4yNDkgMTQ2LjgxNCwxNi4yNjkgQzE0Ni44MTQsMTUuMjc4IDE0Ny41MzcsMTQuMzE0IDE0OC44NSwxMy41NTYgTDE1NC4yMzMsMTAuNDQ4IE0xNTQuMjMzLDkuNjM5IEwxNDguNDk5LDEyLjk0OSBDMTQ1LjMzMiwxNC43NzggMTQ1LjMxNiwxNy43MzMgMTQ4LjQ2MywxOS41NSBDMTUwLjAzMSwyMC40NTUgMTUyLjA4NiwyMC45MDcgMTU0LjE0NywyMC45MDcgQzE1Ni4yMjQsMjAuOTA3IDE1OC4zMDYsMjAuNDQ3IDE1OS44OTYsMTkuNTMgTDE2NS42MywxNi4yMTkgTDE1NC4yMzMsOS42MzkiIGlkPSJGaWxsLTMyIiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE0NS40NDUsNzIuNjY3IEwxNDUuNDQ1LDcyLjY2NyBDMTQzLjY3Miw3Mi42NjcgMTQyLjIwNCw3MS44MTcgMTQxLjIwMiw3MC40MjIgQzE0MS4xMzUsNzAuMzMgMTQxLjE0NSw3MC4xNDcgMTQxLjIyNSw3MC4wNjYgQzE0MS4zMDUsNjkuOTg1IDE0MS40MzIsNjkuOTQ2IDE0MS41MjUsNzAuMDExIEMxNDIuMzA2LDcwLjU1OSAxNDMuMjMxLDcwLjgyMyAxNDQuMjc2LDcwLjgyMiBDMTQ1LjU5OCw3MC44MjIgMTQ3LjAzLDcwLjM3NiAxNDguNTMyLDY5LjUwOSBDMTUzLjg0Miw2Ni40NDMgMTU4LjE2Myw1OC45ODcgMTU4LjE2Myw1Mi44OTQgQzE1OC4xNjMsNTAuOTY3IDE1Ny43MjEsNDkuMzMyIDE1Ni44ODQsNDguMTY4IEMxNTYuODE4LDQ4LjA3NiAxNTYuODI4LDQ3Ljk0OCAxNTYuOTA4LDQ3Ljg2NyBDMTU2Ljk4OCw0Ny43ODYgMTU3LjExNCw0Ny43NzQgMTU3LjIwOCw0Ny44NCBDMTU4Ljg3OCw0OS4wMTIgMTU5Ljc5OCw1MS4yMiAxNTkuNzk4LDU0LjA1OSBDMTU5Ljc5OCw2MC4zMDEgMTU1LjM3Myw2OC4wNDYgMTQ5LjkzMyw3MS4xODYgQzE0OC4zNiw3Mi4wOTQgMTQ2Ljg1LDcyLjY2NyAxNDUuNDQ1LDcyLjY2NyBMMTQ1LjQ0NSw3Mi42NjcgWiBNMTQyLjQ3Niw3MSBDMTQzLjI5LDcxLjY1MSAxNDQuMjk2LDcyLjAwMiAxNDUuNDQ1LDcyLjAwMiBDMTQ2Ljc2Nyw3Mi4wMDIgMTQ4LjE5OCw3MS41NSAxNDkuNyw3MC42ODIgQzE1NS4wMSw2Ny42MTcgMTU5LjMzMSw2MC4xNTkgMTU5LjMzMSw1NC4wNjUgQzE1OS4zMzEsNTIuMDg1IDE1OC44NjgsNTAuNDM1IDE1OC4wMDYsNDkuMjcyIEMxNTguNDE3LDUwLjMwNyAxNTguNjMsNTEuNTMyIDE1OC42Myw1Mi44OTIgQzE1OC42Myw1OS4xMzQgMTU0LjIwNSw2Ni43NjcgMTQ4Ljc2NSw2OS45MDcgQzE0Ny4xOTIsNzAuODE2IDE0NS42ODEsNzEuMjgzIDE0NC4yNzYsNzEuMjgzIEMxNDMuNjM0LDcxLjI4MyAxNDMuMDMzLDcxLjE5MiAxNDIuNDc2LDcxIEwxNDIuNDc2LDcxIFoiIGlkPSJGaWxsLTMzIiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE0OC42NDgsNjkuNzA0IEMxNTQuMDMyLDY2LjU5NiAxNTguMzk2LDU5LjA2OCAxNTguMzk2LDUyLjg5MSBDMTU4LjM5Niw1MC44MzkgMTU3LjkxMyw0OS4xOTggMTU3LjA3NCw0OC4wMyBDMTU1LjI4OSw0Ni43NzggMTUyLjY5OSw0Ni44MzYgMTQ5LjgxNiw0OC41MDEgQzE0NC40MzMsNTEuNjA5IDE0MC4wNjgsNTkuMTM3IDE0MC4wNjgsNjUuMzE0IEMxNDAuMDY4LDY3LjM2NSAxNDAuNTUyLDY5LjAwNiAxNDEuMzkxLDcwLjE3NCBDMTQzLjE3Niw3MS40MjcgMTQ1Ljc2NSw3MS4zNjkgMTQ4LjY0OCw2OS43MDQiIGlkPSJGaWxsLTM0IiBmaWxsPSIjRkFGQUZBIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE0NC4yNzYsNzEuMjc2IEwxNDQuMjc2LDcxLjI3NiBDMTQzLjEzMyw3MS4yNzYgMTQyLjExOCw3MC45NjkgMTQxLjI1Nyw3MC4zNjUgQzE0MS4yMzYsNzAuMzUxIDE0MS4yMTcsNzAuMzMyIDE0MS4yMDIsNzAuMzExIEMxNDAuMzA3LDY5LjA2NyAxMzkuODM1LDY3LjMzOSAxMzkuODM1LDY1LjMxNCBDMTM5LjgzNSw1OS4wNzMgMTQ0LjI2LDUxLjQzOSAxNDkuNyw0OC4yOTggQzE1MS4yNzMsNDcuMzkgMTUyLjc4NCw0Ni45MjkgMTU0LjE4OSw0Ni45MjkgQzE1NS4zMzIsNDYuOTI5IDE1Ni4zNDcsNDcuMjM2IDE1Ny4yMDgsNDcuODM5IEMxNTcuMjI5LDQ3Ljg1NCAxNTcuMjQ4LDQ3Ljg3MyAxNTcuMjYzLDQ3Ljg5NCBDMTU4LjE1Nyw0OS4xMzggMTU4LjYzLDUwLjg2NSAxNTguNjMsNTIuODkxIEMxNTguNjMsNTkuMTMyIDE1NC4yMDUsNjYuNzY2IDE0OC43NjUsNjkuOTA3IEMxNDcuMTkyLDcwLjgxNSAxNDUuNjgxLDcxLjI3NiAxNDQuMjc2LDcxLjI3NiBMMTQ0LjI3Niw3MS4yNzYgWiBNMTQxLjU1OCw3MC4xMDQgQzE0Mi4zMzEsNzAuNjM3IDE0My4yNDUsNzEuMDA1IDE0NC4yNzYsNzEuMDA1IEMxNDUuNTk4LDcxLjAwNSAxNDcuMDMsNzAuNDY3IDE0OC41MzIsNjkuNiBDMTUzLjg0Miw2Ni41MzQgMTU4LjE2Myw1OS4wMzMgMTU4LjE2Myw1Mi45MzkgQzE1OC4xNjMsNTEuMDMxIDE1Ny43MjksNDkuMzg1IDE1Ni45MDcsNDguMjIzIEMxNTYuMTMzLDQ3LjY5MSAxNTUuMjE5LDQ3LjQwOSAxNTQuMTg5LDQ3LjQwOSBDMTUyLjg2Nyw0Ny40MDkgMTUxLjQzNSw0Ny44NDIgMTQ5LjkzMyw0OC43MDkgQzE0NC42MjMsNTEuNzc1IDE0MC4zMDIsNTkuMjczIDE0MC4zMDIsNjUuMzY2IEMxNDAuMzAyLDY3LjI3NiAxNDAuNzM2LDY4Ljk0MiAxNDEuNTU4LDcwLjEwNCBMMTQxLjU1OCw3MC4xMDQgWiIgaWQ9IkZpbGwtMzUiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTUwLjcyLDY1LjM2MSBMMTUwLjM1Nyw2NS4wNjYgQzE1MS4xNDcsNjQuMDkyIDE1MS44NjksNjMuMDQgMTUyLjUwNSw2MS45MzggQzE1My4zMTMsNjAuNTM5IDE1My45NzgsNTkuMDY3IDE1NC40ODIsNTcuNTYzIEwxNTQuOTI1LDU3LjcxMiBDMTU0LjQxMiw1OS4yNDUgMTUzLjczMyw2MC43NDUgMTUyLjkxLDYyLjE3MiBDMTUyLjI2Miw2My4yOTUgMTUxLjUyNSw2NC4zNjggMTUwLjcyLDY1LjM2MSIgaWQ9IkZpbGwtMzYiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTE1LjkxNyw4NC41MTQgTDExNS41NTQsODQuMjIgQzExNi4zNDQsODMuMjQ1IDExNy4wNjYsODIuMTk0IDExNy43MDIsODEuMDkyIEMxMTguNTEsNzkuNjkyIDExOS4xNzUsNzguMjIgMTE5LjY3OCw3Ni43MTcgTDEyMC4xMjEsNzYuODY1IEMxMTkuNjA4LDc4LjM5OCAxMTguOTMsNzkuODk5IDExOC4xMDYsODEuMzI2IEMxMTcuNDU4LDgyLjQ0OCAxMTYuNzIyLDgzLjUyMSAxMTUuOTE3LDg0LjUxNCIgaWQ9IkZpbGwtMzciIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTE0LDEzMC40NzYgTDExNCwxMzAuMDA4IEwxMTQsNzYuMDUyIEwxMTQsNzUuNTg0IEwxMTQsNzYuMDUyIEwxMTQsMTMwLjAwOCBMMTE0LDEzMC40NzYiIGlkPSJGaWxsLTM4IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgICAgICA8ZyBpZD0iSW1wb3J0ZWQtTGF5ZXJzLUNvcHkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDYyLjAwMDAwMCwgMC4wMDAwMDApIiBza2V0Y2g6dHlwZT0iTVNTaGFwZUdyb3VwIj4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTkuODIyLDM3LjQ3NCBDMTkuODM5LDM3LjMzOSAxOS43NDcsMzcuMTk0IDE5LjU1NSwzNy4wODIgQzE5LjIyOCwzNi44OTQgMTguNzI5LDM2Ljg3MiAxOC40NDYsMzcuMDM3IEwxMi40MzQsNDAuNTA4IEMxMi4zMDMsNDAuNTg0IDEyLjI0LDQwLjY4NiAxMi4yNDMsNDAuNzkzIEMxMi4yNDUsNDAuOTI1IDEyLjI0NSw0MS4yNTQgMTIuMjQ1LDQxLjM3MSBMMTIuMjQ1LDQxLjQxNCBMMTIuMjM4LDQxLjU0MiBDOC4xNDgsNDMuODg3IDUuNjQ3LDQ1LjMyMSA1LjY0Nyw0NS4zMjEgQzUuNjQ2LDQ1LjMyMSAzLjU3LDQ2LjM2NyAyLjg2LDUwLjUxMyBDMi44Niw1MC41MTMgMS45NDgsNTcuNDc0IDEuOTYyLDcwLjI1OCBDMS45NzcsODIuODI4IDIuNTY4LDg3LjMyOCAzLjEyOSw5MS42MDkgQzMuMzQ5LDkzLjI5MyA2LjEzLDkzLjczNCA2LjEzLDkzLjczNCBDNi40NjEsOTMuNzc0IDYuODI4LDkzLjcwNyA3LjIxLDkzLjQ4NiBMODIuNDgzLDQ5LjkzNSBDODQuMjkxLDQ4Ljg2NiA4NS4xNSw0Ni4yMTYgODUuNTM5LDQzLjY1MSBDODYuNzUyLDM1LjY2MSA4Ny4yMTQsMTAuNjczIDg1LjI2NCwzLjc3MyBDODUuMDY4LDMuMDggODQuNzU0LDIuNjkgODQuMzk2LDIuNDkxIEw4Mi4zMSwxLjcwMSBDODEuNTgzLDEuNzI5IDgwLjg5NCwyLjE2OCA4MC43NzYsMi4yMzYgQzgwLjYzNiwyLjMxNyA0MS44MDcsMjQuNTg1IDIwLjAzMiwzNy4wNzIgTDE5LjgyMiwzNy40NzQiIGlkPSJGaWxsLTEiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNODIuMzExLDEuNzAxIEw4NC4zOTYsMi40OTEgQzg0Ljc1NCwyLjY5IDg1LjA2OCwzLjA4IDg1LjI2NCwzLjc3MyBDODcuMjEzLDEwLjY3MyA4Ni43NTEsMzUuNjYgODUuNTM5LDQzLjY1MSBDODUuMTQ5LDQ2LjIxNiA4NC4yOSw0OC44NjYgODIuNDgzLDQ5LjkzNSBMNy4yMSw5My40ODYgQzYuODk3LDkzLjY2NyA2LjU5NSw5My43NDQgNi4zMTQsOTMuNzQ0IEw2LjEzMSw5My43MzMgQzYuMTMxLDkzLjczNCAzLjM0OSw5My4yOTMgMy4xMjgsOTEuNjA5IEMyLjU2OCw4Ny4zMjcgMS45NzcsODIuODI4IDEuOTYzLDcwLjI1OCBDMS45NDgsNTcuNDc0IDIuODYsNTAuNTEzIDIuODYsNTAuNTEzIEMzLjU3LDQ2LjM2NyA1LjY0Nyw0NS4zMjEgNS42NDcsNDUuMzIxIEM1LjY0Nyw0NS4zMjEgOC4xNDgsNDMuODg3IDEyLjIzOCw0MS41NDIgTDEyLjI0NSw0MS40MTQgTDEyLjI0NSw0MS4zNzEgQzEyLjI0NSw0MS4yNTQgMTIuMjQ1LDQwLjkyNSAxMi4yNDMsNDAuNzkzIEMxMi4yNCw0MC42ODYgMTIuMzAyLDQwLjU4MyAxMi40MzQsNDAuNTA4IEwxOC40NDYsMzcuMDM2IEMxOC41NzQsMzYuOTYyIDE4Ljc0NiwzNi45MjYgMTguOTI3LDM2LjkyNiBDMTkuMTQ1LDM2LjkyNiAxOS4zNzYsMzYuOTc5IDE5LjU1NCwzNy4wODIgQzE5Ljc0NywzNy4xOTQgMTkuODM5LDM3LjM0IDE5LjgyMiwzNy40NzQgTDIwLjAzMywzNy4wNzIgQzQxLjgwNiwyNC41ODUgODAuNjM2LDIuMzE4IDgwLjc3NywyLjIzNiBDODAuODk0LDIuMTY4IDgxLjU4MywxLjcyOSA4Mi4zMTEsMS43MDEgTTgyLjMxMSwwLjcwNCBMODIuMjcyLDAuNzA1IEM4MS42NTQsMC43MjggODAuOTg5LDAuOTQ5IDgwLjI5OCwxLjM2MSBMODAuMjc3LDEuMzczIEM4MC4xMjksMS40NTggNTkuNzY4LDEzLjEzNSAxOS43NTgsMzYuMDc5IEMxOS41LDM1Ljk4MSAxOS4yMTQsMzUuOTI5IDE4LjkyNywzNS45MjkgQzE4LjU2MiwzNS45MjkgMTguMjIzLDM2LjAxMyAxNy45NDcsMzYuMTczIEwxMS45MzUsMzkuNjQ0IEMxMS40OTMsMzkuODk5IDExLjIzNiw0MC4zMzQgMTEuMjQ2LDQwLjgxIEwxMS4yNDcsNDAuOTYgTDUuMTY3LDQ0LjQ0NyBDNC43OTQsNDQuNjQ2IDIuNjI1LDQ1Ljk3OCAxLjg3Nyw1MC4zNDUgTDEuODcxLDUwLjM4NCBDMS44NjIsNTAuNDU0IDAuOTUxLDU3LjU1NyAwLjk2NSw3MC4yNTkgQzAuOTc5LDgyLjg3OSAxLjU2OCw4Ny4zNzUgMi4xMzcsOTEuNzI0IEwyLjEzOSw5MS43MzkgQzIuNDQ3LDk0LjA5NCA1LjYxNCw5NC42NjIgNS45NzUsOTQuNzE5IEw2LjAwOSw5NC43MjMgQzYuMTEsOTQuNzM2IDYuMjEzLDk0Ljc0MiA2LjMxNCw5NC43NDIgQzYuNzksOTQuNzQyIDcuMjYsOTQuNjEgNy43MSw5NC4zNSBMODIuOTgzLDUwLjc5OCBDODQuNzk0LDQ5LjcyNyA4NS45ODIsNDcuMzc1IDg2LjUyNSw0My44MDEgQzg3LjcxMSwzNS45ODcgODguMjU5LDEwLjcwNSA4Ni4yMjQsMy41MDIgQzg1Ljk3MSwyLjYwOSA4NS41MiwxLjk3NSA4NC44ODEsMS42MiBMODQuNzQ5LDEuNTU4IEw4Mi42NjQsMC43NjkgQzgyLjU1MSwwLjcyNSA4Mi40MzEsMC43MDQgODIuMzExLDAuNzA0IiBpZD0iRmlsbC0yIiBmaWxsPSIjNDU1QTY0Ij48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTY2LjI2NywxMS41NjUgTDY3Ljc2MiwxMS45OTkgTDExLjQyMyw0NC4zMjUiIGlkPSJGaWxsLTMiIGZpbGw9IiNGRkZGRkYiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTIuMjAyLDkwLjU0NSBDMTIuMDI5LDkwLjU0NSAxMS44NjIsOTAuNDU1IDExLjc2OSw5MC4yOTUgQzExLjYzMiw5MC4wNTcgMTEuNzEzLDg5Ljc1MiAxMS45NTIsODkuNjE0IEwzMC4zODksNzguOTY5IEMzMC42MjgsNzguODMxIDMwLjkzMyw3OC45MTMgMzEuMDcxLDc5LjE1MiBDMzEuMjA4LDc5LjM5IDMxLjEyNyw3OS42OTYgMzAuODg4LDc5LjgzMyBMMTIuNDUxLDkwLjQ3OCBMMTIuMjAyLDkwLjU0NSIgaWQ9IkZpbGwtNCIgZmlsbD0iIzYwN0Q4QiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMy43NjQsNDIuNjU0IEwxMy42NTYsNDIuNTkyIEwxMy43MDIsNDIuNDIxIEwxOC44MzcsMzkuNDU3IEwxOS4wMDcsMzkuNTAyIEwxOC45NjIsMzkuNjczIEwxMy44MjcsNDIuNjM3IEwxMy43NjQsNDIuNjU0IiBpZD0iRmlsbC01IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTguNTIsOTAuMzc1IEw4LjUyLDQ2LjQyMSBMOC41ODMsNDYuMzg1IEw3NS44NCw3LjU1NCBMNzUuODQsNTEuNTA4IEw3NS43NzgsNTEuNTQ0IEw4LjUyLDkwLjM3NSBMOC41Miw5MC4zNzUgWiBNOC43Nyw0Ni41NjQgTDguNzcsODkuOTQ0IEw3NS41OTEsNTEuMzY1IEw3NS41OTEsNy45ODUgTDguNzcsNDYuNTY0IEw4Ljc3LDQ2LjU2NCBaIiBpZD0iRmlsbC02IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTI0Ljk4Niw4My4xODIgQzI0Ljc1Niw4My4zMzEgMjQuMzc0LDgzLjU2NiAyNC4xMzcsODMuNzA1IEwxMi42MzIsOTAuNDA2IEMxMi4zOTUsOTAuNTQ1IDEyLjQyNiw5MC42NTggMTIuNyw5MC42NTggTDEzLjI2NSw5MC42NTggQzEzLjU0LDkwLjY1OCAxMy45NTgsOTAuNTQ1IDE0LjE5NSw5MC40MDYgTDI1LjcsODMuNzA1IEMyNS45MzcsODMuNTY2IDI2LjEyOCw4My40NTIgMjYuMTI1LDgzLjQ0OSBDMjYuMTIyLDgzLjQ0NyAyNi4xMTksODMuMjIgMjYuMTE5LDgyLjk0NiBDMjYuMTE5LDgyLjY3MiAyNS45MzEsODIuNTY5IDI1LjcwMSw4Mi43MTkgTDI0Ljk4Niw4My4xODIiIGlkPSJGaWxsLTciIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTMuMjY2LDkwLjc4MiBMMTIuNyw5MC43ODIgQzEyLjUsOTAuNzgyIDEyLjM4NCw5MC43MjYgMTIuMzU0LDkwLjYxNiBDMTIuMzI0LDkwLjUwNiAxMi4zOTcsOTAuMzk5IDEyLjU2OSw5MC4yOTkgTDI0LjA3NCw4My41OTcgQzI0LjMxLDgzLjQ1OSAyNC42ODksODMuMjI2IDI0LjkxOCw4My4wNzggTDI1LjYzMyw4Mi42MTQgQzI1LjcyMyw4Mi41NTUgMjUuODEzLDgyLjUyNSAyNS44OTksODIuNTI1IEMyNi4wNzEsODIuNTI1IDI2LjI0NCw4Mi42NTUgMjYuMjQ0LDgyLjk0NiBDMjYuMjQ0LDgzLjE2IDI2LjI0NSw4My4zMDkgMjYuMjQ3LDgzLjM4MyBMMjYuMjUzLDgzLjM4NyBMMjYuMjQ5LDgzLjQ1NiBDMjYuMjQ2LDgzLjUzMSAyNi4yNDYsODMuNTMxIDI1Ljc2Myw4My44MTIgTDE0LjI1OCw5MC41MTQgQzE0LDkwLjY2NSAxMy41NjQsOTAuNzgyIDEzLjI2Niw5MC43ODIgTDEzLjI2Niw5MC43ODIgWiBNMTIuNjY2LDkwLjUzMiBMMTIuNyw5MC41MzMgTDEzLjI2Niw5MC41MzMgQzEzLjUxOCw5MC41MzMgMTMuOTE1LDkwLjQyNSAxNC4xMzIsOTAuMjk5IEwyNS42MzcsODMuNTk3IEMyNS44MDUsODMuNDk5IDI1LjkzMSw4My40MjQgMjUuOTk4LDgzLjM4MyBDMjUuOTk0LDgzLjI5OSAyNS45OTQsODMuMTY1IDI1Ljk5NCw4Mi45NDYgTDI1Ljg5OSw4Mi43NzUgTDI1Ljc2OCw4Mi44MjQgTDI1LjA1NCw4My4yODcgQzI0LjgyMiw4My40MzcgMjQuNDM4LDgzLjY3MyAyNC4yLDgzLjgxMiBMMTIuNjk1LDkwLjUxNCBMMTIuNjY2LDkwLjUzMiBMMTIuNjY2LDkwLjUzMiBaIiBpZD0iRmlsbC04IiBmaWxsPSIjNjA3RDhCIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTEzLjI2Niw4OS44NzEgTDEyLjcsODkuODcxIEMxMi41LDg5Ljg3MSAxMi4zODQsODkuODE1IDEyLjM1NCw4OS43MDUgQzEyLjMyNCw4OS41OTUgMTIuMzk3LDg5LjQ4OCAxMi41NjksODkuMzg4IEwyNC4wNzQsODIuNjg2IEMyNC4zMzIsODIuNTM1IDI0Ljc2OCw4Mi40MTggMjUuMDY3LDgyLjQxOCBMMjUuNjMyLDgyLjQxOCBDMjUuODMyLDgyLjQxOCAyNS45NDgsODIuNDc0IDI1Ljk3OCw4Mi41ODQgQzI2LjAwOCw4Mi42OTQgMjUuOTM1LDgyLjgwMSAyNS43NjMsODIuOTAxIEwxNC4yNTgsODkuNjAzIEMxNCw4OS43NTQgMTMuNTY0LDg5Ljg3MSAxMy4yNjYsODkuODcxIEwxMy4yNjYsODkuODcxIFogTTEyLjY2Niw4OS42MjEgTDEyLjcsODkuNjIyIEwxMy4yNjYsODkuNjIyIEMxMy41MTgsODkuNjIyIDEzLjkxNSw4OS41MTUgMTQuMTMyLDg5LjM4OCBMMjUuNjM3LDgyLjY4NiBMMjUuNjY3LDgyLjY2OCBMMjUuNjMyLDgyLjY2NyBMMjUuMDY3LDgyLjY2NyBDMjQuODE1LDgyLjY2NyAyNC40MTgsODIuNzc1IDI0LjIsODIuOTAxIEwxMi42OTUsODkuNjAzIEwxMi42NjYsODkuNjIxIEwxMi42NjYsODkuNjIxIFoiIGlkPSJGaWxsLTkiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTIuMzcsOTAuODAxIEwxMi4zNyw4OS41NTQgTDEyLjM3LDkwLjgwMSIgaWQ9IkZpbGwtMTAiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNi4xMyw5My45MDEgQzUuMzc5LDkzLjgwOCA0LjgxNiw5My4xNjQgNC42OTEsOTIuNTI1IEMzLjg2LDg4LjI4NyAzLjU0LDgzLjc0MyAzLjUyNiw3MS4xNzMgQzMuNTExLDU4LjM4OSA0LjQyMyw1MS40MjggNC40MjMsNTEuNDI4IEM1LjEzNCw0Ny4yODIgNy4yMSw0Ni4yMzYgNy4yMSw0Ni4yMzYgQzcuMjEsNDYuMjM2IDgxLjY2NywzLjI1IDgyLjA2OSwzLjAxNyBDODIuMjkyLDIuODg4IDg0LjU1NiwxLjQzMyA4NS4yNjQsMy45NCBDODcuMjE0LDEwLjg0IDg2Ljc1MiwzNS44MjcgODUuNTM5LDQzLjgxOCBDODUuMTUsNDYuMzgzIDg0LjI5MSw0OS4wMzMgODIuNDgzLDUwLjEwMSBMNy4yMSw5My42NTMgQzYuODI4LDkzLjg3NCA2LjQ2MSw5My45NDEgNi4xMyw5My45MDEgQzYuMTMsOTMuOTAxIDMuMzQ5LDkzLjQ2IDMuMTI5LDkxLjc3NiBDMi41NjgsODcuNDk1IDEuOTc3LDgyLjk5NSAxLjk2Miw3MC40MjUgQzEuOTQ4LDU3LjY0MSAyLjg2LDUwLjY4IDIuODYsNTAuNjggQzMuNTcsNDYuNTM0IDUuNjQ3LDQ1LjQ4OSA1LjY0Nyw0NS40ODkgQzUuNjQ2LDQ1LjQ4OSA4LjA2NSw0NC4wOTIgMTIuMjQ1LDQxLjY3OSBMMTMuMTE2LDQxLjU2IEwxOS43MTUsMzcuNzMgTDE5Ljc2MSwzNy4yNjkgTDYuMTMsOTMuOTAxIiBpZD0iRmlsbC0xMSIgZmlsbD0iI0ZBRkFGQSI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik02LjMxNyw5NC4xNjEgTDYuMTAyLDk0LjE0OCBMNi4xMDEsOTQuMTQ4IEw1Ljg1Nyw5NC4xMDEgQzUuMTM4LDkzLjk0NSAzLjA4NSw5My4zNjUgMi44ODEsOTEuODA5IEMyLjMxMyw4Ny40NjkgMS43MjcsODIuOTk2IDEuNzEzLDcwLjQyNSBDMS42OTksNTcuNzcxIDIuNjA0LDUwLjcxOCAyLjYxMyw1MC42NDggQzMuMzM4LDQ2LjQxNyA1LjQ0NSw0NS4zMSA1LjUzNSw0NS4yNjYgTDEyLjE2Myw0MS40MzkgTDEzLjAzMyw0MS4zMiBMMTkuNDc5LDM3LjU3OCBMMTkuNTEzLDM3LjI0NCBDMTkuNTI2LDM3LjEwNyAxOS42NDcsMzcuMDA4IDE5Ljc4NiwzNy4wMjEgQzE5LjkyMiwzNy4wMzQgMjAuMDIzLDM3LjE1NiAyMC4wMDksMzcuMjkzIEwxOS45NSwzNy44ODIgTDEzLjE5OCw0MS44MDEgTDEyLjMyOCw0MS45MTkgTDUuNzcyLDQ1LjcwNCBDNS43NDEsNDUuNzIgMy43ODIsNDYuNzcyIDMuMTA2LDUwLjcyMiBDMy4wOTksNTAuNzgyIDIuMTk4LDU3LjgwOCAyLjIxMiw3MC40MjQgQzIuMjI2LDgyLjk2MyAyLjgwOSw4Ny40MiAzLjM3Myw5MS43MjkgQzMuNDY0LDkyLjQyIDQuMDYyLDkyLjg4MyA0LjY4Miw5My4xODEgQzQuNTY2LDkyLjk4NCA0LjQ4Niw5Mi43NzYgNC40NDYsOTIuNTcyIEMzLjY2NSw4OC41ODggMy4yOTEsODQuMzcgMy4yNzYsNzEuMTczIEMzLjI2Miw1OC41MiA0LjE2Nyw1MS40NjYgNC4xNzYsNTEuMzk2IEM0LjkwMSw0Ny4xNjUgNy4wMDgsNDYuMDU5IDcuMDk4LDQ2LjAxNCBDNy4wOTQsNDYuMDE1IDgxLjU0MiwzLjAzNCA4MS45NDQsMi44MDIgTDgxLjk3MiwyLjc4NSBDODIuODc2LDIuMjQ3IDgzLjY5MiwyLjA5NyA4NC4zMzIsMi4zNTIgQzg0Ljg4NywyLjU3MyA4NS4yODEsMy4wODUgODUuNTA0LDMuODcyIEM4Ny41MTgsMTEgODYuOTY0LDM2LjA5MSA4NS43ODUsNDMuODU1IEM4NS4yNzgsNDcuMTk2IDg0LjIxLDQ5LjM3IDgyLjYxLDUwLjMxNyBMNy4zMzUsOTMuODY5IEM2Ljk5OSw5NC4wNjMgNi42NTgsOTQuMTYxIDYuMzE3LDk0LjE2MSBMNi4zMTcsOTQuMTYxIFogTTYuMTcsOTMuNjU0IEM2LjQ2Myw5My42OSA2Ljc3NCw5My42MTcgNy4wODUsOTMuNDM3IEw4Mi4zNTgsNDkuODg2IEM4NC4xODEsNDguODA4IDg0Ljk2LDQ1Ljk3MSA4NS4yOTIsNDMuNzggQzg2LjQ2NiwzNi4wNDkgODcuMDIzLDExLjA4NSA4NS4wMjQsNC4wMDggQzg0Ljg0NiwzLjM3NyA4NC41NTEsMi45NzYgODQuMTQ4LDIuODE2IEM4My42NjQsMi42MjMgODIuOTgyLDIuNzY0IDgyLjIyNywzLjIxMyBMODIuMTkzLDMuMjM0IEM4MS43OTEsMy40NjYgNy4zMzUsNDYuNDUyIDcuMzM1LDQ2LjQ1MiBDNy4zMDQsNDYuNDY5IDUuMzQ2LDQ3LjUyMSA0LjY2OSw1MS40NzEgQzQuNjYyLDUxLjUzIDMuNzYxLDU4LjU1NiAzLjc3NSw3MS4xNzMgQzMuNzksODQuMzI4IDQuMTYxLDg4LjUyNCA0LjkzNiw5Mi40NzYgQzUuMDI2LDkyLjkzNyA1LjQxMiw5My40NTkgNS45NzMsOTMuNjE1IEM2LjA4Nyw5My42NCA2LjE1OCw5My42NTIgNi4xNjksOTMuNjU0IEw2LjE3LDkzLjY1NCBMNi4xNyw5My42NTQgWiIgaWQ9IkZpbGwtMTIiIGZpbGw9IiM0NTVBNjQiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNy4zMTcsNjguOTgyIEM3LjgwNiw2OC43MDEgOC4yMDIsNjguOTI2IDguMjAyLDY5LjQ4NyBDOC4yMDIsNzAuMDQ3IDcuODA2LDcwLjczIDcuMzE3LDcxLjAxMiBDNi44MjksNzEuMjk0IDYuNDMzLDcxLjA2OSA2LjQzMyw3MC41MDggQzYuNDMzLDY5Ljk0OCA2LjgyOSw2OS4yNjUgNy4zMTcsNjguOTgyIiBpZD0iRmlsbC0xMyIgZmlsbD0iI0ZGRkZGRiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik02LjkyLDcxLjEzMyBDNi42MzEsNzEuMTMzIDYuNDMzLDcwLjkwNSA2LjQzMyw3MC41MDggQzYuNDMzLDY5Ljk0OCA2LjgyOSw2OS4yNjUgNy4zMTcsNjguOTgyIEM3LjQ2LDY4LjkgNy41OTUsNjguODYxIDcuNzE0LDY4Ljg2MSBDOC4wMDMsNjguODYxIDguMjAyLDY5LjA5IDguMjAyLDY5LjQ4NyBDOC4yMDIsNzAuMDQ3IDcuODA2LDcwLjczIDcuMzE3LDcxLjAxMiBDNy4xNzQsNzEuMDk0IDcuMDM5LDcxLjEzMyA2LjkyLDcxLjEzMyBNNy43MTQsNjguNjc0IEM3LjU1Nyw2OC42NzQgNy4zOTIsNjguNzIzIDcuMjI0LDY4LjgyMSBDNi42NzYsNjkuMTM4IDYuMjQ2LDY5Ljg3OSA2LjI0Niw3MC41MDggQzYuMjQ2LDcwLjk5NCA2LjUxNyw3MS4zMiA2LjkyLDcxLjMyIEM3LjA3OCw3MS4zMiA3LjI0Myw3MS4yNzEgNy40MTEsNzEuMTc0IEM3Ljk1OSw3MC44NTcgOC4zODksNzAuMTE3IDguMzg5LDY5LjQ4NyBDOC4zODksNjkuMDAxIDguMTE3LDY4LjY3NCA3LjcxNCw2OC42NzQiIGlkPSJGaWxsLTE0IiBmaWxsPSIjODA5N0EyIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTYuOTIsNzAuOTQ3IEM2LjY0OSw3MC45NDcgNi42MjEsNzAuNjQgNi42MjEsNzAuNTA4IEM2LjYyMSw3MC4wMTcgNi45ODIsNjkuMzkyIDcuNDExLDY5LjE0NSBDNy41MjEsNjkuMDgyIDcuNjI1LDY5LjA0OSA3LjcxNCw2OS4wNDkgQzcuOTg2LDY5LjA0OSA4LjAxNSw2OS4zNTUgOC4wMTUsNjkuNDg3IEM4LjAxNSw2OS45NzggNy42NTIsNzAuNjAzIDcuMjI0LDcwLjg1MSBDNy4xMTUsNzAuOTE0IDcuMDEsNzAuOTQ3IDYuOTIsNzAuOTQ3IE03LjcxNCw2OC44NjEgQzcuNTk1LDY4Ljg2MSA3LjQ2LDY4LjkgNy4zMTcsNjguOTgyIEM2LjgyOSw2OS4yNjUgNi40MzMsNjkuOTQ4IDYuNDMzLDcwLjUwOCBDNi40MzMsNzAuOTA1IDYuNjMxLDcxLjEzMyA2LjkyLDcxLjEzMyBDNy4wMzksNzEuMTMzIDcuMTc0LDcxLjA5NCA3LjMxNyw3MS4wMTIgQzcuODA2LDcwLjczIDguMjAyLDcwLjA0NyA4LjIwMiw2OS40ODcgQzguMjAyLDY5LjA5IDguMDAzLDY4Ljg2MSA3LjcxNCw2OC44NjEiIGlkPSJGaWxsLTE1IiBmaWxsPSIjODA5N0EyIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTcuNDQ0LDg1LjM1IEM3LjcwOCw4NS4xOTggNy45MjEsODUuMzE5IDcuOTIxLDg1LjYyMiBDNy45MjEsODUuOTI1IDcuNzA4LDg2LjI5MiA3LjQ0NCw4Ni40NDQgQzcuMTgxLDg2LjU5NyA2Ljk2Nyw4Ni40NzUgNi45NjcsODYuMTczIEM2Ljk2Nyw4NS44NzEgNy4xODEsODUuNTAyIDcuNDQ0LDg1LjM1IiBpZD0iRmlsbC0xNiIgZmlsbD0iI0ZGRkZGRiI+PC9wYXRoPgogICAgICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik03LjIzLDg2LjUxIEM3LjA3NCw4Ni41MSA2Ljk2Nyw4Ni4zODcgNi45NjcsODYuMTczIEM2Ljk2Nyw4NS44NzEgNy4xODEsODUuNTAyIDcuNDQ0LDg1LjM1IEM3LjUyMSw4NS4zMDUgNy41OTQsODUuMjg0IDcuNjU4LDg1LjI4NCBDNy44MTQsODUuMjg0IDcuOTIxLDg1LjQwOCA3LjkyMSw4NS42MjIgQzcuOTIxLDg1LjkyNSA3LjcwOCw4Ni4yOTIgNy40NDQsODYuNDQ0IEM3LjM2Nyw4Ni40ODkgNy4yOTQsODYuNTEgNy4yMyw4Ni41MSBNNy42NTgsODUuMDk4IEM3LjU1OCw4NS4wOTggNy40NTUsODUuMTI3IDcuMzUxLDg1LjE4OCBDNy4wMzEsODUuMzczIDYuNzgxLDg1LjgwNiA2Ljc4MSw4Ni4xNzMgQzYuNzgxLDg2LjQ4MiA2Ljk2Niw4Ni42OTcgNy4yMyw4Ni42OTcgQzcuMzMsODYuNjk3IDcuNDMzLDg2LjY2NiA3LjUzOCw4Ni42MDcgQzcuODU4LDg2LjQyMiA4LjEwOCw4NS45ODkgOC4xMDgsODUuNjIyIEM4LjEwOCw4NS4zMTMgNy45MjMsODUuMDk4IDcuNjU4LDg1LjA5OCIgaWQ9IkZpbGwtMTciIGZpbGw9IiM4MDk3QTIiPjwvcGF0aD4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNy4yMyw4Ni4zMjIgTDcuMTU0LDg2LjE3MyBDNy4xNTQsODUuOTM4IDcuMzMzLDg1LjYyOSA3LjUzOCw4NS41MTIgTDcuNjU4LDg1LjQ3MSBMNy43MzQsODUuNjIyIEM3LjczNCw4NS44NTYgNy41NTUsODYuMTY0IDcuMzUxLDg2LjI4MiBMNy4yMyw4Ni4zMjIgTTcuNjU4LDg1LjI4NCBDNy41OTQsODUuMjg0IDcuNTIxLDg1LjMwNSA3LjQ0NCw4NS4zNSBDNy4xODEsODUuNTAyIDYuOTY3LDg1Ljg3MSA2Ljk2Nyw4Ni4xNzMgQzYuOTY3LDg2LjM4NyA3LjA3NCw4Ni41MSA3LjIzLDg2LjUxIEM3LjI5NCw4Ni41MSA3LjM2Nyw4Ni40ODkgNy40NDQsODYuNDQ0IEM3LjcwOCw4Ni4yOTIgNy45MjEsODUuOTI1IDcuOTIxLDg1LjYyMiBDNy45MjEsODUuNDA4IDcuODE0LDg1LjI4NCA3LjY1OCw4NS4yODQiIGlkPSJGaWxsLTE4IiBmaWxsPSIjODA5N0EyIj48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTc3LjI3OCw3Ljc2OSBMNzcuMjc4LDUxLjQzNiBMMTAuMjA4LDkwLjE2IEwxMC4yMDgsNDYuNDkzIEw3Ny4yNzgsNy43NjkiIGlkPSJGaWxsLTE5IiBmaWxsPSIjNDU1QTY0Ij48L3BhdGg+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTEwLjA4Myw5MC4zNzUgTDEwLjA4Myw0Ni40MjEgTDEwLjE0Niw0Ni4zODUgTDc3LjQwMyw3LjU1NCBMNzcuNDAzLDUxLjUwOCBMNzcuMzQxLDUxLjU0NCBMMTAuMDgzLDkwLjM3NSBMMTAuMDgzLDkwLjM3NSBaIE0xMC4zMzMsNDYuNTY0IEwxMC4zMzMsODkuOTQ0IEw3Ny4xNTQsNTEuMzY1IEw3Ny4xNTQsNy45ODUgTDEwLjMzMyw0Ni41NjQgTDEwLjMzMyw0Ni41NjQgWiIgaWQ9IkZpbGwtMjAiIGZpbGw9IiM2MDdEOEIiPjwvcGF0aD4KICAgICAgICAgICAgICAgIDwvZz4KICAgICAgICAgICAgICAgIDxwYXRoIGQ9Ik0xMjUuNzM3LDg4LjY0NyBMMTE4LjA5OCw5MS45ODEgTDExOC4wOTgsODQgTDEwNi42MzksODguNzEzIEwxMDYuNjM5LDk2Ljk4MiBMOTksMTAwLjMxNSBMMTEyLjM2OSwxMDMuOTYxIEwxMjUuNzM3LDg4LjY0NyIgaWQ9IkltcG9ydGVkLUxheWVycy1Db3B5LTIiIGZpbGw9IiM0NTVBNjQiIHNrZXRjaDp0eXBlPSJNU1NoYXBlR3JvdXAiPjwvcGF0aD4KICAgICAgICAgICAgPC9nPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+');
+RotateInstructions.prototype.loadIcon_ = function () {
+  this.icon = dataUri('image/svg+xml', rotateInstructionsAsset);
 };
-
-module.exports = RotateInstructions;
-
-},{"./util.js":22}],17:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var SensorSample = _dereq_('./sensor-sample.js');
-var MathUtil = _dereq_('../math-util.js');
-var Util = _dereq_('../util.js');
-
-/**
- * An implementation of a simple complementary filter, which fuses gyroscope and
- * accelerometer data from the 'devicemotion' event.
- *
- * Accelerometer data is very noisy, but stable over the long term.
- * Gyroscope data is smooth, but tends to drift over the long term.
- *
- * This fusion is relatively simple:
- * 1. Get orientation estimates from accelerometer by applying a low-pass filter
- *    on that data.
- * 2. Get orientation estimates from gyroscope by integrating over time.
- * 3. Combine the two estimates, weighing (1) in the long term, but (2) for the
- *    short term.
- */
-function ComplementaryFilter(kFilter) {
-  this.kFilter = kFilter;
-
-  // Raw sensor measurements.
-  this.currentAccelMeasurement = new SensorSample();
-  this.currentGyroMeasurement = new SensorSample();
-  this.previousGyroMeasurement = new SensorSample();
-
-  // Set default look direction to be in the correct direction.
-  if (Util.isIOS()) {
-    this.filterQ = new MathUtil.Quaternion(-1, 0, 0, 1);
-  } else {
-    this.filterQ = new MathUtil.Quaternion(1, 0, 0, 1);
-  }
-  this.previousFilterQ = new MathUtil.Quaternion();
-  this.previousFilterQ.copy(this.filterQ);
-
-  // Orientation based on the accelerometer.
-  this.accelQ = new MathUtil.Quaternion();
-  // Whether or not the orientation has been initialized.
-  this.isOrientationInitialized = false;
-  // Running estimate of gravity based on the current orientation.
-  this.estimatedGravity = new MathUtil.Vector3();
-  // Measured gravity based on accelerometer.
-  this.measuredGravity = new MathUtil.Vector3();
-
-  // Debug only quaternion of gyro-based orientation.
-  this.gyroIntegralQ = new MathUtil.Quaternion();
-}
-
-ComplementaryFilter.prototype.addAccelMeasurement = function(vector, timestampS) {
-  this.currentAccelMeasurement.set(vector, timestampS);
-};
-
-ComplementaryFilter.prototype.addGyroMeasurement = function(vector, timestampS) {
-  this.currentGyroMeasurement.set(vector, timestampS);
-
-  var deltaT = timestampS - this.previousGyroMeasurement.timestampS;
-  if (Util.isTimestampDeltaValid(deltaT)) {
-    this.run_();
-  }
-
-  this.previousGyroMeasurement.copy(this.currentGyroMeasurement);
-};
-
-ComplementaryFilter.prototype.run_ = function() {
-
-  if (!this.isOrientationInitialized) {
-    this.accelQ = this.accelToQuaternion_(this.currentAccelMeasurement.sample);
-    this.previousFilterQ.copy(this.accelQ);
-    this.isOrientationInitialized = true;
-    return;
-  }
-
-  var deltaT = this.currentGyroMeasurement.timestampS -
-      this.previousGyroMeasurement.timestampS;
-
-  // Convert gyro rotation vector to a quaternion delta.
-  var gyroDeltaQ = this.gyroToQuaternionDelta_(this.currentGyroMeasurement.sample, deltaT);
-  this.gyroIntegralQ.multiply(gyroDeltaQ);
-
-  // filter_1 = K * (filter_0 + gyro * dT) + (1 - K) * accel.
-  this.filterQ.copy(this.previousFilterQ);
-  this.filterQ.multiply(gyroDeltaQ);
-
-  // Calculate the delta between the current estimated gravity and the real
-  // gravity vector from accelerometer.
-  var invFilterQ = new MathUtil.Quaternion();
-  invFilterQ.copy(this.filterQ);
-  invFilterQ.inverse();
-
-  this.estimatedGravity.set(0, 0, -1);
-  this.estimatedGravity.applyQuaternion(invFilterQ);
-  this.estimatedGravity.normalize();
-
-  this.measuredGravity.copy(this.currentAccelMeasurement.sample);
-  this.measuredGravity.normalize();
-
-  // Compare estimated gravity with measured gravity, get the delta quaternion
-  // between the two.
-  var deltaQ = new MathUtil.Quaternion();
-  deltaQ.setFromUnitVectors(this.estimatedGravity, this.measuredGravity);
-  deltaQ.inverse();
-
-  if (Util.isDebug()) {
-    console.log('Delta: %d deg, G_est: (%s, %s, %s), G_meas: (%s, %s, %s)',
-                MathUtil.radToDeg * Util.getQuaternionAngle(deltaQ),
-                (this.estimatedGravity.x).toFixed(1),
-                (this.estimatedGravity.y).toFixed(1),
-                (this.estimatedGravity.z).toFixed(1),
-                (this.measuredGravity.x).toFixed(1),
-                (this.measuredGravity.y).toFixed(1),
-                (this.measuredGravity.z).toFixed(1));
-  }
-
-  // Calculate the SLERP target: current orientation plus the measured-estimated
-  // quaternion delta.
-  var targetQ = new MathUtil.Quaternion();
-  targetQ.copy(this.filterQ);
-  targetQ.multiply(deltaQ);
-
-  // SLERP factor: 0 is pure gyro, 1 is pure accel.
-  this.filterQ.slerp(targetQ, 1 - this.kFilter);
-
-  this.previousFilterQ.copy(this.filterQ);
-};
-
-ComplementaryFilter.prototype.getOrientation = function() {
-  return this.filterQ;
-};
-
-ComplementaryFilter.prototype.accelToQuaternion_ = function(accel) {
-  var normAccel = new MathUtil.Vector3();
-  normAccel.copy(accel);
-  normAccel.normalize();
-  var quat = new MathUtil.Quaternion();
-  quat.setFromUnitVectors(new MathUtil.Vector3(0, 0, -1), normAccel);
-  quat.inverse();
-  return quat;
-};
-
-ComplementaryFilter.prototype.gyroToQuaternionDelta_ = function(gyro, dt) {
-  // Extract axis and angle from the gyroscope data.
-  var quat = new MathUtil.Quaternion();
-  var axis = new MathUtil.Vector3();
-  axis.copy(gyro);
-  axis.normalize();
-  quat.setFromAxisAngle(axis, gyro.length() * dt);
-  return quat;
-};
-
-
-module.exports = ComplementaryFilter;
-
-},{"../math-util.js":14,"../util.js":22,"./sensor-sample.js":20}],18:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var ComplementaryFilter = _dereq_('./complementary-filter.js');
-var PosePredictor = _dereq_('./pose-predictor.js');
-var TouchPanner = _dereq_('../touch-panner.js');
-var MathUtil = _dereq_('../math-util.js');
-var Util = _dereq_('../util.js');
-
-/**
- * The pose sensor, implemented using DeviceMotion APIs.
- */
-function FusionPoseSensor() {
-  this.deviceId = 'webvr-polyfill:fused';
-  this.deviceName = 'VR Position Device (webvr-polyfill:fused)';
-
-  this.accelerometer = new MathUtil.Vector3();
-  this.gyroscope = new MathUtil.Vector3();
-
-  this.start();
-
-  this.filter = new ComplementaryFilter(WebVRConfig.K_FILTER);
-  this.posePredictor = new PosePredictor(WebVRConfig.PREDICTION_TIME_S);
-  this.touchPanner = new TouchPanner();
-
-  this.filterToWorldQ = new MathUtil.Quaternion();
-
-  // Set the filter to world transform, depending on OS.
-  if (Util.isIOS()) {
-    this.filterToWorldQ.setFromAxisAngle(new MathUtil.Vector3(1, 0, 0), Math.PI / 2);
-  } else {
-    this.filterToWorldQ.setFromAxisAngle(new MathUtil.Vector3(1, 0, 0), -Math.PI / 2);
-  }
-
-  this.inverseWorldToScreenQ = new MathUtil.Quaternion();
-  this.worldToScreenQ = new MathUtil.Quaternion();
-  this.originalPoseAdjustQ = new MathUtil.Quaternion();
-  this.originalPoseAdjustQ.setFromAxisAngle(new MathUtil.Vector3(0, 0, 1),
-                                           -window.orientation * Math.PI / 180);
-
-  this.setScreenTransform_();
-  // Adjust this filter for being in landscape mode.
-  if (Util.isLandscapeMode()) {
-    this.filterToWorldQ.multiply(this.inverseWorldToScreenQ);
-  }
-
-  // Keep track of a reset transform for resetSensor.
-  this.resetQ = new MathUtil.Quaternion();
-
-  this.isFirefoxAndroid = Util.isFirefoxAndroid();
-  this.isIOS = Util.isIOS();
-
-  this.orientationOut_ = new Float32Array(4);
-}
-
-FusionPoseSensor.prototype.getPosition = function() {
-  // This PoseSensor doesn't support position
-  return null;
-};
-
-FusionPoseSensor.prototype.getOrientation = function() {
-  // Convert from filter space to the the same system used by the
-  // deviceorientation event.
-  var orientation = this.filter.getOrientation();
-
-  // Predict orientation.
-  this.predictedQ = this.posePredictor.getPrediction(orientation, this.gyroscope, this.previousTimestampS);
-
-  // Convert to THREE coordinate system: -Z forward, Y up, X right.
-  var out = new MathUtil.Quaternion();
-  out.copy(this.filterToWorldQ);
-  out.multiply(this.resetQ);
-  if (!WebVRConfig.TOUCH_PANNER_DISABLED) {
-    out.multiply(this.touchPanner.getOrientation());
-  }
-  out.multiply(this.predictedQ);
-  out.multiply(this.worldToScreenQ);
-
-  // Handle the yaw-only case.
-  if (WebVRConfig.YAW_ONLY) {
-    // Make a quaternion that only turns around the Y-axis.
-    out.x = 0;
-    out.z = 0;
-    out.normalize();
-  }
-
-  this.orientationOut_[0] = out.x;
-  this.orientationOut_[1] = out.y;
-  this.orientationOut_[2] = out.z;
-  this.orientationOut_[3] = out.w;
-  return this.orientationOut_;
-};
-
-FusionPoseSensor.prototype.resetPose = function() {
-  // Reduce to inverted yaw-only.
-  this.resetQ.copy(this.filter.getOrientation());
-  this.resetQ.x = 0;
-  this.resetQ.y = 0;
-  this.resetQ.z *= -1;
-  this.resetQ.normalize();
-
-  // Take into account extra transformations in landscape mode.
-  if (Util.isLandscapeMode()) {
-    this.resetQ.multiply(this.inverseWorldToScreenQ);
-  }
-
-  // Take into account original pose.
-  this.resetQ.multiply(this.originalPoseAdjustQ);
-
-  if (!WebVRConfig.TOUCH_PANNER_DISABLED) {
-    this.touchPanner.resetSensor();
-  }
-};
-
-FusionPoseSensor.prototype.onDeviceMotion_ = function(deviceMotion) {
-  this.updateDeviceMotion_(deviceMotion);
-};
-
-FusionPoseSensor.prototype.updateDeviceMotion_ = function(deviceMotion) {
-  var accGravity = deviceMotion.accelerationIncludingGravity;
-  var rotRate = deviceMotion.rotationRate;
-  var timestampS = deviceMotion.timeStamp / 1000;
-
-  // Firefox Android timeStamp returns one thousandth of a millisecond.
-  if (this.isFirefoxAndroid) {
-    timestampS /= 1000;
-  }
-
-  var deltaS = timestampS - this.previousTimestampS;
-  if (deltaS <= Util.MIN_TIMESTEP || deltaS > Util.MAX_TIMESTEP) {
-    console.warn('Invalid timestamps detected. Time step between successive ' +
-                 'gyroscope sensor samples is very small or not monotonic');
-    this.previousTimestampS = timestampS;
-    return;
-  }
-  this.accelerometer.set(-accGravity.x, -accGravity.y, -accGravity.z);
-  this.gyroscope.set(rotRate.alpha, rotRate.beta, rotRate.gamma);
-
-  // With iOS and Firefox Android, rotationRate is reported in degrees,
-  // so we first convert to radians.
-  if (this.isIOS || this.isFirefoxAndroid) {
-    this.gyroscope.multiplyScalar(Math.PI / 180);
-  }
-
-  this.filter.addAccelMeasurement(this.accelerometer, timestampS);
-  this.filter.addGyroMeasurement(this.gyroscope, timestampS);
-
-  this.previousTimestampS = timestampS;
-};
-
-FusionPoseSensor.prototype.onOrientationChange_ = function(screenOrientation) {
-  this.setScreenTransform_();
-};
-
-/**
- * This is only needed if we are in an cross origin iframe on iOS to work around
- * this issue: https://bugs.webkit.org/show_bug.cgi?id=152299.
- */
-FusionPoseSensor.prototype.onMessage_ = function(event) {
-  var message = event.data;
-
-  // If there's no message type, ignore it.
-  if (!message || !message.type) {
-    return;
-  }
-
-  // Ignore all messages that aren't devicemotion.
-  var type = message.type.toLowerCase();
-  if (type !== 'devicemotion') {
-    return;
-  }
-
-  // Update device motion.
-  this.updateDeviceMotion_(message.deviceMotionEvent);
-};
-
-FusionPoseSensor.prototype.setScreenTransform_ = function() {
-  this.worldToScreenQ.set(0, 0, 0, 1);
-  switch (window.orientation) {
-    case 0:
-      break;
-    case 90:
-      this.worldToScreenQ.setFromAxisAngle(new MathUtil.Vector3(0, 0, 1), -Math.PI / 2);
-      break;
-    case -90:
-      this.worldToScreenQ.setFromAxisAngle(new MathUtil.Vector3(0, 0, 1), Math.PI / 2);
-      break;
-    case 180:
-      // TODO.
-      break;
-  }
-  this.inverseWorldToScreenQ.copy(this.worldToScreenQ);
-  this.inverseWorldToScreenQ.inverse();
-};
-
-FusionPoseSensor.prototype.start = function() {
-  this.onDeviceMotionCallback_ = this.onDeviceMotion_.bind(this);
-  this.onOrientationChangeCallback_ = this.onOrientationChange_.bind(this);
-  this.onMessageCallback_ = this.onMessage_.bind(this);
-
-  // Only listen for postMessages if we're in an iOS and embedded inside a cross
-  // domain IFrame. In this case, the polyfill can still work if the containing
-  // page sends synthetic devicemotion events. For an example of this, see
-  // iframe-message-sender.js in VR View: https://goo.gl/XDtvFZ
-  if (Util.isIOS() && Util.isInsideCrossDomainIFrame()) {
-    window.addEventListener('message', this.onMessageCallback_);
-  }
-  window.addEventListener('orientationchange', this.onOrientationChangeCallback_);
-  window.addEventListener('devicemotion', this.onDeviceMotionCallback_);
-};
-
-FusionPoseSensor.prototype.stop = function() {
-  window.removeEventListener('devicemotion', this.onDeviceMotionCallback_);
-  window.removeEventListener('orientationchange', this.onOrientationChangeCallback_);
-  window.removeEventListener('message', this.onMessageCallback_);
-};
-
-module.exports = FusionPoseSensor;
-
-},{"../math-util.js":14,"../touch-panner.js":21,"../util.js":22,"./complementary-filter.js":17,"./pose-predictor.js":19}],19:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var MathUtil = _dereq_('../math-util');
-var Util = _dereq_('../util');
-
-/**
- * Given an orientation and the gyroscope data, predicts the future orientation
- * of the head. This makes rendering appear faster.
- *
- * Also see: http://msl.cs.uiuc.edu/~lavalle/papers/LavYerKatAnt14.pdf
- *
- * @param {Number} predictionTimeS time from head movement to the appearance of
- * the corresponding image.
- */
-function PosePredictor(predictionTimeS) {
-  this.predictionTimeS = predictionTimeS;
-
-  // The quaternion corresponding to the previous state.
-  this.previousQ = new MathUtil.Quaternion();
-  // Previous time a prediction occurred.
-  this.previousTimestampS = null;
-
-  // The delta quaternion that adjusts the current pose.
-  this.deltaQ = new MathUtil.Quaternion();
-  // The output quaternion.
-  this.outQ = new MathUtil.Quaternion();
-}
-
-PosePredictor.prototype.getPrediction = function(currentQ, gyro, timestampS) {
-  if (!this.previousTimestampS) {
-    this.previousQ.copy(currentQ);
-    this.previousTimestampS = timestampS;
-    return currentQ;
-  }
-
-  // Calculate axis and angle based on gyroscope rotation rate data.
-  var axis = new MathUtil.Vector3();
-  axis.copy(gyro);
-  axis.normalize();
-
-  var angularSpeed = gyro.length();
-
-  // If we're rotating slowly, don't do prediction.
-  if (angularSpeed < MathUtil.degToRad * 20) {
-    if (Util.isDebug()) {
-      console.log('Moving slowly, at %s deg/s: no prediction',
-                  (MathUtil.radToDeg * angularSpeed).toFixed(1));
-    }
-    this.outQ.copy(currentQ);
-    this.previousQ.copy(currentQ);
-    return this.outQ;
-  }
-
-  // Get the predicted angle based on the time delta and latency.
-  var deltaT = timestampS - this.previousTimestampS;
-  var predictAngle = angularSpeed * this.predictionTimeS;
-
-  this.deltaQ.setFromAxisAngle(axis, predictAngle);
-  this.outQ.copy(this.previousQ);
-  this.outQ.multiply(this.deltaQ);
-
-  this.previousQ.copy(currentQ);
-  this.previousTimestampS = timestampS;
-
-  return this.outQ;
-};
-
-
-module.exports = PosePredictor;
-
-},{"../math-util":14,"../util":22}],20:[function(_dereq_,module,exports){
-function SensorSample(sample, timestampS) {
-  this.set(sample, timestampS);
-};
-
-SensorSample.prototype.set = function(sample, timestampS) {
-  this.sample = sample;
-  this.timestampS = timestampS;
-};
-
-SensorSample.prototype.copy = function(sensorSample) {
-  this.set(sensorSample.sample, sensorSample.timestampS);
-};
-
-module.exports = SensorSample;
-
-},{}],21:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-var MathUtil = _dereq_('./math-util.js');
-var Util = _dereq_('./util.js');
-
-var ROTATE_SPEED = 0.5;
-/**
- * Provides a quaternion responsible for pre-panning the scene before further
- * transformations due to device sensors.
- */
-function TouchPanner() {
-  window.addEventListener('touchstart', this.onTouchStart_.bind(this));
-  window.addEventListener('touchmove', this.onTouchMove_.bind(this));
-  window.addEventListener('touchend', this.onTouchEnd_.bind(this));
-
-  this.isTouching = false;
-  this.rotateStart = new MathUtil.Vector2();
-  this.rotateEnd = new MathUtil.Vector2();
-  this.rotateDelta = new MathUtil.Vector2();
-
-  this.theta = 0;
-  this.orientation = new MathUtil.Quaternion();
-}
-
-TouchPanner.prototype.getOrientation = function() {
-  this.orientation.setFromEulerXYZ(0, 0, this.theta);
-  return this.orientation;
-};
-
-TouchPanner.prototype.resetSensor = function() {
-  this.theta = 0;
-};
-
-TouchPanner.prototype.onTouchStart_ = function(e) {
-  // Only respond if there is exactly one touch.
-  if (e.touches.length != 1) {
-    return;
-  }
-  this.rotateStart.set(e.touches[0].pageX, e.touches[0].pageY);
-  this.isTouching = true;
-};
-
-TouchPanner.prototype.onTouchMove_ = function(e) {
-  if (!this.isTouching) {
-    return;
-  }
-  this.rotateEnd.set(e.touches[0].pageX, e.touches[0].pageY);
-  this.rotateDelta.subVectors(this.rotateEnd, this.rotateStart);
-  this.rotateStart.copy(this.rotateEnd);
-
-  // On iOS, direction is inverted.
-  if (Util.isIOS()) {
-    this.rotateDelta.x *= -1;
-  }
-
-  var element = document.body;
-  this.theta += 2 * Math.PI * this.rotateDelta.x / element.clientWidth * ROTATE_SPEED;
-};
-
-TouchPanner.prototype.onTouchEnd_ = function(e) {
-  this.isTouching = false;
-};
-
-module.exports = TouchPanner;
-
-},{"./math-util.js":14,"./util.js":22}],22:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var objectAssign = _dereq_('object-assign');
-
-var Util = window.Util || {};
-
-Util.MIN_TIMESTEP = 0.001;
-Util.MAX_TIMESTEP = 1;
-
-Util.base64 = function(mimeType, base64) {
-  return 'data:' + mimeType + ';base64,' + base64;
-};
-
-Util.clamp = function(value, min, max) {
-  return Math.min(Math.max(min, value), max);
-};
-
-Util.lerp = function(a, b, t) {
-  return a + ((b - a) * t);
-};
-
-Util.isIOS = (function() {
-  var isIOS = /iPad|iPhone|iPod/.test(navigator.platform);
-  return function() {
-    return isIOS;
-  };
-})();
-
-Util.isSafari = (function() {
-  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  return function() {
-    return isSafari;
-  };
-})();
-
-Util.isFirefoxAndroid = (function() {
-  var isFirefoxAndroid = navigator.userAgent.indexOf('Firefox') !== -1 &&
-      navigator.userAgent.indexOf('Android') !== -1;
-  return function() {
-    return isFirefoxAndroid;
-  };
-})();
-
-Util.isLandscapeMode = function() {
-  return (window.orientation == 90 || window.orientation == -90);
-};
-
-// Helper method to validate the time steps of sensor timestamps.
-Util.isTimestampDeltaValid = function(timestampDeltaS) {
-  if (isNaN(timestampDeltaS)) {
-    return false;
-  }
-  if (timestampDeltaS <= Util.MIN_TIMESTEP) {
-    return false;
-  }
-  if (timestampDeltaS > Util.MAX_TIMESTEP) {
-    return false;
-  }
-  return true;
-};
-
-Util.getScreenWidth = function() {
-  return Math.max(window.screen.width, window.screen.height) *
-      window.devicePixelRatio;
-};
-
-Util.getScreenHeight = function() {
-  return Math.min(window.screen.width, window.screen.height) *
-      window.devicePixelRatio;
-};
-
-Util.requestFullscreen = function(element) {
-  if (element.requestFullscreen) {
-    element.requestFullscreen();
-  } else if (element.webkitRequestFullscreen) {
-    element.webkitRequestFullscreen();
-  } else if (element.mozRequestFullScreen) {
-    element.mozRequestFullScreen();
-  } else if (element.msRequestFullscreen) {
-    element.msRequestFullscreen();
-  } else {
-    return false;
-  }
-
-  return true;
-};
-
-Util.exitFullscreen = function() {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  } else if (document.webkitExitFullscreen) {
-    document.webkitExitFullscreen();
-  } else if (document.mozCancelFullScreen) {
-    document.mozCancelFullScreen();
-  } else if (document.msExitFullscreen) {
-    document.msExitFullscreen();
-  } else {
-    return false;
-  }
-
-  return true;
-};
-
-Util.getFullscreenElement = function() {
-  return document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      document.mozFullScreenElement ||
-      document.msFullscreenElement;
-};
-
-Util.linkProgram = function(gl, vertexSource, fragmentSource, attribLocationMap) {
-  // No error checking for brevity.
-  var vertexShader = gl.createShader(gl.VERTEX_SHADER);
-  gl.shaderSource(vertexShader, vertexSource);
-  gl.compileShader(vertexShader);
-
-  var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-  gl.shaderSource(fragmentShader, fragmentSource);
-  gl.compileShader(fragmentShader);
-
-  var program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-
-  for (var attribName in attribLocationMap)
-    gl.bindAttribLocation(program, attribLocationMap[attribName], attribName);
-
-  gl.linkProgram(program);
-
-  gl.deleteShader(vertexShader);
-  gl.deleteShader(fragmentShader);
-
-  return program;
-};
-
-Util.getProgramUniforms = function(gl, program) {
-  var uniforms = {};
-  var uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-  var uniformName = '';
-  for (var i = 0; i < uniformCount; i++) {
-    var uniformInfo = gl.getActiveUniform(program, i);
-    uniformName = uniformInfo.name.replace('[0]', '');
-    uniforms[uniformName] = gl.getUniformLocation(program, uniformName);
-  }
-  return uniforms;
-};
-
-Util.orthoMatrix = function (out, left, right, bottom, top, near, far) {
-  var lr = 1 / (left - right),
-      bt = 1 / (bottom - top),
-      nf = 1 / (near - far);
-  out[0] = -2 * lr;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 0;
-  out[4] = 0;
-  out[5] = -2 * bt;
-  out[6] = 0;
-  out[7] = 0;
-  out[8] = 0;
-  out[9] = 0;
-  out[10] = 2 * nf;
-  out[11] = 0;
-  out[12] = (left + right) * lr;
-  out[13] = (top + bottom) * bt;
-  out[14] = (far + near) * nf;
-  out[15] = 1;
-  return out;
-};
-
-Util.isMobile = function() {
-  var check = false;
-  (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
-  return check;
-};
-
-Util.extend = objectAssign;
-
-Util.safariCssSizeWorkaround = function(canvas) {
-  // TODO(smus): Remove this workaround when Safari for iOS is fixed.
-  // iOS only workaround (for https://bugs.webkit.org/show_bug.cgi?id=152556).
-  //
-  // "To the last I grapple with thee;
-  //  from hell's heart I stab at thee;
-  //  for hate's sake I spit my last breath at thee."
-  // -- Moby Dick, by Herman Melville
-  if (Util.isIOS()) {
-    var width = canvas.style.width;
-    var height = canvas.style.height;
-    canvas.style.width = (parseInt(width) + 1) + 'px';
-    canvas.style.height = (parseInt(height)) + 'px';
-    setTimeout(function() {
-      canvas.style.width = width;
-      canvas.style.height = height;
-    }, 100);
-  }
-
-  // Debug only.
-  window.Util = Util;
-  window.canvas = canvas;
-};
-
-Util.isDebug = function() {
-  return Util.getQueryParameter('debug');
-};
-
-Util.getQueryParameter = function(name) {
-  var name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-      results = regex.exec(location.search);
-  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-};
-
-Util.frameDataFromPose = (function() {
-  var piOver180 = Math.PI / 180.0;
-  var rad45 = Math.PI * 0.25;
-
-  // Borrowed from glMatrix.
-  function mat4_perspectiveFromFieldOfView(out, fov, near, far) {
-    var upTan = Math.tan(fov ? (fov.upDegrees * piOver180) : rad45),
-    downTan = Math.tan(fov ? (fov.downDegrees * piOver180) : rad45),
-    leftTan = Math.tan(fov ? (fov.leftDegrees * piOver180) : rad45),
-    rightTan = Math.tan(fov ? (fov.rightDegrees * piOver180) : rad45),
-    xScale = 2.0 / (leftTan + rightTan),
-    yScale = 2.0 / (upTan + downTan);
-
-    out[0] = xScale;
-    out[1] = 0.0;
-    out[2] = 0.0;
-    out[3] = 0.0;
-    out[4] = 0.0;
-    out[5] = yScale;
-    out[6] = 0.0;
-    out[7] = 0.0;
-    out[8] = -((leftTan - rightTan) * xScale * 0.5);
-    out[9] = ((upTan - downTan) * yScale * 0.5);
-    out[10] = far / (near - far);
-    out[11] = -1.0;
-    out[12] = 0.0;
-    out[13] = 0.0;
-    out[14] = (far * near) / (near - far);
-    out[15] = 0.0;
-    return out;
-  }
-
-  function mat4_fromRotationTranslation(out, q, v) {
-    // Quaternion math
-    var x = q[0], y = q[1], z = q[2], w = q[3],
-        x2 = x + x,
-        y2 = y + y,
-        z2 = z + z,
-
-        xx = x * x2,
-        xy = x * y2,
-        xz = x * z2,
-        yy = y * y2,
-        yz = y * z2,
-        zz = z * z2,
-        wx = w * x2,
-        wy = w * y2,
-        wz = w * z2;
-
-    out[0] = 1 - (yy + zz);
-    out[1] = xy + wz;
-    out[2] = xz - wy;
-    out[3] = 0;
-    out[4] = xy - wz;
-    out[5] = 1 - (xx + zz);
-    out[6] = yz + wx;
-    out[7] = 0;
-    out[8] = xz + wy;
-    out[9] = yz - wx;
-    out[10] = 1 - (xx + yy);
-    out[11] = 0;
-    out[12] = v[0];
-    out[13] = v[1];
-    out[14] = v[2];
-    out[15] = 1;
-
-    return out;
-  };
-
-  function mat4_translate(out, a, v) {
-    var x = v[0], y = v[1], z = v[2],
-        a00, a01, a02, a03,
-        a10, a11, a12, a13,
-        a20, a21, a22, a23;
-
-    if (a === out) {
-      out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
-      out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
-      out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
-      out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
-    } else {
-      a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
-      a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
-      a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
-
-      out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
-      out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
-      out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
-
-      out[12] = a00 * x + a10 * y + a20 * z + a[12];
-      out[13] = a01 * x + a11 * y + a21 * z + a[13];
-      out[14] = a02 * x + a12 * y + a22 * z + a[14];
-      out[15] = a03 * x + a13 * y + a23 * z + a[15];
-    }
-
-    return out;
-  };
-
-  function mat4_invert(out, a) {
-    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
-        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
-        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
-        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15],
-
-        b00 = a00 * a11 - a01 * a10,
-        b01 = a00 * a12 - a02 * a10,
-        b02 = a00 * a13 - a03 * a10,
-        b03 = a01 * a12 - a02 * a11,
-        b04 = a01 * a13 - a03 * a11,
-        b05 = a02 * a13 - a03 * a12,
-        b06 = a20 * a31 - a21 * a30,
-        b07 = a20 * a32 - a22 * a30,
-        b08 = a20 * a33 - a23 * a30,
-        b09 = a21 * a32 - a22 * a31,
-        b10 = a21 * a33 - a23 * a31,
-        b11 = a22 * a33 - a23 * a32,
-
-        // Calculate the determinant
-        det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-
-    if (!det) {
-      return null;
-    }
-    det = 1.0 / det;
-
-    out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
-    out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
-    out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
-    out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det;
-    out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
-    out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
-    out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
-    out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det;
-    out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
-    out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
-    out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
-    out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det;
-    out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det;
-    out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det;
-    out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det;
-    out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det;
-
-    return out;
-  };
-
-  var defaultOrientation = new Float32Array([0, 0, 0, 1]);
-  var defaultPosition = new Float32Array([0, 0, 0]);
-
-  function updateEyeMatrices(projection, view, pose, parameters, vrDisplay) {
-    mat4_perspectiveFromFieldOfView(projection, parameters ? parameters.fieldOfView : null, vrDisplay.depthNear, vrDisplay.depthFar);
-
-    var orientation = pose.orientation || defaultOrientation;
-    var position = pose.position || defaultPosition;
-
-    mat4_fromRotationTranslation(view, orientation, position);
-    if (parameters)
-      mat4_translate(view, view, parameters.offset);
-    mat4_invert(view, view);
-  }
-
-  return function(frameData, pose, vrDisplay) {
-    if (!frameData || !pose)
-      return false;
-
-    frameData.pose = pose;
-    frameData.timestamp = pose.timestamp;
-
-    updateEyeMatrices(
-        frameData.leftProjectionMatrix, frameData.leftViewMatrix,
-        pose, vrDisplay.getEyeParameters("left"), vrDisplay);
-    updateEyeMatrices(
-        frameData.rightProjectionMatrix, frameData.rightViewMatrix,
-        pose, vrDisplay.getEyeParameters("right"), vrDisplay);
-
-    return true;
-  };
-})();
-
-Util.isInsideCrossDomainIFrame = function() {
-  var isFramed = (window.self !== window.top);
-  var refDomain = Util.getDomainFromUrl(document.referrer);
-  var thisDomain = Util.getDomainFromUrl(window.location.href);
-
-  return isFramed && (refDomain !== thisDomain);
-};
-
-// From http://stackoverflow.com/a/23945027.
-Util.getDomainFromUrl = function(url) {
-  var domain;
-  // Find & remove protocol (http, ftp, etc.) and get domain.
-  if (url.indexOf("://") > -1) {
-    domain = url.split('/')[2];
-  }
-  else {
-    domain = url.split('/')[0];
-  }
-
-  //find & remove port number
-  domain = domain.split(':')[0];
-
-  return domain;
-}
-
-module.exports = Util;
-
-},{"object-assign":2}],23:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var DeviceInfo = _dereq_('./device-info.js');
-var EventEmitter3 = _dereq_('eventemitter3');
-var Util = _dereq_('./util.js');
-
 var DEFAULT_VIEWER = 'CardboardV1';
 var VIEWER_KEY = 'WEBVR_CARDBOARD_VIEWER';
 var CLASS_NAME = 'webvr-polyfill-viewer-selector';
-
-/**
- * Creates a viewer selector with the options specified. Supports being shown
- * and hidden. Generates events when viewer parameters change. Also supports
- * saving the currently selected index in localStorage.
- */
-function ViewerSelector() {
-  // Try to load the selected key from local storage. If none exists, use the
-  // default key.
+function ViewerSelector(defaultViewer) {
   try {
-    this.selectedKey = localStorage.getItem(VIEWER_KEY) || DEFAULT_VIEWER;
+    this.selectedKey = localStorage.getItem(VIEWER_KEY);
   } catch (error) {
     console.error('Failed to load viewer profile: %s', error);
   }
+  if (!this.selectedKey) {
+    this.selectedKey = defaultViewer || DEFAULT_VIEWER;
+  }
   this.dialog = this.createDialog_(DeviceInfo.Viewers);
   this.root = null;
+  this.onChangeCallbacks_ = [];
 }
-ViewerSelector.prototype = new EventEmitter3();
-
-ViewerSelector.prototype.show = function(root) {
+ViewerSelector.prototype.show = function (root) {
   this.root = root;
-
   root.appendChild(this.dialog);
-
-  // Ensure the currently selected item is checked.
   var selected = this.dialog.querySelector('#' + this.selectedKey);
   selected.checked = true;
-
-  // Show the UI.
   this.dialog.style.display = 'block';
 };
-
-ViewerSelector.prototype.hide = function() {
+ViewerSelector.prototype.hide = function () {
   if (this.root && this.root.contains(this.dialog)) {
     this.root.removeChild(this.dialog);
   }
   this.dialog.style.display = 'none';
 };
-
-ViewerSelector.prototype.getCurrentViewer = function() {
+ViewerSelector.prototype.getCurrentViewer = function () {
   return DeviceInfo.Viewers[this.selectedKey];
 };
-
-ViewerSelector.prototype.getSelectedKey_ = function() {
+ViewerSelector.prototype.getSelectedKey_ = function () {
   var input = this.dialog.querySelector('input[name=field]:checked');
   if (input) {
     return input.id;
   }
   return null;
 };
-
-ViewerSelector.prototype.onSave_ = function() {
+ViewerSelector.prototype.onChange = function (cb) {
+  this.onChangeCallbacks_.push(cb);
+};
+ViewerSelector.prototype.fireOnChange_ = function (viewer) {
+  for (var i = 0; i < this.onChangeCallbacks_.length; i++) {
+    this.onChangeCallbacks_[i](viewer);
+  }
+};
+ViewerSelector.prototype.onSave_ = function () {
   this.selectedKey = this.getSelectedKey_();
   if (!this.selectedKey || !DeviceInfo.Viewers[this.selectedKey]) {
     console.error('ViewerSelector.onSave_: this should never happen!');
     return;
   }
-
-  this.emit('change', DeviceInfo.Viewers[this.selectedKey]);
-
-  // Attempt to save the viewer profile, but fails in private mode.
+  this.fireOnChange_(DeviceInfo.Viewers[this.selectedKey]);
   try {
     localStorage.setItem(VIEWER_KEY, this.selectedKey);
-  } catch(error) {
+  } catch (error) {
     console.error('Failed to save viewer profile: %s', error);
   }
   this.hide();
 };
-
-/**
- * Creates the dialog.
- */
-ViewerSelector.prototype.createDialog_ = function(options) {
+ViewerSelector.prototype.createDialog_ = function (options) {
   var container = document.createElement('div');
   container.classList.add(CLASS_NAME);
   container.style.display = 'none';
-  // Create an overlay that dims the background, and which goes away when you
-  // tap it.
   var overlay = document.createElement('div');
   var s = overlay.style;
   s.position = 'fixed';
@@ -5906,7 +2580,6 @@ ViewerSelector.prototype.createDialog_ = function(options) {
   s.height = '100%';
   s.background = 'rgba(0, 0, 0, 0.3)';
   overlay.addEventListener('click', this.hide.bind(this));
-
   var width = 280;
   var dialog = document.createElement('div');
   var s = dialog.style;
@@ -5914,27 +2587,23 @@ ViewerSelector.prototype.createDialog_ = function(options) {
   s.position = 'fixed';
   s.top = '24px';
   s.left = '50%';
-  s.marginLeft = (-width/2) + 'px';
+  s.marginLeft = -width / 2 + 'px';
   s.width = width + 'px';
   s.padding = '24px';
   s.overflow = 'hidden';
   s.background = '#fafafa';
   s.fontFamily = "'Roboto', sans-serif";
   s.boxShadow = '0px 5px 20px #666';
-
   dialog.appendChild(this.createH1_('Select your viewer'));
   for (var id in options) {
     dialog.appendChild(this.createChoice_(id, options[id].label));
   }
   dialog.appendChild(this.createButton_('Save', this.onSave_.bind(this)));
-
   container.appendChild(overlay);
   container.appendChild(dialog);
-
   return container;
 };
-
-ViewerSelector.prototype.createH1_ = function(name) {
+ViewerSelector.prototype.createH1_ = function (name) {
   var h1 = document.createElement('h1');
   var s = h1.style;
   s.color = 'black';
@@ -5945,37 +2614,25 @@ ViewerSelector.prototype.createH1_ = function(name) {
   h1.innerHTML = name;
   return h1;
 };
-
-ViewerSelector.prototype.createChoice_ = function(id, name) {
-  /*
-  <div class="choice">
-  <input id="v1" type="radio" name="field" value="v1">
-  <label for="v1">Cardboard V1</label>
-  </div>
-  */
+ViewerSelector.prototype.createChoice_ = function (id, name) {
   var div = document.createElement('div');
   div.style.marginTop = '8px';
   div.style.color = 'black';
-
   var input = document.createElement('input');
   input.style.fontSize = '30px';
   input.setAttribute('id', id);
   input.setAttribute('type', 'radio');
   input.setAttribute('value', id);
   input.setAttribute('name', 'field');
-
   var label = document.createElement('label');
   label.style.marginLeft = '4px';
   label.setAttribute('for', id);
   label.innerHTML = name;
-
   div.appendChild(input);
   div.appendChild(label);
-
   return div;
 };
-
-ViewerSelector.prototype.createButton_ = function(label, onclick) {
+ViewerSelector.prototype.createButton_ = function (label, onclick) {
   var button = document.createElement('button');
   button.innerHTML = label;
   var s = button.style;
@@ -5987,326 +2644,828 @@ ViewerSelector.prototype.createButton_ = function(label, onclick) {
   s.border = 0;
   s.background = 'none';
   s.marginTop = '16px';
-
   button.addEventListener('click', onclick);
-
   return button;
 };
-
-module.exports = ViewerSelector;
-
-},{"./device-info.js":8,"./util.js":22,"eventemitter3":1}],24:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Util = _dereq_('./util.js');
-
-/**
- * Android and iOS compatible wakelock implementation.
- *
- * Refactored thanks to dkovalev@.
- */
-function AndroidWakeLock() {
-  var video = document.createElement('video');
-
-  video.addEventListener('ended', function() {
-    video.play();
+var commonjsGlobal$$1 = typeof window !== 'undefined' ? window : typeof commonjsGlobal !== 'undefined' ? commonjsGlobal : typeof self !== 'undefined' ? self : {};
+function unwrapExports$$1 (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
+function createCommonjsModule$$1(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+var NoSleep = createCommonjsModule$$1(function (module, exports) {
+(function webpackUniversalModuleDefinition(root, factory) {
+	module.exports = factory();
+})(commonjsGlobal$$1, function() {
+return          (function(modules) {
+         	var installedModules = {};
+         	function __webpack_require__(moduleId) {
+         		if(installedModules[moduleId]) {
+         			return installedModules[moduleId].exports;
+         		}
+         		var module = installedModules[moduleId] = {
+         			i: moduleId,
+         			l: false,
+         			exports: {}
+         		};
+         		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+         		module.l = true;
+         		return module.exports;
+         	}
+         	__webpack_require__.m = modules;
+         	__webpack_require__.c = installedModules;
+         	__webpack_require__.d = function(exports, name, getter) {
+         		if(!__webpack_require__.o(exports, name)) {
+         			Object.defineProperty(exports, name, {
+         				configurable: false,
+         				enumerable: true,
+         				get: getter
+         			});
+         		}
+         	};
+         	__webpack_require__.n = function(module) {
+         		var getter = module && module.__esModule ?
+         			function getDefault() { return module['default']; } :
+         			function getModuleExports() { return module; };
+         		__webpack_require__.d(getter, 'a', getter);
+         		return getter;
+         	};
+         	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+         	__webpack_require__.p = "";
+         	return __webpack_require__(__webpack_require__.s = 0);
+         })
+         ([
+      (function(module, exports, __webpack_require__) {
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var mediaFile = __webpack_require__(1);
+var oldIOS = typeof navigator !== 'undefined' && parseFloat(('' + (/CPU.*OS ([0-9_]{3,4})[0-9_]{0,1}|(CPU like).*AppleWebKit.*Mobile/i.exec(navigator.userAgent) || [0, ''])[1]).replace('undefined', '3_2').replace('_', '.').replace('_', '')) < 10 && !window.MSStream;
+var NoSleep = function () {
+  function NoSleep() {
+    _classCallCheck(this, NoSleep);
+    if (oldIOS) {
+      this.noSleepTimer = null;
+    } else {
+      this.noSleepVideo = document.createElement('video');
+      this.noSleepVideo.setAttribute('playsinline', '');
+      this.noSleepVideo.setAttribute('src', mediaFile);
+      this.noSleepVideo.addEventListener('timeupdate', function (e) {
+        if (this.noSleepVideo.currentTime > 0.5) {
+          this.noSleepVideo.currentTime = Math.random();
+        }
+      }.bind(this));
+    }
+  }
+  _createClass(NoSleep, [{
+    key: 'enable',
+    value: function enable() {
+      if (oldIOS) {
+        this.disable();
+        this.noSleepTimer = window.setInterval(function () {
+          window.location.href = '/';
+          window.setTimeout(window.stop, 0);
+        }, 15000);
+      } else {
+        this.noSleepVideo.play();
+      }
+    }
+  }, {
+    key: 'disable',
+    value: function disable() {
+      if (oldIOS) {
+        if (this.noSleepTimer) {
+          window.clearInterval(this.noSleepTimer);
+          this.noSleepTimer = null;
+        }
+      } else {
+        this.noSleepVideo.pause();
+      }
+    }
+  }]);
+  return NoSleep;
+}();
+module.exports = NoSleep;
+      }),
+      (function(module, exports, __webpack_require__) {
+module.exports = 'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAACKBtZGF0AAAC8wYF///v3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0MiByMjQ3OSBkZDc5YTYxIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNCAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTEgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MToweDExMSBtZT1oZXggc3VibWU9MiBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0wIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MCA4eDhkY3Q9MCBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0wIHRocmVhZHM9NiBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTMgYl9weXJhbWlkPTIgYl9hZGFwdD0xIGJfYmlhcz0wIGRpcmVjdD0xIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MSBrZXlpbnQ9MzAwIGtleWludF9taW49MzAgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD0xMCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIwLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IHZidl9tYXhyYXRlPTIwMDAwIHZidl9idWZzaXplPTI1MDAwIGNyZl9tYXg9MC4wIG5hbF9ocmQ9bm9uZSBmaWxsZXI9MCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAAOWWIhAA3//p+C7v8tDDSTjf97w55i3SbRPO4ZY+hkjD5hbkAkL3zpJ6h/LR1CAABzgB1kqqzUorlhQAAAAxBmiQYhn/+qZYADLgAAAAJQZ5CQhX/AAj5IQADQGgcIQADQGgcAAAACQGeYUQn/wALKCEAA0BoHAAAAAkBnmNEJ/8ACykhAANAaBwhAANAaBwAAAANQZpoNExDP/6plgAMuSEAA0BoHAAAAAtBnoZFESwr/wAI+SEAA0BoHCEAA0BoHAAAAAkBnqVEJ/8ACykhAANAaBwAAAAJAZ6nRCf/AAsoIQADQGgcIQADQGgcAAAADUGarDRMQz/+qZYADLghAANAaBwAAAALQZ7KRRUsK/8ACPkhAANAaBwAAAAJAZ7pRCf/AAsoIQADQGgcIQADQGgcAAAACQGe60Qn/wALKCEAA0BoHAAAAA1BmvA0TEM//qmWAAy5IQADQGgcIQADQGgcAAAAC0GfDkUVLCv/AAj5IQADQGgcAAAACQGfLUQn/wALKSEAA0BoHCEAA0BoHAAAAAkBny9EJ/8ACyghAANAaBwAAAANQZs0NExDP/6plgAMuCEAA0BoHAAAAAtBn1JFFSwr/wAI+SEAA0BoHCEAA0BoHAAAAAkBn3FEJ/8ACyghAANAaBwAAAAJAZ9zRCf/AAsoIQADQGgcIQADQGgcAAAADUGbeDRMQz/+qZYADLkhAANAaBwAAAALQZ+WRRUsK/8ACPghAANAaBwhAANAaBwAAAAJAZ+1RCf/AAspIQADQGgcAAAACQGft0Qn/wALKSEAA0BoHCEAA0BoHAAAAA1Bm7w0TEM//qmWAAy4IQADQGgcAAAAC0Gf2kUVLCv/AAj5IQADQGgcAAAACQGf+UQn/wALKCEAA0BoHCEAA0BoHAAAAAkBn/tEJ/8ACykhAANAaBwAAAANQZvgNExDP/6plgAMuSEAA0BoHCEAA0BoHAAAAAtBnh5FFSwr/wAI+CEAA0BoHAAAAAkBnj1EJ/8ACyghAANAaBwhAANAaBwAAAAJAZ4/RCf/AAspIQADQGgcAAAADUGaJDRMQz/+qZYADLghAANAaBwAAAALQZ5CRRUsK/8ACPkhAANAaBwhAANAaBwAAAAJAZ5hRCf/AAsoIQADQGgcAAAACQGeY0Qn/wALKSEAA0BoHCEAA0BoHAAAAA1Bmmg0TEM//qmWAAy5IQADQGgcAAAAC0GehkUVLCv/AAj5IQADQGgcIQADQGgcAAAACQGepUQn/wALKSEAA0BoHAAAAAkBnqdEJ/8ACyghAANAaBwAAAANQZqsNExDP/6plgAMuCEAA0BoHCEAA0BoHAAAAAtBnspFFSwr/wAI+SEAA0BoHAAAAAkBnulEJ/8ACyghAANAaBwhAANAaBwAAAAJAZ7rRCf/AAsoIQADQGgcAAAADUGa8DRMQz/+qZYADLkhAANAaBwhAANAaBwAAAALQZ8ORRUsK/8ACPkhAANAaBwAAAAJAZ8tRCf/AAspIQADQGgcIQADQGgcAAAACQGfL0Qn/wALKCEAA0BoHAAAAA1BmzQ0TEM//qmWAAy4IQADQGgcAAAAC0GfUkUVLCv/AAj5IQADQGgcIQADQGgcAAAACQGfcUQn/wALKCEAA0BoHAAAAAkBn3NEJ/8ACyghAANAaBwhAANAaBwAAAANQZt4NExC//6plgAMuSEAA0BoHAAAAAtBn5ZFFSwr/wAI+CEAA0BoHCEAA0BoHAAAAAkBn7VEJ/8ACykhAANAaBwAAAAJAZ+3RCf/AAspIQADQGgcAAAADUGbuzRMQn/+nhAAYsAhAANAaBwhAANAaBwAAAAJQZ/aQhP/AAspIQADQGgcAAAACQGf+UQn/wALKCEAA0BoHCEAA0BoHCEAA0BoHCEAA0BoHCEAA0BoHCEAA0BoHAAACiFtb292AAAAbG12aGQAAAAA1YCCX9WAgl8AAAPoAAAH/AABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAGGlvZHMAAAAAEICAgAcAT////v7/AAAF+XRyYWsAAABcdGtoZAAAAAPVgIJf1YCCXwAAAAEAAAAAAAAH0AAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAygAAAMoAAAAAACRlZHRzAAAAHGVsc3QAAAAAAAAAAQAAB9AAABdwAAEAAAAABXFtZGlhAAAAIG1kaGQAAAAA1YCCX9WAgl8AAV+QAAK/IFXEAAAAAAAtaGRscgAAAAAAAAAAdmlkZQAAAAAAAAAAAAAAAFZpZGVvSGFuZGxlcgAAAAUcbWluZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAAE3HN0YmwAAACYc3RzZAAAAAAAAAABAAAAiGF2YzEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAygDKAEgAAABIAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY//8AAAAyYXZjQwFNQCj/4QAbZ01AKOyho3ySTUBAQFAAAAMAEAAr8gDxgxlgAQAEaO+G8gAAABhzdHRzAAAAAAAAAAEAAAA8AAALuAAAABRzdHNzAAAAAAAAAAEAAAABAAAB8GN0dHMAAAAAAAAAPAAAAAEAABdwAAAAAQAAOpgAAAABAAAXcAAAAAEAAAAAAAAAAQAAC7gAAAABAAA6mAAAAAEAABdwAAAAAQAAAAAAAAABAAALuAAAAAEAADqYAAAAAQAAF3AAAAABAAAAAAAAAAEAAAu4AAAAAQAAOpgAAAABAAAXcAAAAAEAAAAAAAAAAQAAC7gAAAABAAA6mAAAAAEAABdwAAAAAQAAAAAAAAABAAALuAAAAAEAADqYAAAAAQAAF3AAAAABAAAAAAAAAAEAAAu4AAAAAQAAOpgAAAABAAAXcAAAAAEAAAAAAAAAAQAAC7gAAAABAAA6mAAAAAEAABdwAAAAAQAAAAAAAAABAAALuAAAAAEAADqYAAAAAQAAF3AAAAABAAAAAAAAAAEAAAu4AAAAAQAAOpgAAAABAAAXcAAAAAEAAAAAAAAAAQAAC7gAAAABAAA6mAAAAAEAABdwAAAAAQAAAAAAAAABAAALuAAAAAEAADqYAAAAAQAAF3AAAAABAAAAAAAAAAEAAAu4AAAAAQAAOpgAAAABAAAXcAAAAAEAAAAAAAAAAQAAC7gAAAABAAA6mAAAAAEAABdwAAAAAQAAAAAAAAABAAALuAAAAAEAAC7gAAAAAQAAF3AAAAABAAAAAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAEEc3RzegAAAAAAAAAAAAAAPAAAAzQAAAAQAAAADQAAAA0AAAANAAAAEQAAAA8AAAANAAAADQAAABEAAAAPAAAADQAAAA0AAAARAAAADwAAAA0AAAANAAAAEQAAAA8AAAANAAAADQAAABEAAAAPAAAADQAAAA0AAAARAAAADwAAAA0AAAANAAAAEQAAAA8AAAANAAAADQAAABEAAAAPAAAADQAAAA0AAAARAAAADwAAAA0AAAANAAAAEQAAAA8AAAANAAAADQAAABEAAAAPAAAADQAAAA0AAAARAAAADwAAAA0AAAANAAAAEQAAAA8AAAANAAAADQAAABEAAAANAAAADQAAAQBzdGNvAAAAAAAAADwAAAAwAAADZAAAA3QAAAONAAADoAAAA7kAAAPQAAAD6wAAA/4AAAQXAAAELgAABEMAAARcAAAEbwAABIwAAAShAAAEugAABM0AAATkAAAE/wAABRIAAAUrAAAFQgAABV0AAAVwAAAFiQAABaAAAAW1AAAFzgAABeEAAAX+AAAGEwAABiwAAAY/AAAGVgAABnEAAAaEAAAGnQAABrQAAAbPAAAG4gAABvUAAAcSAAAHJwAAB0AAAAdTAAAHcAAAB4UAAAeeAAAHsQAAB8gAAAfjAAAH9gAACA8AAAgmAAAIQQAACFQAAAhnAAAIhAAACJcAAAMsdHJhawAAAFx0a2hkAAAAA9WAgl/VgIJfAAAAAgAAAAAAAAf8AAAAAAAAAAAAAAABAQAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAACsm1kaWEAAAAgbWRoZAAAAADVgIJf1YCCXwAArEQAAWAAVcQAAAAAACdoZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAU3RlcmVvAAAAAmNtaW5mAAAAEHNtaGQAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAidzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdtcDRhAAAAAAAAAAEAAAAAAAAAAAACABAAAAAArEQAAAAAADNlc2RzAAAAAAOAgIAiAAIABICAgBRAFQAAAAADDUAAAAAABYCAgAISEAaAgIABAgAAABhzdHRzAAAAAAAAAAEAAABYAAAEAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAAUc3RzegAAAAAAAAAGAAAAWAAAAXBzdGNvAAAAAAAAAFgAAAOBAAADhwAAA5oAAAOtAAADswAAA8oAAAPfAAAD5QAAA/gAAAQLAAAEEQAABCgAAAQ9AAAEUAAABFYAAARpAAAEgAAABIYAAASbAAAErgAABLQAAATHAAAE3gAABPMAAAT5AAAFDAAABR8AAAUlAAAFPAAABVEAAAVXAAAFagAABX0AAAWDAAAFmgAABa8AAAXCAAAFyAAABdsAAAXyAAAF+AAABg0AAAYgAAAGJgAABjkAAAZQAAAGZQAABmsAAAZ+AAAGkQAABpcAAAauAAAGwwAABskAAAbcAAAG7wAABwYAAAcMAAAHIQAABzQAAAc6AAAHTQAAB2QAAAdqAAAHfwAAB5IAAAeYAAAHqwAAB8IAAAfXAAAH3QAAB/AAAAgDAAAICQAACCAAAAg1AAAIOwAACE4AAAhhAAAIeAAACH4AAAiRAAAIpAAACKoAAAiwAAAItgAACLwAAAjCAAAAFnVkdGEAAAAObmFtZVN0ZXJlbwAAAHB1ZHRhAAAAaG1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAAO2lsc3QAAAAzqXRvbwAAACtkYXRhAAAAAQAAAABIYW5kQnJha2UgMC4xMC4yIDIwMTUwNjExMDA=';
+      })
+         ]);
+});
+});
+var NoSleep$1 = unwrapExports$$1(NoSleep);
+var nextDisplayId = 1000;
+var defaultLeftBounds = [0, 0, 0.5, 1];
+var defaultRightBounds = [0.5, 0, 0.5, 1];
+var raf = window.requestAnimationFrame;
+var caf = window.cancelAnimationFrame;
+function VRFrameData() {
+  this.leftProjectionMatrix = new Float32Array(16);
+  this.leftViewMatrix = new Float32Array(16);
+  this.rightProjectionMatrix = new Float32Array(16);
+  this.rightViewMatrix = new Float32Array(16);
+  this.pose = null;
+}
+function VRDisplayCapabilities(config) {
+  Object.defineProperties(this, {
+    hasPosition: {
+      writable: false, enumerable: true, value: config.hasPosition
+    },
+    hasExternalDisplay: {
+      writable: false, enumerable: true, value: config.hasExternalDisplay
+    },
+    canPresent: {
+      writable: false, enumerable: true, value: config.canPresent
+    },
+    maxLayers: {
+      writable: false, enumerable: true, value: config.maxLayers
+    },
+    hasOrientation: {
+      enumerable: true, get: function get() {
+        deprecateWarning('VRDisplayCapabilities.prototype.hasOrientation', 'VRDisplay.prototype.getFrameData');
+        return config.hasOrientation;
+      }
+    }
   });
-
-  this.request = function() {
-    if (video.paused) {
-      // Base64 version of videos_src/no-sleep-120s.mp4.
-      video.src = Util.base64('video/mp4', 'AAAAGGZ0eXBpc29tAAAAAG1wNDFhdmMxAAAIA21vb3YAAABsbXZoZAAAAADSa9v60mvb+gABX5AAlw/gAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAdkdHJhawAAAFx0a2hkAAAAAdJr2/rSa9v6AAAAAQAAAAAAlw/gAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAQAAAAHAAAAAAAJGVkdHMAAAAcZWxzdAAAAAAAAAABAJcP4AAAAAAAAQAAAAAG3G1kaWEAAAAgbWRoZAAAAADSa9v60mvb+gAPQkAGjneAFccAAAAAAC1oZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW9IYW5kbGVyAAAABodtaW5mAAAAFHZtaGQAAAABAAAAAAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAZHc3RibAAAAJdzdHNkAAAAAAAAAAEAAACHYXZjMQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAMABwASAAAAEgAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAADFhdmNDAWQAC//hABlnZAALrNlfllw4QAAAAwBAAAADAKPFCmWAAQAFaOvssiwAAAAYc3R0cwAAAAAAAAABAAAAbgAPQkAAAAAUc3RzcwAAAAAAAAABAAAAAQAAA4BjdHRzAAAAAAAAAG4AAAABAD0JAAAAAAEAehIAAAAAAQA9CQAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEATEtAAAAAAQAehIAAAAABAAAAAAAAAAEAD0JAAAAAAQBMS0AAAAABAB6EgAAAAAEAAAAAAAAAAQAPQkAAAAABAExLQAAAAAEAHoSAAAAAAQAAAAAAAAABAA9CQAAAAAEALcbAAAAAHHN0c2MAAAAAAAAAAQAAAAEAAABuAAAAAQAAAcxzdHN6AAAAAAAAAAAAAABuAAADCQAAABgAAAAOAAAADgAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABIAAAAOAAAADAAAAAwAAAASAAAADgAAAAwAAAAMAAAAEgAAAA4AAAAMAAAADAAAABMAAAAUc3RjbwAAAAAAAAABAAAIKwAAACt1ZHRhAAAAI6llbmMAFwAAdmxjIDIuMi4xIHN0cmVhbSBvdXRwdXQAAAAId2lkZQAACRRtZGF0AAACrgX//6vcRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTQyIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNCAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDEzIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0xIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MTIgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTEgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1hYnIgbWJ0cmVlPTEgYml0cmF0ZT0xMDAgcmF0ZXRvbD0xLjAgcWNvbXA9MC42MCBxcG1pbj0xMCBxcG1heD01MSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAAU2WIhAAQ/8ltlOe+cTZuGkKg+aRtuivcDZ0pBsfsEi9p/i1yU9DxS2lq4dXTinViF1URBKXgnzKBd/Uh1bkhHtMrwrRcOJslD01UB+fyaL6ef+DBAAAAFEGaJGxBD5B+v+a+4QqF3MgBXz9MAAAACkGeQniH/+94r6EAAAAKAZ5hdEN/8QytwAAAAAgBnmNqQ3/EgQAAAA5BmmhJqEFomUwIIf/+4QAAAApBnoZFESw//76BAAAACAGepXRDf8SBAAAACAGep2pDf8SAAAAADkGarEmoQWyZTAgh//7gAAAACkGeykUVLD//voEAAAAIAZ7pdEN/xIAAAAAIAZ7rakN/xIAAAAAOQZrwSahBbJlMCCH//uEAAAAKQZ8ORRUsP/++gQAAAAgBny10Q3/EgQAAAAgBny9qQ3/EgAAAAA5BmzRJqEFsmUwIIf/+4AAAAApBn1JFFSw//76BAAAACAGfcXRDf8SAAAAACAGfc2pDf8SAAAAADkGbeEmoQWyZTAgh//7hAAAACkGflkUVLD//voAAAAAIAZ+1dEN/xIEAAAAIAZ+3akN/xIEAAAAOQZu8SahBbJlMCCH//uAAAAAKQZ/aRRUsP/++gQAAAAgBn/l0Q3/EgAAAAAgBn/tqQ3/EgQAAAA5Bm+BJqEFsmUwIIf/+4QAAAApBnh5FFSw//76AAAAACAGePXRDf8SAAAAACAGeP2pDf8SBAAAADkGaJEmoQWyZTAgh//7gAAAACkGeQkUVLD//voEAAAAIAZ5hdEN/xIAAAAAIAZ5jakN/xIEAAAAOQZpoSahBbJlMCCH//uEAAAAKQZ6GRRUsP/++gQAAAAgBnqV0Q3/EgQAAAAgBnqdqQ3/EgAAAAA5BmqxJqEFsmUwIIf/+4AAAAApBnspFFSw//76BAAAACAGe6XRDf8SAAAAACAGe62pDf8SAAAAADkGa8EmoQWyZTAgh//7hAAAACkGfDkUVLD//voEAAAAIAZ8tdEN/xIEAAAAIAZ8vakN/xIAAAAAOQZs0SahBbJlMCCH//uAAAAAKQZ9SRRUsP/++gQAAAAgBn3F0Q3/EgAAAAAgBn3NqQ3/EgAAAAA5Bm3hJqEFsmUwIIf/+4QAAAApBn5ZFFSw//76AAAAACAGftXRDf8SBAAAACAGft2pDf8SBAAAADkGbvEmoQWyZTAgh//7gAAAACkGf2kUVLD//voEAAAAIAZ/5dEN/xIAAAAAIAZ/7akN/xIEAAAAOQZvgSahBbJlMCCH//uEAAAAKQZ4eRRUsP/++gAAAAAgBnj10Q3/EgAAAAAgBnj9qQ3/EgQAAAA5BmiRJqEFsmUwIIf/+4AAAAApBnkJFFSw//76BAAAACAGeYXRDf8SAAAAACAGeY2pDf8SBAAAADkGaaEmoQWyZTAgh//7hAAAACkGehkUVLD//voEAAAAIAZ6ldEN/xIEAAAAIAZ6nakN/xIAAAAAOQZqsSahBbJlMCCH//uAAAAAKQZ7KRRUsP/++gQAAAAgBnul0Q3/EgAAAAAgBnutqQ3/EgAAAAA5BmvBJqEFsmUwIIf/+4QAAAApBnw5FFSw//76BAAAACAGfLXRDf8SBAAAACAGfL2pDf8SAAAAADkGbNEmoQWyZTAgh//7gAAAACkGfUkUVLD//voEAAAAIAZ9xdEN/xIAAAAAIAZ9zakN/xIAAAAAOQZt4SahBbJlMCCH//uEAAAAKQZ+WRRUsP/++gAAAAAgBn7V0Q3/EgQAAAAgBn7dqQ3/EgQAAAA5Bm7xJqEFsmUwIIf/+4AAAAApBn9pFFSw//76BAAAACAGf+XRDf8SAAAAACAGf+2pDf8SBAAAADkGb4EmoQWyZTAgh//7hAAAACkGeHkUVLD//voAAAAAIAZ49dEN/xIAAAAAIAZ4/akN/xIEAAAAOQZokSahBbJlMCCH//uAAAAAKQZ5CRRUsP/++gQAAAAgBnmF0Q3/EgAAAAAgBnmNqQ3/EgQAAAA5BmmhJqEFsmUwIIf/+4QAAAApBnoZFFSw//76BAAAACAGepXRDf8SBAAAACAGep2pDf8SAAAAADkGarEmoQWyZTAgh//7gAAAACkGeykUVLD//voEAAAAIAZ7pdEN/xIAAAAAIAZ7rakN/xIAAAAAPQZruSahBbJlMFEw3//7B');
-      video.play();
-    }
-  };
-
-  this.release = function() {
-    video.pause();
-    video.src = '';
-  };
 }
-
-function iOSWakeLock() {
-  var timer = null;
-
-  this.request = function() {
-    if (!timer) {
-      timer = setInterval(function() {
-        window.location = window.location;
-        setTimeout(window.stop, 0);
-      }, 30000);
+function VRDisplay(config) {
+  config = config || {};
+  var USE_WAKELOCK = 'wakelock' in config ? config.wakelock : true;
+  this.isPolyfilled = true;
+  this.displayId = nextDisplayId++;
+  this.displayName = '';
+  this.depthNear = 0.01;
+  this.depthFar = 10000.0;
+  this.isPresenting = false;
+  Object.defineProperty(this, 'isConnected', {
+    get: function get() {
+      deprecateWarning('VRDisplay.prototype.isConnected', 'VRDisplayCapabilities.prototype.hasExternalDisplay');
+      return false;
     }
-  }
-
-  this.release = function() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
-}
-
-
-function getWakeLock() {
-  var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-  if (userAgent.match(/iPhone/i) || userAgent.match(/iPod/i)) {
-    return iOSWakeLock;
-  } else {
-    return AndroidWakeLock;
+  });
+  this.capabilities = new VRDisplayCapabilities({
+    hasPosition: false,
+    hasOrientation: false,
+    hasExternalDisplay: false,
+    canPresent: false,
+    maxLayers: 1
+  });
+  this.stageParameters = null;
+  this.waitingForPresent_ = false;
+  this.layer_ = null;
+  this.originalParent_ = null;
+  this.fullscreenElement_ = null;
+  this.fullscreenWrapper_ = null;
+  this.fullscreenElementCachedStyle_ = null;
+  this.fullscreenEventTarget_ = null;
+  this.fullscreenChangeHandler_ = null;
+  this.fullscreenErrorHandler_ = null;
+  if (USE_WAKELOCK && isMobile()) {
+    this.wakelock_ = new NoSleep$1();
   }
 }
-
-module.exports = getWakeLock();
-},{"./util.js":22}],25:[function(_dereq_,module,exports){
-/*
- * Copyright 2015 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-var Util = _dereq_('./util.js');
-var CardboardVRDisplay = _dereq_('./cardboard-vr-display.js');
-var MouseKeyboardVRDisplay = _dereq_('./mouse-keyboard-vr-display.js');
-// Uncomment to add positional tracking via webcam.
-//var WebcamPositionSensorVRDevice = require('./webcam-position-sensor-vr-device.js');
-var VRDisplay = _dereq_('./base.js').VRDisplay;
-var VRFrameData = _dereq_('./base.js').VRFrameData;
-var HMDVRDevice = _dereq_('./base.js').HMDVRDevice;
-var PositionSensorVRDevice = _dereq_('./base.js').PositionSensorVRDevice;
-var VRDisplayHMDDevice = _dereq_('./display-wrappers.js').VRDisplayHMDDevice;
-var VRDisplayPositionSensorDevice = _dereq_('./display-wrappers.js').VRDisplayPositionSensorDevice;
-
-function WebVRPolyfill() {
-  this.displays = [];
-  this.devices = []; // For deprecated objects
-  this.devicesPopulated = false;
-  this.nativeWebVRAvailable = this.isWebVRAvailable();
-  this.nativeLegacyWebVRAvailable = this.isDeprecatedWebVRAvailable();
-  this.nativeGetVRDisplaysFunc = this.nativeWebVRAvailable ?
-                                 navigator.getVRDisplays :
-                                 null;
-
-  if (!this.nativeLegacyWebVRAvailable) {
-    this.enablePolyfill();
-    if (WebVRConfig.ENABLE_DEPRECATED_API) {
-      this.enableDeprecatedPolyfill();
-    }
-  }
-
-  // Put a shim in place to update the API to 1.1 if needed.
-  InstallWebVRSpecShim();
-}
-
-WebVRPolyfill.prototype.isWebVRAvailable = function() {
-  return ('getVRDisplays' in navigator);
+VRDisplay.prototype.getFrameData = function (frameData) {
+  return frameDataFromPose(frameData, this._getPose(), this);
 };
-
-WebVRPolyfill.prototype.isDeprecatedWebVRAvailable = function() {
-  return ('getVRDevices' in navigator) || ('mozGetVRDevices' in navigator);
+VRDisplay.prototype.getPose = function () {
+  deprecateWarning('VRDisplay.prototype.getPose', 'VRDisplay.prototype.getFrameData');
+  return this._getPose();
 };
-
-WebVRPolyfill.prototype.populateDevices = function() {
-  if (this.devicesPopulated) {
+VRDisplay.prototype.resetPose = function () {
+  deprecateWarning('VRDisplay.prototype.resetPose');
+  return this._resetPose();
+};
+VRDisplay.prototype.getImmediatePose = function () {
+  deprecateWarning('VRDisplay.prototype.getImmediatePose', 'VRDisplay.prototype.getFrameData');
+  return this._getPose();
+};
+VRDisplay.prototype.requestAnimationFrame = function (callback) {
+  return raf(callback);
+};
+VRDisplay.prototype.cancelAnimationFrame = function (id) {
+  return caf(id);
+};
+VRDisplay.prototype.wrapForFullscreen = function (element) {
+  if (isIOS()) {
+    return element;
+  }
+  if (!this.fullscreenWrapper_) {
+    this.fullscreenWrapper_ = document.createElement('div');
+    var cssProperties = ['height: ' + Math.min(screen.height, screen.width) + 'px !important', 'top: 0 !important', 'left: 0 !important', 'right: 0 !important', 'border: 0', 'margin: 0', 'padding: 0', 'z-index: 999999 !important', 'position: fixed'];
+    this.fullscreenWrapper_.setAttribute('style', cssProperties.join('; ') + ';');
+    this.fullscreenWrapper_.classList.add('webvr-polyfill-fullscreen-wrapper');
+  }
+  if (this.fullscreenElement_ == element) {
+    return this.fullscreenWrapper_;
+  }
+  if (this.fullscreenElement_) {
+    if (this.originalParent_) {
+      this.originalParent_.appendChild(this.fullscreenElement_);
+    } else {
+      this.fullscreenElement_.parentElement.removeChild(this.fullscreenElement_);
+    }
+  }
+  this.fullscreenElement_ = element;
+  this.originalParent_ = element.parentElement;
+  if (!this.originalParent_) {
+    document.body.appendChild(element);
+  }
+  if (!this.fullscreenWrapper_.parentElement) {
+    var parent = this.fullscreenElement_.parentElement;
+    parent.insertBefore(this.fullscreenWrapper_, this.fullscreenElement_);
+    parent.removeChild(this.fullscreenElement_);
+  }
+  this.fullscreenWrapper_.insertBefore(this.fullscreenElement_, this.fullscreenWrapper_.firstChild);
+  this.fullscreenElementCachedStyle_ = this.fullscreenElement_.getAttribute('style');
+  var self = this;
+  function applyFullscreenElementStyle() {
+    if (!self.fullscreenElement_) {
+      return;
+    }
+    var cssProperties = ['position: absolute', 'top: 0', 'left: 0', 'width: ' + Math.max(screen.width, screen.height) + 'px', 'height: ' + Math.min(screen.height, screen.width) + 'px', 'border: 0', 'margin: 0', 'padding: 0'];
+    self.fullscreenElement_.setAttribute('style', cssProperties.join('; ') + ';');
+  }
+  applyFullscreenElementStyle();
+  return this.fullscreenWrapper_;
+};
+VRDisplay.prototype.removeFullscreenWrapper = function () {
+  if (!this.fullscreenElement_) {
     return;
   }
-
-  // Initialize our virtual VR devices.
-  var vrDisplay = null;
-
-  // Add a Cardboard VRDisplay on compatible mobile devices
-  if (this.isCardboardCompatible()) {
-    vrDisplay = new CardboardVRDisplay();
-    this.displays.push(vrDisplay);
-
-    // For backwards compatibility
-    if (WebVRConfig.ENABLE_DEPRECATED_API) {
-      this.devices.push(new VRDisplayHMDDevice(vrDisplay));
-      this.devices.push(new VRDisplayPositionSensorDevice(vrDisplay));
-    }
-  }
-
-  // Add a Mouse and Keyboard driven VRDisplay for desktops/laptops
-  if (!this.isMobile() && !WebVRConfig.MOUSE_KEYBOARD_CONTROLS_DISABLED) {
-    vrDisplay = new MouseKeyboardVRDisplay();
-    this.displays.push(vrDisplay);
-
-    // For backwards compatibility
-    if (WebVRConfig.ENABLE_DEPRECATED_API) {
-      this.devices.push(new VRDisplayHMDDevice(vrDisplay));
-      this.devices.push(new VRDisplayPositionSensorDevice(vrDisplay));
-    }
-  }
-
-  // Uncomment to add positional tracking via webcam.
-  //if (!this.isMobile() && WebVRConfig.ENABLE_DEPRECATED_API) {
-  //  positionDevice = new WebcamPositionSensorVRDevice();
-  //  this.devices.push(positionDevice);
-  //}
-
-  this.devicesPopulated = true;
-};
-
-WebVRPolyfill.prototype.enablePolyfill = function() {
-  // Provide navigator.getVRDisplays.
-  navigator.getVRDisplays = this.getVRDisplays.bind(this);
-
-  // Provide the VRDisplay object.
-  window.VRDisplay = VRDisplay;
-
-  // Provide navigator.vrEnabled.
-  var self = this;
-  Object.defineProperty(navigator, 'vrEnabled', {
-    get: function () {
-      return self.isCardboardCompatible() &&
-          (self.isFullScreenAvailable() || Util.isIOS());
-    }
-  });
-
-  if (!'VRFrameData' in window) {
-    // Provide the VRFrameData object.
-    window.VRFrameData = VRFrameData;
-  }
-};
-
-WebVRPolyfill.prototype.enableDeprecatedPolyfill = function() {
-  // Provide navigator.getVRDevices.
-  navigator.getVRDevices = this.getVRDevices.bind(this);
-
-  // Provide the CardboardHMDVRDevice and PositionSensorVRDevice objects.
-  window.HMDVRDevice = HMDVRDevice;
-  window.PositionSensorVRDevice = PositionSensorVRDevice;
-};
-
-WebVRPolyfill.prototype.getVRDisplays = function() {
-  this.populateDevices();
-  var polyfillDisplays = this.displays;
-
-  if (this.nativeWebVRAvailable) {
-    return this.nativeGetVRDisplaysFunc.call(navigator).then(function(nativeDisplays) {
-      if (WebVRConfig.ALWAYS_APPEND_POLYFILL_DISPLAY) {
-        return nativeDisplays.concat(polyfillDisplays);
-      } else {
-        return nativeDisplays.length > 0 ? nativeDisplays : polyfillDisplays;
-      }
-    });
+  var element = this.fullscreenElement_;
+  if (this.fullscreenElementCachedStyle_) {
+    element.setAttribute('style', this.fullscreenElementCachedStyle_);
   } else {
-    return new Promise(function(resolve, reject) {
-      try {
-        resolve(polyfillDisplays);
-      } catch (e) {
-        reject(e);
-      }
-    });
+    element.removeAttribute('style');
   }
+  this.fullscreenElement_ = null;
+  this.fullscreenElementCachedStyle_ = null;
+  var parent = this.fullscreenWrapper_.parentElement;
+  this.fullscreenWrapper_.removeChild(element);
+  if (this.originalParent_ === parent) {
+    parent.insertBefore(element, this.fullscreenWrapper_);
+  }
+  else if (this.originalParent_) {
+      this.originalParent_.appendChild(element);
+    }
+  parent.removeChild(this.fullscreenWrapper_);
+  return element;
 };
-
-WebVRPolyfill.prototype.getVRDevices = function() {
-  console.warn('getVRDevices is deprecated. Please update your code to use getVRDisplays instead.');
+VRDisplay.prototype.requestPresent = function (layers) {
+  var wasPresenting = this.isPresenting;
   var self = this;
-  return new Promise(function(resolve, reject) {
-    try {
-      if (!self.devicesPopulated) {
-        if (self.nativeWebVRAvailable) {
-          return navigator.getVRDisplays(function(displays) {
-            for (var i = 0; i < displays.length; ++i) {
-              self.devices.push(new VRDisplayHMDDevice(displays[i]));
-              self.devices.push(new VRDisplayPositionSensorDevice(displays[i]));
-            }
-            self.devicesPopulated = true;
-            resolve(self.devices);
-          }, reject);
-        }
-
-        if (self.nativeLegacyWebVRAvailable) {
-          return (navigator.getVRDDevices || navigator.mozGetVRDevices)(function(devices) {
-            for (var i = 0; i < devices.length; ++i) {
-              if (devices[i] instanceof HMDVRDevice) {
-                self.devices.push(devices[i]);
-              }
-              if (devices[i] instanceof PositionSensorVRDevice) {
-                self.devices.push(devices[i]);
-              }
-            }
-            self.devicesPopulated = true;
-            resolve(self.devices);
-          }, reject);
-        }
+  if (!(layers instanceof Array)) {
+    deprecateWarning('VRDisplay.prototype.requestPresent with non-array argument', 'an array of VRLayers as the first argument');
+    layers = [layers];
+  }
+  return new Promise(function (resolve, reject) {
+    if (!self.capabilities.canPresent) {
+      reject(new Error('VRDisplay is not capable of presenting.'));
+      return;
+    }
+    if (layers.length == 0 || layers.length > self.capabilities.maxLayers) {
+      reject(new Error('Invalid number of layers.'));
+      return;
+    }
+    var incomingLayer = layers[0];
+    if (!incomingLayer.source) {
+      resolve();
+      return;
+    }
+    var leftBounds = incomingLayer.leftBounds || defaultLeftBounds;
+    var rightBounds = incomingLayer.rightBounds || defaultRightBounds;
+    if (wasPresenting) {
+      var layer = self.layer_;
+      if (layer.source !== incomingLayer.source) {
+        layer.source = incomingLayer.source;
       }
-
-      self.populateDevices();
-      resolve(self.devices);
-    } catch (e) {
-      reject(e);
+      for (var i = 0; i < 4; i++) {
+        layer.leftBounds[i] = leftBounds[i];
+        layer.rightBounds[i] = rightBounds[i];
+      }
+      self.wrapForFullscreen(self.layer_.source);
+      self.updatePresent_();
+      resolve();
+      return;
+    }
+    self.layer_ = {
+      predistorted: incomingLayer.predistorted,
+      source: incomingLayer.source,
+      leftBounds: leftBounds.slice(0),
+      rightBounds: rightBounds.slice(0)
+    };
+    self.waitingForPresent_ = false;
+    if (self.layer_ && self.layer_.source) {
+      var fullscreenElement = self.wrapForFullscreen(self.layer_.source);
+      var onFullscreenChange = function onFullscreenChange() {
+        var actualFullscreenElement = getFullscreenElement();
+        self.isPresenting = fullscreenElement === actualFullscreenElement;
+        if (self.isPresenting) {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape-primary').catch(function (error) {
+              console.error('screen.orientation.lock() failed due to', error.message);
+            });
+          }
+          self.waitingForPresent_ = false;
+          self.beginPresent_();
+          resolve();
+        } else {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+          self.removeFullscreenWrapper();
+          self.disableWakeLock();
+          self.endPresent_();
+          self.removeFullscreenListeners_();
+        }
+        self.fireVRDisplayPresentChange_();
+      };
+      var onFullscreenError = function onFullscreenError() {
+        if (!self.waitingForPresent_) {
+          return;
+        }
+        self.removeFullscreenWrapper();
+        self.removeFullscreenListeners_();
+        self.disableWakeLock();
+        self.waitingForPresent_ = false;
+        self.isPresenting = false;
+        reject(new Error('Unable to present.'));
+      };
+      self.addFullscreenListeners_(fullscreenElement, onFullscreenChange, onFullscreenError);
+      if (requestFullscreen(fullscreenElement)) {
+        self.enableWakeLock();
+        self.waitingForPresent_ = true;
+      } else if (isIOS() || isWebViewAndroid()) {
+        self.enableWakeLock();
+        self.isPresenting = true;
+        self.beginPresent_();
+        self.fireVRDisplayPresentChange_();
+        resolve();
+      }
+    }
+    if (!self.waitingForPresent_ && !isIOS()) {
+      exitFullscreen();
+      reject(new Error('Unable to present.'));
     }
   });
 };
-
-/**
- * Determine if a device is mobile.
- */
-WebVRPolyfill.prototype.isMobile = function() {
-  return /Android/i.test(navigator.userAgent) ||
-      /iPhone|iPad|iPod/i.test(navigator.userAgent);
-};
-
-WebVRPolyfill.prototype.isCardboardCompatible = function() {
-  // For now, support all iOS and Android devices.
-  // Also enable the WebVRConfig.FORCE_VR flag for debugging.
-  return this.isMobile() || WebVRConfig.FORCE_ENABLE_VR;
-};
-
-WebVRPolyfill.prototype.isFullScreenAvailable = function() {
-  return (document.fullscreenEnabled ||
-          document.mozFullScreenEnabled ||
-          document.webkitFullscreenEnabled ||
-          false);
-};
-
-// Installs a shim that updates a WebVR 1.0 spec implementation to WebVR 1.1
-function InstallWebVRSpecShim() {
-  if ('VRDisplay' in window && !('VRFrameData' in window)) {
-    // Provide the VRFrameData object.
-    window.VRFrameData = VRFrameData;
-
-    // A lot of Chrome builds don't have depthNear and depthFar, even
-    // though they're in the WebVR 1.0 spec. Patch them in if they're not present.
-    if(!('depthNear' in window.VRDisplay.prototype)) {
-      window.VRDisplay.prototype.depthNear = 0.01;
+VRDisplay.prototype.exitPresent = function () {
+  var wasPresenting = this.isPresenting;
+  var self = this;
+  this.isPresenting = false;
+  this.layer_ = null;
+  this.disableWakeLock();
+  return new Promise(function (resolve, reject) {
+    if (wasPresenting) {
+      if (!exitFullscreen() && isIOS()) {
+        self.endPresent_();
+        self.fireVRDisplayPresentChange_();
+      }
+      if (isWebViewAndroid()) {
+        self.removeFullscreenWrapper();
+        self.removeFullscreenListeners_();
+        self.endPresent_();
+        self.fireVRDisplayPresentChange_();
+      }
+      resolve();
+    } else {
+      reject(new Error('Was not presenting to VRDisplay.'));
     }
-
-    if(!('depthFar' in window.VRDisplay.prototype)) {
-      window.VRDisplay.prototype.depthFar = 10000.0;
+  });
+};
+VRDisplay.prototype.getLayers = function () {
+  if (this.layer_) {
+    return [this.layer_];
+  }
+  return [];
+};
+VRDisplay.prototype.fireVRDisplayPresentChange_ = function () {
+  var event = new CustomEvent('vrdisplaypresentchange', { detail: { display: this } });
+  window.dispatchEvent(event);
+};
+VRDisplay.prototype.fireVRDisplayConnect_ = function () {
+  var event = new CustomEvent('vrdisplayconnect', { detail: { display: this } });
+  window.dispatchEvent(event);
+};
+VRDisplay.prototype.addFullscreenListeners_ = function (element, changeHandler, errorHandler) {
+  this.removeFullscreenListeners_();
+  this.fullscreenEventTarget_ = element;
+  this.fullscreenChangeHandler_ = changeHandler;
+  this.fullscreenErrorHandler_ = errorHandler;
+  if (changeHandler) {
+    if (document.fullscreenEnabled) {
+      element.addEventListener('fullscreenchange', changeHandler, false);
+    } else if (document.webkitFullscreenEnabled) {
+      element.addEventListener('webkitfullscreenchange', changeHandler, false);
+    } else if (document.mozFullScreenEnabled) {
+      document.addEventListener('mozfullscreenchange', changeHandler, false);
+    } else if (document.msFullscreenEnabled) {
+      element.addEventListener('msfullscreenchange', changeHandler, false);
     }
-
-    window.VRDisplay.prototype.getFrameData = function(frameData) {
-      return Util.frameDataFromPose(frameData, this.getPose(), this);
+  }
+  if (errorHandler) {
+    if (document.fullscreenEnabled) {
+      element.addEventListener('fullscreenerror', errorHandler, false);
+    } else if (document.webkitFullscreenEnabled) {
+      element.addEventListener('webkitfullscreenerror', errorHandler, false);
+    } else if (document.mozFullScreenEnabled) {
+      document.addEventListener('mozfullscreenerror', errorHandler, false);
+    } else if (document.msFullscreenEnabled) {
+      element.addEventListener('msfullscreenerror', errorHandler, false);
     }
   }
 };
-
-module.exports.WebVRPolyfill = WebVRPolyfill;
-
-},{"./base.js":3,"./cardboard-vr-display.js":6,"./display-wrappers.js":9,"./mouse-keyboard-vr-display.js":15,"./util.js":22}]},{},[13])(13)
+VRDisplay.prototype.removeFullscreenListeners_ = function () {
+  if (!this.fullscreenEventTarget_) return;
+  var element = this.fullscreenEventTarget_;
+  if (this.fullscreenChangeHandler_) {
+    var changeHandler = this.fullscreenChangeHandler_;
+    element.removeEventListener('fullscreenchange', changeHandler, false);
+    element.removeEventListener('webkitfullscreenchange', changeHandler, false);
+    document.removeEventListener('mozfullscreenchange', changeHandler, false);
+    element.removeEventListener('msfullscreenchange', changeHandler, false);
+  }
+  if (this.fullscreenErrorHandler_) {
+    var errorHandler = this.fullscreenErrorHandler_;
+    element.removeEventListener('fullscreenerror', errorHandler, false);
+    element.removeEventListener('webkitfullscreenerror', errorHandler, false);
+    document.removeEventListener('mozfullscreenerror', errorHandler, false);
+    element.removeEventListener('msfullscreenerror', errorHandler, false);
+  }
+  this.fullscreenEventTarget_ = null;
+  this.fullscreenChangeHandler_ = null;
+  this.fullscreenErrorHandler_ = null;
+};
+VRDisplay.prototype.enableWakeLock = function () {
+  if (this.wakelock_) {
+    this.wakelock_.enable();
+  }
+};
+VRDisplay.prototype.disableWakeLock = function () {
+  if (this.wakelock_) {
+    this.wakelock_.disable();
+  }
+};
+VRDisplay.prototype.beginPresent_ = function () {
+};
+VRDisplay.prototype.endPresent_ = function () {
+};
+VRDisplay.prototype.submitFrame = function (pose) {
+};
+VRDisplay.prototype.getEyeParameters = function (whichEye) {
+  return null;
+};
+var config = {
+  ADDITIONAL_VIEWERS: [],
+  DEFAULT_VIEWER: '',
+  MOBILE_WAKE_LOCK: true,
+  DEBUG: false,
+  DPDB_URL: 'https://dpdb.webvr.rocks/dpdb.json',
+  K_FILTER: 0.98,
+  PREDICTION_TIME_S: 0.040,
+  CARDBOARD_UI_DISABLED: false,
+  ROTATE_INSTRUCTIONS_DISABLED: false,
+  YAW_ONLY: false,
+  BUFFER_SCALE: 0.5,
+  DIRTY_SUBMIT_FRAME_BINDINGS: false
+};
+var Eye = {
+  LEFT: 'left',
+  RIGHT: 'right'
+};
+function CardboardVRDisplay(config$$1) {
+  var defaults = extend({}, config);
+  config$$1 = extend(defaults, config$$1 || {});
+  VRDisplay.call(this, {
+    wakelock: config$$1.MOBILE_WAKE_LOCK
+  });
+  this.config = config$$1;
+  this.displayName = 'Cardboard VRDisplay';
+  this.capabilities = new VRDisplayCapabilities({
+    hasPosition: false,
+    hasOrientation: true,
+    hasExternalDisplay: false,
+    canPresent: true,
+    maxLayers: 1
+  });
+  this.stageParameters = null;
+  this.bufferScale_ = this.config.BUFFER_SCALE;
+  this.poseSensor_ = new PoseSensor(this.config);
+  this.distorter_ = null;
+  this.cardboardUI_ = null;
+  this.dpdb_ = new Dpdb(this.config.DPDB_URL, this.onDeviceParamsUpdated_.bind(this));
+  this.deviceInfo_ = new DeviceInfo(this.dpdb_.getDeviceParams(), config$$1.ADDITIONAL_VIEWERS);
+  this.viewerSelector_ = new ViewerSelector(config$$1.DEFAULT_VIEWER);
+  this.viewerSelector_.onChange(this.onViewerChanged_.bind(this));
+  this.deviceInfo_.setViewer(this.viewerSelector_.getCurrentViewer());
+  if (!this.config.ROTATE_INSTRUCTIONS_DISABLED) {
+    this.rotateInstructions_ = new RotateInstructions();
+  }
+  if (isIOS()) {
+    window.addEventListener('resize', this.onResize_.bind(this));
+  }
+}
+CardboardVRDisplay.prototype = Object.create(VRDisplay.prototype);
+CardboardVRDisplay.prototype._getPose = function () {
+  return {
+    position: null,
+    orientation: this.poseSensor_.getOrientation(),
+    linearVelocity: null,
+    linearAcceleration: null,
+    angularVelocity: null,
+    angularAcceleration: null
+  };
+};
+CardboardVRDisplay.prototype._resetPose = function () {
+  if (this.poseSensor_.resetPose) {
+    this.poseSensor_.resetPose();
+  }
+};
+CardboardVRDisplay.prototype._getFieldOfView = function (whichEye) {
+  var fieldOfView;
+  if (whichEye == Eye.LEFT) {
+    fieldOfView = this.deviceInfo_.getFieldOfViewLeftEye();
+  } else if (whichEye == Eye.RIGHT) {
+    fieldOfView = this.deviceInfo_.getFieldOfViewRightEye();
+  } else {
+    console.error('Invalid eye provided: %s', whichEye);
+    return null;
+  }
+  return fieldOfView;
+};
+CardboardVRDisplay.prototype._getEyeOffset = function (whichEye) {
+  var offset;
+  if (whichEye == Eye.LEFT) {
+    offset = [-this.deviceInfo_.viewer.interLensDistance * 0.5, 0.0, 0.0];
+  } else if (whichEye == Eye.RIGHT) {
+    offset = [this.deviceInfo_.viewer.interLensDistance * 0.5, 0.0, 0.0];
+  } else {
+    console.error('Invalid eye provided: %s', whichEye);
+    return null;
+  }
+  return offset;
+};
+CardboardVRDisplay.prototype.getEyeParameters = function (whichEye) {
+  var offset = this._getEyeOffset(whichEye);
+  var fieldOfView = this._getFieldOfView(whichEye);
+  var eyeParams = {
+    offset: offset,
+    renderWidth: this.deviceInfo_.device.width * 0.5 * this.bufferScale_,
+    renderHeight: this.deviceInfo_.device.height * this.bufferScale_
+  };
+  Object.defineProperty(eyeParams, 'fieldOfView', {
+    enumerable: true,
+    get: function get() {
+      deprecateWarning('VRFieldOfView', 'VRFrameData\'s projection matrices');
+      return fieldOfView;
+    }
+  });
+  return eyeParams;
+};
+CardboardVRDisplay.prototype.onDeviceParamsUpdated_ = function (newParams) {
+  if (this.config.DEBUG) {
+    console.log('DPDB reported that device params were updated.');
+  }
+  this.deviceInfo_.updateDeviceParams(newParams);
+  if (this.distorter_) {
+    this.distorter_.updateDeviceInfo(this.deviceInfo_);
+  }
+};
+CardboardVRDisplay.prototype.updateBounds_ = function () {
+  if (this.layer_ && this.distorter_ && (this.layer_.leftBounds || this.layer_.rightBounds)) {
+    this.distorter_.setTextureBounds(this.layer_.leftBounds, this.layer_.rightBounds);
+  }
+};
+CardboardVRDisplay.prototype.beginPresent_ = function () {
+  var gl = this.layer_.source.getContext('webgl');
+  if (!gl) gl = this.layer_.source.getContext('experimental-webgl');
+  if (!gl) gl = this.layer_.source.getContext('webgl2');
+  if (!gl) return;
+  if (this.layer_.predistorted) {
+    if (!this.config.CARDBOARD_UI_DISABLED) {
+      gl.canvas.width = getScreenWidth() * this.bufferScale_;
+      gl.canvas.height = getScreenHeight() * this.bufferScale_;
+      this.cardboardUI_ = new CardboardUI(gl);
+    }
+  } else {
+    if (!this.config.CARDBOARD_UI_DISABLED) {
+      this.cardboardUI_ = new CardboardUI(gl);
+    }
+    this.distorter_ = new CardboardDistorter(gl, this.cardboardUI_, this.config.BUFFER_SCALE, this.config.DIRTY_SUBMIT_FRAME_BINDINGS);
+    this.distorter_.updateDeviceInfo(this.deviceInfo_);
+  }
+  if (this.cardboardUI_) {
+    this.cardboardUI_.listen(function (e) {
+      this.viewerSelector_.show(this.layer_.source.parentElement);
+      e.stopPropagation();
+      e.preventDefault();
+    }.bind(this), function (e) {
+      this.exitPresent();
+      e.stopPropagation();
+      e.preventDefault();
+    }.bind(this));
+  }
+  if (this.rotateInstructions_) {
+    if (isLandscapeMode() && isMobile()) {
+      this.rotateInstructions_.showTemporarily(3000, this.layer_.source.parentElement);
+    } else {
+      this.rotateInstructions_.update();
+    }
+  }
+  this.orientationHandler = this.onOrientationChange_.bind(this);
+  window.addEventListener('orientationchange', this.orientationHandler);
+  this.vrdisplaypresentchangeHandler = this.updateBounds_.bind(this);
+  window.addEventListener('vrdisplaypresentchange', this.vrdisplaypresentchangeHandler);
+  this.fireVRDisplayDeviceParamsChange_();
+};
+CardboardVRDisplay.prototype.endPresent_ = function () {
+  if (this.distorter_) {
+    this.distorter_.destroy();
+    this.distorter_ = null;
+  }
+  if (this.cardboardUI_) {
+    this.cardboardUI_.destroy();
+    this.cardboardUI_ = null;
+  }
+  if (this.rotateInstructions_) {
+    this.rotateInstructions_.hide();
+  }
+  this.viewerSelector_.hide();
+  window.removeEventListener('orientationchange', this.orientationHandler);
+  window.removeEventListener('vrdisplaypresentchange', this.vrdisplaypresentchangeHandler);
+};
+CardboardVRDisplay.prototype.updatePresent_ = function () {
+  this.endPresent_();
+  this.beginPresent_();
+};
+CardboardVRDisplay.prototype.submitFrame = function (pose) {
+  if (this.distorter_) {
+    this.updateBounds_();
+    this.distorter_.submitFrame();
+  } else if (this.cardboardUI_ && this.layer_) {
+    var canvas = this.layer_.source.getContext('webgl').canvas;
+    if (canvas.width != this.lastWidth || canvas.height != this.lastHeight) {
+      this.cardboardUI_.onResize();
+    }
+    this.lastWidth = canvas.width;
+    this.lastHeight = canvas.height;
+    this.cardboardUI_.render();
+  }
+};
+CardboardVRDisplay.prototype.onOrientationChange_ = function (e) {
+  this.viewerSelector_.hide();
+  if (this.rotateInstructions_) {
+    this.rotateInstructions_.update();
+  }
+  this.onResize_();
+};
+CardboardVRDisplay.prototype.onResize_ = function (e) {
+  if (this.layer_) {
+    var gl = this.layer_.source.getContext('webgl');
+    var cssProperties = ['position: absolute', 'top: 0', 'left: 0',
+    'width: 100vw', 'height: 100vh', 'border: 0', 'margin: 0',
+    'padding: 0px', 'box-sizing: content-box'];
+    gl.canvas.setAttribute('style', cssProperties.join('; ') + ';');
+    safariCssSizeWorkaround(gl.canvas);
+  }
+};
+CardboardVRDisplay.prototype.onViewerChanged_ = function (viewer) {
+  this.deviceInfo_.setViewer(viewer);
+  if (this.distorter_) {
+    this.distorter_.updateDeviceInfo(this.deviceInfo_);
+  }
+  this.fireVRDisplayDeviceParamsChange_();
+};
+CardboardVRDisplay.prototype.fireVRDisplayDeviceParamsChange_ = function () {
+  var event = new CustomEvent('vrdisplaydeviceparamschange', {
+    detail: {
+      vrdisplay: this,
+      deviceInfo: this.deviceInfo_
+    }
+  });
+  window.dispatchEvent(event);
+};
+CardboardVRDisplay.VRFrameData = VRFrameData;
+CardboardVRDisplay.VRDisplay = VRDisplay;
+return CardboardVRDisplay;
+})));
 });
+var CardboardVRDisplay = unwrapExports(cardboardVrDisplay);
+
+var version = "0.10.10";
+
+var DefaultConfig = {
+  ADDITIONAL_VIEWERS: [],
+  DEFAULT_VIEWER: '',
+  PROVIDE_MOBILE_VRDISPLAY: true,
+  MOBILE_WAKE_LOCK: true,
+  DEBUG: false,
+  DPDB_URL: 'https://dpdb.webvr.rocks/dpdb.json',
+  K_FILTER: 0.98,
+  PREDICTION_TIME_S: 0.040,
+  CARDBOARD_UI_DISABLED: false,
+  ROTATE_INSTRUCTIONS_DISABLED: false,
+  YAW_ONLY: false,
+  BUFFER_SCALE: 0.5,
+  DIRTY_SUBMIT_FRAME_BINDINGS: false
+};
+
+function WebVRPolyfill(config) {
+  this.config = extend(extend({}, DefaultConfig), config);
+  this.polyfillDisplays = [];
+  this.enabled = false;
+  this.hasNative = 'getVRDisplays' in navigator;
+  this.native = {};
+  this.native.getVRDisplays = navigator.getVRDisplays;
+  this.native.VRFrameData = window.VRFrameData;
+  this.native.VRDisplay = window.VRDisplay;
+  if (!this.hasNative || this.config.PROVIDE_MOBILE_VRDISPLAY && isMobile()) {
+    this.enable();
+    this.getVRDisplays().then(function (displays) {
+      if (displays && displays[0] && displays[0].fireVRDisplayConnect_) {
+        displays[0].fireVRDisplayConnect_();
+      }
+    });
+  }
+}
+WebVRPolyfill.prototype.getPolyfillDisplays = function () {
+  if (this._polyfillDisplaysPopulated) {
+    return this.polyfillDisplays;
+  }
+  if (isMobile()) {
+    var vrDisplay = new CardboardVRDisplay({
+      ADDITIONAL_VIEWERS: this.config.ADDITIONAL_VIEWERS,
+      DEFAULT_VIEWER: this.config.DEFAULT_VIEWER,
+      MOBILE_WAKE_LOCK: this.config.MOBILE_WAKE_LOCK,
+      DEBUG: this.config.DEBUG,
+      DPDB_URL: this.config.DPDB_URL,
+      CARDBOARD_UI_DISABLED: this.config.CARDBOARD_UI_DISABLED,
+      K_FILTER: this.config.K_FILTER,
+      PREDICTION_TIME_S: this.config.PREDICTION_TIME_S,
+      ROTATE_INSTRUCTIONS_DISABLED: this.config.ROTATE_INSTRUCTIONS_DISABLED,
+      YAW_ONLY: this.config.YAW_ONLY,
+      BUFFER_SCALE: this.config.BUFFER_SCALE,
+      DIRTY_SUBMIT_FRAME_BINDINGS: this.config.DIRTY_SUBMIT_FRAME_BINDINGS
+    });
+    this.polyfillDisplays.push(vrDisplay);
+  }
+  this._polyfillDisplaysPopulated = true;
+  return this.polyfillDisplays;
+};
+WebVRPolyfill.prototype.enable = function () {
+  this.enabled = true;
+  if (this.hasNative && this.native.VRFrameData) {
+    var NativeVRFrameData = this.native.VRFrameData;
+    var nativeFrameData = new this.native.VRFrameData();
+    var nativeGetFrameData = this.native.VRDisplay.prototype.getFrameData;
+    window.VRDisplay.prototype.getFrameData = function (frameData) {
+      if (frameData instanceof NativeVRFrameData) {
+        nativeGetFrameData.call(this, frameData);
+        return;
+      }
+      nativeGetFrameData.call(this, nativeFrameData);
+      frameData.pose = nativeFrameData.pose;
+      copyArray(nativeFrameData.leftProjectionMatrix, frameData.leftProjectionMatrix);
+      copyArray(nativeFrameData.rightProjectionMatrix, frameData.rightProjectionMatrix);
+      copyArray(nativeFrameData.leftViewMatrix, frameData.leftViewMatrix);
+      copyArray(nativeFrameData.rightViewMatrix, frameData.rightViewMatrix);
+    };
+  }
+  navigator.getVRDisplays = this.getVRDisplays.bind(this);
+  window.VRDisplay = CardboardVRDisplay.VRDisplay;
+  window.VRFrameData = CardboardVRDisplay.VRFrameData;
+};
+WebVRPolyfill.prototype.getVRDisplays = function () {
+  var _this = this;
+  var config = this.config;
+  if (!this.hasNative) {
+    return Promise.resolve(this.getPolyfillDisplays());
+  }
+  return this.native.getVRDisplays.call(navigator).then(function (nativeDisplays) {
+    return nativeDisplays.length > 0 ? nativeDisplays : _this.getPolyfillDisplays();
+  });
+};
+WebVRPolyfill.version = version;
+WebVRPolyfill.VRFrameData = CardboardVRDisplay.VRFrameData;
+WebVRPolyfill.VRDisplay = CardboardVRDisplay.VRDisplay;
+
+
+var webvrPolyfill = Object.freeze({
+	default: WebVRPolyfill
+});
+
+var require$$0 = ( webvrPolyfill && WebVRPolyfill ) || webvrPolyfill;
+
+if (typeof commonjsGlobal !== 'undefined' && commonjsGlobal.window) {
+  if (!commonjsGlobal.document) {
+    commonjsGlobal.document = commonjsGlobal.window.document;
+  }
+  if (!commonjsGlobal.navigator) {
+    commonjsGlobal.navigator = commonjsGlobal.window.navigator;
+  }
+}
+var src = require$$0;
+
+return src;
+
+})));
