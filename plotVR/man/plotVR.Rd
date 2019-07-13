@@ -4,15 +4,34 @@
 \alias{plotVR}
 \title{Plot data into the Cardboard VR}
 \usage{
-plotVR(data, col = NULL, broadcast = getOption("plotVF.default.broadcast",
-  broadcastRefresh))
+plotVR(data, col = NULL, size = NULL, type = "p", lines = NULL,
+  name = NULL, description = NULL, speed = 0L, autoScale = T,
+  digits = 5, doOpenController = TRUE, .send = TRUE)
 }
 \arguments{
 \item{data}{data frame of which the first three columns will be used in the scatter.}
 
-\item{col}{the color for all the points}
+\item{col}{the color}
 
-\item{broadcast}{can specify another server to use.}
+\item{size}{the size}
+
+\item{type}{point (p) or line (l)}
+
+\item{lines}{if you want to have lines addition to data}
+
+\item{name}{the name of this dataset - by default will be inferred from \code{data}.}
+
+\item{description}{description of the data}
+
+\item{speed}{the speed along which the viewer will fly through data}
+
+\item{autoScale}{standardize data before sending}
+
+\item{digits}{precision of data sent}
+
+\item{doOpenController}{after sending, should the controller be (re-)opened?}
+
+\item{.send}{send the data}
 }
 \description{
 This is the main function for usage of plotVR.

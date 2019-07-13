@@ -1,29 +1,22 @@
 
 # the state of the controller:
 pkg.env <- new.env()
+
 # list of all connected clients
-pkg.env$all_clients <- list()
+pkg.env$clients <- list()
+
 # the handle of the httpuv-server daemon
 pkg.env$server_handle <- NULL
+
 # the model to serve to devices
 pkg.env$vr_data_json <- NULL
-# the global keyboard of the controller
-pkg.env$keyboard <- NULL
-# indicates whether the server 'blocking' or 'daemon' (or 'none')
-pkg.env$server.type <- 'none'
-# indicates whether the server was stopped (used for the blocking server)
-pkg.env$stopped <- FALSE
+
 # interval for blocking server to serve at once
 pkg.env$interruptIntervalMs <- 250
 
-# list of controllers
-pkg.env$controller <- list()
-# list of focus
-pkg.env$focus <- list()
-
 log.info <- function(...){
   try({
-    if(getOption("plotVR.log.info", default=FALSE))
+    if(getOption("plotVR.log.info", default=TRUE))
       cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), "plotVR info:",...,fill=T)
   })
   try({
@@ -33,36 +26,74 @@ log.info <- function(...){
   })
 }
 
+# ' @importFrom datasets iris
+defaultDataJson <- function()
+  plotVR(datasets::iris[,1:3],col=datasets::iris$Species, name="Iris", .send=FALSE, doOpenController=F)
+
 
 process_request <- function(req, base="~/density/vr/") {
   log.info("Serving",req$PATH_INFO)
   # print(ls.str(req))
+  log.info(req$REQUEST_METHOD)
   if(req$REQUEST_METHOD=="POST"){
-    log.info('Got POST Content-type;',req$CONTENT_TYPE)
-    #print(ls.str(req))
-    input_str <- req$rook.input$read_lines()
-    input_str <- paste(input_str, collapse="\n")
-    if(substring(input_str,0,5)=="data=")
-      input_str <- URLdecode(substring(input_str,6))
-    if(req$QUERY_STRING == "?add=TRUE"){
-      warning('Adding not yet implemented')
-    }else{
-      pkg.env$vr_data_json <- input_str
-    }
-    log.info('Having new data from POST -- nchar:',paste0(nchar(input_str),collapse=','),'data:',input_str)
-    #ws()log.info(pkg.env$vr_data_json,fill=T)
-    broadcastRefresh()
-    log.info('got data and broadcasted refresh')
-    return(list(status = 200L,
-                headers = list('Content-Type' = 'text/plain'),
-                body = "OK"))
+    return(handle_upload_data(req))
   }
   path <- req$PATH_INFO
-  wsUrl = paste0('"ws://', ifelse(is.null(req$HTTP_HOST), req$SERVER_NAME, req$HTTP_HOST),'"')
+  wsUrl = paste0('ws://', ifelse(is.null(req$HTTP_HOST), req$SERVER_NAME, req$HTTP_HOST),'/ws')
   if(path=="/") path <- "/index.html"
   if(path=="/plotVR.html") path <- "/index.html"
-  if( path == '/echo' ){
+  if( path == '/echo' )
+    return(handle_echo(wsUrl))
+  if(path == "/qr.json"){
+    url <- getUrl()
+    qr <- ''
+    # try(qr <- qrcode::qrcode_gen(url, dataOutput=TRUE, plotQRcode=FALSE), silent=T)
+    qr_json <- jsonlite::toJSON(list(qr=qr, url=url), auto_unbox=TRUE)
     return(list(status = 200L,
+                headers = list('Content-Type' = 'application/json'),
+                body = qr_json ))
+  }else if(path == "/data.json"){
+    if(is.null(pkg.env$vr_data_json))
+      pkg.env$vr_data_json <- defaultDataJson()
+    return(list(status = 200L,
+                headers = list('Content-Type' = 'application/json'),
+                body = pkg.env$vr_data_json ))
+  }else{
+    real_filename <- system.file(path,package="plotVR")
+    real_filename <- sub("../","", real_filename,fixed=T)
+    log.info(" changed to ",real_filename)
+
+    if(!file.exists(real_filename)){
+      log.info("Does not exist!!")
+      return(list(status=404L,headers=list('Content-Type'="text/plain"),body="Nothing here."))
+    }
+    content_type <- 'text/html'
+    if(tools::file_ext(path)=="png") content_type <- "image/png"
+    if(tools::file_ext(path)=="js") content_type <- "application/javascript"
+    return(list(status = 200L,
+                headers = list('Content-Type' = content_type),
+                body = list(file=real_filename)))
+  }
+}
+
+handle_upload_data <- function(req){
+  log.info('Got POST Content-type;', req$CONTENT_TYPE)
+  input_str <- req$rook.input$read_lines()
+  json_data <- paste(input_str, collapse="\n")
+  pkg.env$vr_data_json <- json_data
+  log.info('Having new data from POST -- nchar:',paste0(nchar(json_data),collapse=','),'data:',json_data)
+  #ws()log.info(pkg.env$vr_data_json,fill=T)
+
+  broadcastRefresh()
+
+  log.info('got data and broadcasted refresh')
+  return(list(status = 200L,
+              headers = list('Content-Type' = 'text/plain'),
+              body = "OK"))
+}
+
+handle_echo <- function(wsUrl){
+  list(status = 200L,
                 headers = list('Content-Type' = 'text/html'),
                 body = paste(
                   sep = "\r\n",
@@ -97,131 +128,71 @@ process_request <- function(req, base="~/density/vr/") {
                   "</body>",
                   "</html>"
                 )
-    ))
-  }else if(path == "/qr.json"){
-    url <- getUrl()
-    qr <- qrcode::qrcode_gen(url, dataOutput=TRUE, plotQRcode=FALSE)
-    data_frag <- paste(apply(qr,1,paste, collapse=','),collapse="],\n[")
-    qr_json <- paste('{ qr: [[ ',data_frag,']]\n}\n')
-    return(list(status = 200L,
-                headers = list('Content-Type' = 'application/json'),
-                body = qr_json ))
-  }else if(path == "/data.json"){
-    if(is.null(pkg.env$vr_data_json))
-      pkg.env$vr_data_json <- writeData(iris[,1:3],col=iris$Species,loc=NULL)
-    return(list(status = 200L,
-                headers = list('Content-Type' = 'application/json'),
-                body = pkg.env$vr_data_json ))
-  }else{
-    if(substring(path,2,2)=="_"){
-      real_filename <- substring(path,3)
-    }else{
-      real_filename <- system.file(path,package="plotVR")
-    }
-    real_filename <- sub("../","", real_filename,fixed=T)
-    log.info(" changed to ",real_filename)
-
-    if(!file.exists(real_filename)){
-      log.info("Does not exist!!")
-      return(list(status=404L,headers=list('Content-Type'="text/plain"),body="Nothing here."))
-    }
-    content_type <- 'text/html'
-    if(tools::file_ext(path)=="png") content_type <- "image/png"
-    return(list(status = 200L,
-                headers = list('Content-Type' = content_type),
-                body = list(file=real_filename)))
-  }
+    )
 }
 
 
 processWS <- function(thesock) {
   log.info("got WebSocket")
-  tt_handle <- if(getOption('plotVR.keyboard.individual',default=FALSE))
-    tk_keyboard(thesock$send, wait=F, closeSock=thesock$close)
-  else
-    NULL
-  pkg.env$all_clients <- c(pkg.env$all_clients, list(thesock) )
-  setNumberDevices(length(pkg.env$all_clients))
-  #str(pkg.env$all_clients)
-  thesock$onMessage(function(binary, message) {
-    log.info("got WS message",message)
-    if(message=="close"){
-      onClose(thesock, tt_handle)
-    }else if(message == "shutdown"){
-      # FIXME broadcast it?
-      stopServer()
-    }else if(startsWith(message, prefix="broadcast key ")){
-      key <- substring(message, nchar("broadcast key ")+1)
-      broadcastDevices(key)
-    }else if(message == "controller: 1"){
-      pkg.env$controller[[thesock$.handle]] <- 1
-    }else if(message == "focus: 1"){
-      pkg.env$focus[[thesock$.handle]] <- 1
-    }else if(message == "focus: 0"){
-      pkg.env$focus[[thesock$.handle]] <- 0
-    }else{
-      thesock$send(paste0('got message: ',message))
-    }
-  })
-  thesock$onClose(function(){
-    log.info("got WS close")
-    onClose(thesock, tt_handle)
-  })
+  self <- as.environment(list(ws=thesock, isDevice=F, isController=F, hasFocus=F))
+  pkg.env$clients <- c(pkg.env$clients, list(self))
+  thesock$onMessage(function(binary, message) onMessage(binary, message, self))
+  thesock$onClose(function() onClose(self) )
 }
 
-onClose <- function(thesock, tt_handle){
-  handle <- thesock$.handle
+onMessage <- function(binary, message, self) {
+    log.info("got WS message",message)
+    body <- jsonlite::fromJSON(message)
+    keys <- ls(body)
+    if('shutdown' %in% keys){
+      # FIXME broadcast it?
+      stopBlockingServer()
+      return()
+    }
+    sendStatus <- F
+    if('focus' %in% keys){
+      self$hasFocus <- body$focus
+      sendStatus <- T
+    }
+    if('controller' %in% keys){
+      self$isController <- body$controller
+      sendStatus <- T
+    }
+    if('device' %in% keys){
+      self$isDevice <- body$device
+      sendStatus <- T
+    }
+    if(sendStatus){
+      broadcastStatus()
+    }else{
+      broadcast(message)
+    }
+  }
+
+onClose <- function(self){
+  handle <- self$thesock$.handle
   log.info("Closing websocket: ",handle)
   # str(thesock)
   # remove that client from all_clients
-  handles <- sapply(pkg.env$all_clients, function(x) x$.handle)
+  handles <- sapply(pkg.env$clients, function(x) x$thesock$.handle)
   pkg.env$all_clients <- pkg.env$all_clients[handles != handle]
-  setNumberDevices(length(pkg.env$all_clients))
-  # close keyboard for that client
-  if(!is.null(tt_handle))
-    tkdestroy(tt_handle)
-  if(handle %in% pkg.env$controller)
-    pkg.env[[controller]] <- -1
-  if(handle %in% pkg.env$focus)
-    pkg.env[[focus]] <- -1
   log.info("Closed websocket: ",handle)
 }
 
-easyWS <- function(ws) {
-  try({
-    log.info('open easy ws: ',ws$.handle)
-    pkg.env$all_clients <- c(pkg.env$all_clients, list(ws))
-    ws$onMessage(function(binary, message) {
-      log.info('easy ws ',ws$.handle,'message: ',message,'\n')
-      .lastMessage <<- message
-      ws$send(message)
-    })
-  })
-}
-
 app <- list(call=process_request, onWSOpen = processWS)
-# app <- list(call=process_request, onWSOpen = easyWS)
 
-startGlobalKeyboard <- function(){
-  # if(!getOption('plotVR.keyboard.individual',default=FALSE))
-  #   pkg.env$keyboard <- tk_keyboard(broadcastDevices, wait=F, closeSock=function(){}, link=getUrl())
-}
-
-#' Start the WebServer in a blocking version.
-#' @export
+# ' Start the WebServer in a blocking version.
 startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=ifelse(interactive(), 100, 1000)){
 
-  startGlobalKeyboard()
-
+  log.info("Welcome to the PlotVR Server")
   server <- httpuv::startServer(host, port, app)
   pkg.env$server_handle <- server
-  pkg.env$server.type <- 'blocking'
 
   on.exit(stopBlockingServer())
   pkg.env$stopped <- FALSE
   pkg.env$interruptIntervalMs <- interruptIntervalMs
 
-  cat('Now do: browseURL("http://",host,":",port,"/")\n')
+  cat('Now do: browseURL("http://',host,':',port,'/")\n')
 
   while (!pkg.env$stopped) {
     httpuv::service(interruptIntervalMs)
@@ -231,28 +202,7 @@ startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=i
   log.info("Stopped blocking server")
 }
 
-#' @export
-#' @import httpuv
-startDaemonServer <- function(){
-  pkg.env$server_handle <- httpuv::startDaemonizedServer("0.0.0.0", 2908, app)
-  pkg.env$server.type <- 'daemon'
-  cat("Started Daemon server: ",pkg.env$server_handle,"\n")
-  startGlobalKeyboard()
-  invisible(pkg.env$server_handle)
-}
 
-#' @export
-stopServer <- function(){
-  if(pkg.env$server.type == 'blocking'){
-    stopBlockingServer()
-  }else if(pkg.env$server.type == 'daemon'){
-    stopDaemonServer()
-  }else{
-    warning('stopping unknown server', pkg.env$server.type)
-  }
-}
-
-#' @export
 stopBlockingServer <- function(server=pkg.env$server_handle){
   if(is.null(server))
     return()
@@ -260,7 +210,6 @@ stopBlockingServer <- function(server=pkg.env$server_handle){
 
   if(server == pkg.env$server_handle){
     pkg.env$server_handle <- NULL
-    pkg.env$server.type <- 'none'
 
     # set stopped flag and give time
     pkg.env$stopped <- TRUE
@@ -270,75 +219,31 @@ stopBlockingServer <- function(server=pkg.env$server_handle){
 
   try(httpuv::stopServer(server))
 
-  if(!is.null(pkg.env$keyboard)){
-    tkdestroy(pkg.env$keyboard)
-    pkg.env$keyboard <- NULL
-  }
-  # FIXME remove on.exit() handler??
   log.info("succeeded\n")
-}
-
-#' @export
-stopDaemonServer <- function(){
-  if(is.null(pkg.env$server_handle))
-    return()
-  log.info("Stopping Daemon Server ",pkg.env$server_handle,"... ")
-  try(httpuv::stopDaemonizedServer(pkg.env$server_handle))
-  pkg.env$server_handle <- NULL
-
-  if(!is.null(pkg.env$keyboard)){
-    tkdestroy(pkg.env$keyboard)
-    pkg.env$keyboard <- null
-  }
-  log.info("succeeded\n")
-}
-
-setNumberDevices <- function(num){
-  # tclvalue(pkg.env$connectedText) <- num
-  broadcastDevices(paste0('number devices: ',num))
 }
 
 broadcastRefresh <- function(data){
   if(!missing(data)){
     pkg.env$vr_data_json <- data
   }
-  broadcastDevices("reload_data")
+  broadcast(list(key='reload_data'))
 }
 
-broadcastDevices <- function(message){
-  # lazy start Server
-  if(is.null(pkg.env$server_handle))
-    startDaemonServer()
-  log.info('Broadcasting:',message)
-  for(ws in pkg.env$all_clients){
+broadcastStatus <- function(data){
+  print(length(pkg.env$clients))
+  status <- list(
+    numDevices=sum(sapply(pkg.env$clients, `[[`, 'isDevice')),
+    numControllers=sum(sapply(pkg.env$clients, `[[`, 'isController')),
+    numFocus=sum(sapply(pkg.env$clients, `[[`, 'hasFocus'))
+  )
+  broadcast(list(status=status))
+}
+
+broadcast <- function(message){
+  if(!is.character(message))
+    message <- jsonlite::toJSON(message, auto_unbox=TRUE, pretty=TRUE)
+  for(client in pkg.env$clients){
     log.info("Sending", message, "to") #,as.character(ws))
-    try(ws$send(message))
+    try(client$ws$send(message))
   }
-}
-
-.onAttach <- function(libname, pkgname){
-  # if(interactive() && getOption('plotVR.startOnAttach', default=FALSE))
-    # startDaemonServer()
-}
-
-
-.onDetach <- function(libpath){
-  log.info("Detaching!!!\n")
-  stopDaemonServer()
-}
-.onUnload <- function(libpath){
-  log.info("Unloading!!!\n")
-  stopDaemonServer()
-}
-
-
-#' @export
-.Last.lib <- function(libpath){
-  log.info("Detaching or Unloading via .Last.lib!!!\n")
-  stopTheDaemonServer()
-}
-
-restartDaemonServer <- function(){
-  stopDaemonServer()
-  startDaemonServer()
 }

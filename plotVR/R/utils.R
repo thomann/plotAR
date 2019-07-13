@@ -34,6 +34,16 @@ getHostInfo <- function(hostname=R.utils::System$getHostname()){
   strsplit(out, " has address ")
 }
 
+#' Get the URL to which to connect to.
+#'
+#' @param host the host of the URL - if \code{NULL} will be guessed.
+#' @param port the port to connect to
+#' @param useIP if \code{TRUE} will guess the IP instead of hostname. Connecting to IPs should be less hassle in most situations where
+#' the device and the server are on the same subnet behind a NAT (e.g. at home) or behind a firewall (i.e. in a company).
+#' @param useFullName get the hostname from System$getHostname.
+#'
+#' @return an URL string to connect to
+#' @export
 getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
   if(useIP){
     host <- getIP()
@@ -60,7 +70,7 @@ getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
 }
 
 showQR <- function(...){
-  require(qrcode)
+  # require(qrcode)
 
   url <- getUrl(...)
   # viewer <- getOption('viewer')

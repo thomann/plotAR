@@ -2,13 +2,41 @@
 
 defaultSpeed <- 0;
 
-
-writeData <- function(data,col=NULL,speed=NULL,loc="./data.json",autoScale=T){
+#' Plot data into the Cardboard VR
+#'
+#' This is the main function for usage of plotVR.
+#' If necessary it starts a deamonized server and posts the data on that server.
+#' If no controller is open one also will be opened.
+#' All connected devices will be informed of the new data and should reload the data.
+#'
+#' @param data data frame of which the first three columns will be used in the scatter.
+#' @param col the color
+#' @param size the size
+#' @param type point (p) or line (l)
+#' @param lines if you want to have lines addition to data
+#' @param label text labels of data
+#' @param name the name of this dataset - by default will be inferred from \code{data}.
+#' @param description description of the data
+#' @param speed the speed along which the viewer will fly through data
+#' @param autoScale standardize data before sending
+#' @param digits precision of data sent
+#' @param doOpenController after sending, should the controller be (re-)opened?
+#' @param .send send the data
+#'
+#' @export
+#' @seealso \code{\link{open}}
+#' @examples
+#' \dontrun{
+#' plotVR(iris, col=iris$Species)
+#' }
+plotVR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
+           name=NULL, description=NULL, speed=0L, autoScale=T,
+           digits=5, doOpenController=TRUE, .send=TRUE){
+  if(is.null(name)) name <- deparse(substitute(data))
   if(is.null(speed)){
     speed <- defaultSpeed
     defaultSpeed <- as.integer(defaultSpeed==0)
   }
-  str(data)
   data <- data[,1:3]
   if(!is.null(col)){
     col <- as.integer(col)
@@ -20,49 +48,37 @@ writeData <- function(data,col=NULL,speed=NULL,loc="./data.json",autoScale=T){
   I <- !apply(is.na(data),1,any)
   data <- data[ I ,]
 
+  n <- nrow(data)
+
   ### Auto Scaling
   if(autoScale) data[,1:3] <- as.data.frame(scale(data[,1:3]))
-  str(data)
 
-  data_frag <- do.call(paste,c(data,collapse="],[",sep=","))
-  #write(paste("var data = [[ ",data_frag,"]];\nvar speed=",speed,"\n"),loc)
-  data_json <- paste('{ "data": [[ ',data_frag,']],\n"speed": ',speed,'\n}\n')
-  if(!is.null(loc)) write(data_json,loc)
-  invisible(data_json)
-}
-#writeData(threedim)
-#writeData(iris[,1:3],col=iris$Species)
+  body = list(data=as.matrix(data), speed=speed, protocolVersion='0.3.0')
+  if(!is.null(col)) body$col <- col
+  if(!is.null(size)) body$size <- size
+  if(!is.null(type)) body$type <- type
+  if(!is.null(label)) body$label <- label
 
-#' Plot data into the Cardboard VR
-#'
-#' This is the main function for usage of plotVR.
-#' If necessary it starts a deamonized server and posts the data on that server.
-#' If no controller is open one also will be opened.
-#' All connected devices will be informed of the new data and should reload the data.
-#'
-#' @param data data frame of which the first three columns will be used in the scatter.
-#' @param col the color for all the points
-#' @param broadcast can specify another server to use.
-#'
-#' @export
-#' @seealso \code{\link{open}}
-#' @examples
-#' \dontrun{
-#' plotVR(iris, col=iris$Species)
-#' }
-plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast', broadcastRefresh)){
-  data_json <- writeData(data[,1:3],col=col,loc=NULL)
-  broadcast(data_json)
-  openController()
+  if(is.null(name)) name <- deparse(substitute(data))
+  metadata <- list(name=name, n=n, created=Sys.time())
+  if(is.null(description)) metadata$description <- description
+  body$metadata <- metadata
+
+  # TODO auto_unbox is a problem if nrow(data)==1
+  if(n==1) warning("There might be a communication problem for nrow(data)==1 - consider adding a second point.")
+  data_json <- jsonlite::toJSON(body, auto_unbox=TRUE, digits=digits, pretty=TRUE)
+
+  if(.send) sendData(data_json)
+  if(doOpenController) openController()
   invisible(data_json)
 }
 
 #' Broadcast to a server via POST - hence this can run in another process or even on another host.
 #'
-#' @param data the JSON-model data to broadcast, from \link{writeData}
-#' @param server to which post to post the data, default is to \link{getURL} but also can be set
+#' @param data the JSON-model data to broadcast, from \link{plotVR}
+#' @param server to which post to post the data, default also can be set
 #' using \code{options(plotVR.broadcast.server="http://example.com:2908")}.
-#' @param ... passed to \code{\link{httr::POST}}.
+#' @param ... passed to \code{httr::POST}.
 #'
 #' @return invisible the response of the server
 #' @export
@@ -77,14 +93,19 @@ plotVR <- function(data, col=NULL, broadcast=getOption('plotVF.default.broadcast
 #' # or directly:
 #' plotVR(iris, broadcast=broadcastPost)
 #' }
-broadcastPost <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getUrl()), ...){
+sendData <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getUrl()), ...){
   ret <- httr::POST(server,body=data, ...)
-  openController()
   invisible(ret)
 }
 
-startExternalServerProcess <- function(){
-  R <- '"options(plotVR.log.info=T); plotVR::startBlockingServer()"'
-  cmd <- paste0(R.home('bin'),'/Rscript -e ', R)
-  system(cmd, wait=FALSE)
+#' Start Server
+#'
+#' @param ... passed to \code{callr::r_bg}
+#'
+#' @return the process object (invisibly)
+#' @export
+startExternalServerProcess <- function(...){
+  .proc <- callr::r_bg(function(){options(plotVR.log.info=T); plotVR:::startBlockingServer()}, ...)
+  pkg.env$external.proc <- .proc
+  invisible(.proc)
 }
