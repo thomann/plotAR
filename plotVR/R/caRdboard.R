@@ -46,8 +46,7 @@ process_request <- function(req, base="~/density/vr/") {
     return(handle_echo(wsUrl))
   if(path == "/qr.json"){
     url <- getUrl()
-    qr <- ''
-    # try(qr <- qrcode::qrcode_gen(url, dataOutput=TRUE, plotQRcode=FALSE), silent=T)
+    qr <- getQRCode(url)
     qr_json <- jsonlite::toJSON(list(qr=qr, url=url), auto_unbox=TRUE)
     return(list(status = 200L,
                 headers = list('Content-Type' = 'application/json'),

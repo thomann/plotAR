@@ -69,16 +69,6 @@ getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
   return(url)
 }
 
-showQR <- function(...){
-  # require(qrcode)
-
-  url <- getUrl(...)
-  # viewer <- getOption('viewer')
-  # viewer()
-  qrcode::qrcode_gen(url)
-  invisible(url)
-}
-
 openViewer <- function(...){
   url <- getUrl(...)
   viewer <- getOption('viewer')
@@ -129,3 +119,7 @@ zoom <- function(data, times){
   )[,rep(1:nrow(data),each=times)]
 }
 
+getQRCode <- function(url){
+  qr <- qrcode_gen_patch(url, dataOutput=TRUE, plotQRcode=FALSE)
+  return(qr)
+}
