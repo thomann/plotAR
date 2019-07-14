@@ -23,7 +23,7 @@ devtools::install_github('thomann/plotVR',subdir='plotVR-R')
 ```
 or the Python package:
 ```bash
-pip install git+https://github.com/thomann/plotvr#egg=plotvr&subdirectory=plotvr-py
+pip install "git+https://github.com/thomann/plotVR#egg=plotvr&subdirectory=plotVR-py"
 ```
 > The installation from sources currently needs symbolic links to work, which is a bit of an issue on windows (see below). If you cannot make it work, wait to obtain precompiled wheels.
 
