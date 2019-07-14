@@ -19,7 +19,7 @@ The technologies beneath this project are: a web server that handles the communi
 
 Install the R-package:
 ```r
-devtools::install_github('thomann/plotVR',subdir='plotVR')
+devtools::install_github('thomann/plotVR',subdir='plotVR-R')
 ```
 or the Python package:
 ```bash
@@ -109,7 +109,7 @@ plotVR(trees)
 * This repo uses symlinks which for Windows explicitely need to be activated, see <https://github.com/git-for-windows/git/wiki/Symbolic-Links>.
 * There need to be better keyboard assignments, and maybe some more interface in the keyboard focus window.
 * The default values are not well set, e.g. the starting point of the virtual observer.
-* The file `plotVR.m` can be used in MATLAB if you have access to one of the servers in Python or R.
+* The file `plotVR-matlab/plotVR.m` can be used in MATLAB if you have access to a running server in Python or R.
 
 ## Acknowledgements
 
