@@ -22,10 +22,10 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
         payload = np.hstack((data[:,:3],col.reshape((-1,1))))
     # todo: remove NAs, center and scale...
     body = {'data': payload.tolist(),'speed': 0, 'protocolVersion': '0.3.0'}
-    if col is not None: body['col'] = col
-    if size is not None: body['size'] = size
+    if col is not None: body['col'] = col.tolist()
+    if size is not None: body['size'] = size.tolist()
     if type is not None: body['type'] = type
-    if label is not None: body['label'] = label
+    if label is not None: body['label'] = label.tolist()
     if speed is not None: body['speed'] = speed
     metadata = { 'n': n, 'created': time.ctime() }
     metadata['name'] = name or "Dataset"
