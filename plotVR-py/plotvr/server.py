@@ -30,7 +30,7 @@ class MainHandler(tornado.web.RequestHandler):
         return self.write("OK\n")
 
     def broadcastRefresh(self):
-        broadcast("reload_data")
+        broadcast({'key': 'reload_data'})
 
 
 class QRHandler(tornado.web.RequestHandler):
@@ -46,11 +46,20 @@ class DataHandler(tornado.web.RequestHandler):
         return self.write(json.dumps(DATA)+"\n")
 
 
+def defaultData():
+    import numpy as np
+    from . import plotvr
+    data = np.random.normal(size=(100,3))
+    col = np.random.randint(4, size=100)
+    return plotvr(data, col, returnData=True, host=None)
+
 # The list of currently connected clients
 CLIENTS = []
 DATA = {}
-with open(Path(__file__).parent.parent.parent / 'plotVR' / 'data.json', 'r') as f:
-    DATA = json.load(f)
+try:
+    DATA = defaultData()
+except Exception as e:
+    logger.info("Could not load data.json: ", e)
 _PORT = 2908
 
 def broadcast(message):
@@ -99,6 +108,8 @@ class PlotVRWebSocketHandler(tornado.websocket.WebSocketHandler):
         if sendStatus:
             broadcast_status()
             return
+        if 'shutdown' in body and body['shutdown']:
+            _app.stop()
         broadcast(body)
 
     def on_close(self):

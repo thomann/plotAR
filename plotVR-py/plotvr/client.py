@@ -3,17 +3,39 @@ import subprocess
 
 import numpy as np
 import requests
+import time
 
 _host = "http://localhost:2908"
 
-def plotvr(data, col, host="http://localhost:2908"):
+def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
+           name=None, description=None, speed=None, autoScale=True,
+           digits=5, host="http://localhost:2908", returnData=False):
     global _host
     _host = host
-    payload = np.hstack((data[:,:3],col.reshape((-1,1))))
+    # TODO assert compatibility checks
+    n = data.shape[0]
+    for i in [col, size, lines, label]:
+        assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
+    if col is None:
+        payload = data[:,:3]
+    else:
+        payload = np.hstack((data[:,:3],col.reshape((-1,1))))
     # todo: remove NAs, center and scale...
-    body = {'data': payload.tolist(),'speed': 0}
+    body = {'data': payload.tolist(),'speed': 0, 'protocolVersion': '0.3.0'}
+    if col is not None: body['col'] = col
+    if size is not None: body['size'] = size
+    if type is not None: body['type'] = type
+    if label is not None: body['label'] = label
+    if speed is not None: body['speed'] = speed
+    metadata = { 'n': n, 'created': time.ctime() }
+    metadata['name'] = name or "Dataset"
+    if description is not None: metadata['description'] = description
+    body['metadata'] = metadata
     # data_json = json.dumps(, allow_nan=False)
-    requests.post(host, json=body)
+    if host is not None:
+        requests.post(host, json=body)
+    if returnData:
+        return body
 
 def controller(width="100%", height="200px"):
     url = _host + "/keyboard.html"
