@@ -81,6 +81,59 @@ class StatusHandler(tornado.web.RequestHandler):
         self.set_header("X-Plotvr-Version", __version__)
         return self.write(json.dumps(status())+"\n")
 
+class USDHandler(tornado.web.RequestHandler):
+    """Renders the USDA format usably on iOS"""
+    def get(self):
+        data = DATA['data']
+        spheres = ""
+        for i,row in enumerate(data):
+            x,y,z = row[:3]
+            color = "1, 0, 0"
+            if 'color' in DATA:
+                color = ["1,0,0","0,1,0","0,0,1"][DATA['color'][i] % 3]
+            spheres += f"""
+            def Sphere "Point{i}" {{
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                float3 xformOp:translate = ({x},{y},{z})
+                double radius = 0.02
+                color3f[] primvars:displayColor = [({color})]
+            }}
+            """
+        usda = """#usda 1.0
+        
+        (
+            upAxis = "Y"
+        )
+        
+        def Xform "Spheres" {
+            """ + spheres + """
+        }
+        """
+
+        if False:
+            from io import BytesIO
+            import zipfile
+            zipname = "clients_counter.zip"
+            f = BytesIO()
+            zf = zipfile.ZipFile(f, "w")
+            zf.writestr('data.usda', usda)
+            zf.close()
+            result = f.getvalue()
+        if True:
+            import tempfile, os
+            a = tempfile.mktemp('.usda')
+            b = tempfile.mktemp('.usdz')
+            print(a,b)
+            with open(a, 'w') as inp:
+                inp.write(usda)
+            cmd = f'xcrun usdz_converter {a} {b}'
+            logger.info("running "+cmd)
+            os.system(cmd)
+            with open(b, 'rb') as out:
+                result = out.read()
+
+        self.set_header('Content-Type', 'model/usd')
+        self.write(result)
 
 def defaultData():
     import numpy as np
@@ -169,6 +222,7 @@ _mappings = [
     (r"/data.json", DataHandler),
     (r"/status.json", StatusHandler),
     (r"/qr.json", QRHandler),
+    (r"/data.usdz", USDHandler),
     (r"/ws", PlotVRWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
