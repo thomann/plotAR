@@ -180,7 +180,16 @@ onClose <- function(self){
 
 app <- list(call=process_request, onWSOpen = processWS)
 
-# ' Start the WebServer in a blocking version.
+#' Start the WebServer in a blocking version.
+#'
+#' This blocks until interrupted or killed. This is the actual server
+#' that gets run by \code{\link{startServer}} in a background process.
+#'
+#' @param host on which host to listen
+#' @param port on which port to listen
+#' @param interruptIntervalMs passed to \code{httpuv}
+#'
+#' @export
 startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=ifelse(interactive(), 100, 1000)){
 
   log.info("Welcome to the PlotVR Server")

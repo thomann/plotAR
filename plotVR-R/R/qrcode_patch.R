@@ -4,6 +4,7 @@
 ## a package='qrcode'.
 ## Here are copied version of the codes, where there is a fixed line.
 
+#' @importFrom utils data head
 qrcode_gen_patch <- function (dataString, ErrorCorrectionLevel = "L", dataOutput = FALSE,
   plotQRcode = TRUE, wColor = "White", bColor = "black", mask = 1,
   softLimitFlag = TRUE)
@@ -14,13 +15,13 @@ qrcode_gen_patch <- function (dataString, ErrorCorrectionLevel = "L", dataOutput
   }
   else {
     data <- qrcode:::qrInitMatrix(qrInfo$Version)
-    dataPoly <- qrcode:::DataStringBinary(dataString, qrInfo)
+    dataPoly <- qrcode::DataStringBinary(dataString, qrInfo)
     poly <- qrcode:::polynomialGenerator(qrInfo$ECwordPerBlock)
-    allBinary <- qrcode:::qrInterleave(poly, dataPoly, qrInfo)
-    data <- qrcode:::qrFillUpMatrix(allBinary, data, qrInfo$Version)
-    dataMasked <- qrcode:::qrMask(data, qrInfo, mask)
+    allBinary <- qrcode::qrInterleave(poly, dataPoly, qrInfo)
+    data <- qrcode::qrFillUpMatrix(allBinary, data, qrInfo$Version)
+    dataMasked <- qrcode::qrMask(data, qrInfo, mask)
     if (plotQRcode) {
-      heatmap(dataMasked[nrow(dataMasked):1, ], Rowv = NA,
+      stats::heatmap(dataMasked[nrow(dataMasked):1, ], Rowv = NA,
         Colv = NA, scale = "none", col = c(wColor, bColor),
         labRow = "", labCol = "")
     }
@@ -37,7 +38,7 @@ qrcode_qrVersionInfo_patch <- function (dataString, ECLevel = "L")
   }
   qrCodeSpec <- ""
   # Fix for original
-  #     data(qrCodeSpec, envir = environment(), package='qrcode')
+  #     data(qrCodeSpec, envir = environment())
   # is the following
   data(qrCodeSpec, envir = environment(), package='qrcode')
 

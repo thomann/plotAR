@@ -5,7 +5,7 @@ This is a prototype to get your data into a Google Cardboard (VR) or into Augmen
 > This package was presented at EuroPython 2019.
 > Check out the recording video on <https://youtu.be/lxXC76jHc98?t=5h20m>. *The video covers the whole day in that room - the talk starts at 5h20m and ends at 5h46m.*
 
-Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? plotVR provides a simple way for data scientists to plot data, pick up a phone, get a real 3d impression - either by VR or by AR - and use the computer's keyboard to walk through the scatter plot (see [live demo](https://thomann.github.io/plotVR/plotVR/inst/)):
+Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? plotVR provides a simple way for data scientists to plot data, pick up a phone, get a real 3d impression - either by VR or by AR - and use the computer's keyboard to walk through the scatter plot (see [live demo](https://thomann.github.io/plotVR/plotVR-R/inst/)):
 
 ![Overview](images/overview.png?raw=true "Overview")
 
@@ -43,7 +43,7 @@ Here we will describe how to plot the data in RStudio or Jupyter, then view it o
 In R load and plot the first three dimensions of `iris` with `iris$Species` as color:
 ```r
 library(plotVR)
-startExternalServerProcess()
+startServer()
 plotVR(iris[,1:3],iris$Species)
 ```
 In Python - or better even in Jupyter Lab - enter the following:
@@ -65,7 +65,7 @@ Now you can open the advertised webpage - also on your mobile device using any Q
 ```
 http://<ip-address of your machine>:2908/index.html
 ```
-This will look something like (see [live demo](https://thomann.github.io/plotVR/plotVR/inst/)):
+This will look something like (see [live demo](https://thomann.github.io/plotVR/plotVR-R/inst/)):
 
 ![VR view](images/screen-vr.png?raw=true "VR view")
 

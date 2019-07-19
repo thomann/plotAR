@@ -104,8 +104,20 @@ sendData <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::g
 #'
 #' @return the process object (invisibly)
 #' @export
-startExternalServerProcess <- function(...){
-  .proc <- callr::r_bg(function(){options(plotVR.log.info=T); plotVR:::startBlockingServer()}, ...)
+startServer <- function(...){
+  .proc <- callr::r_bg(function(){options(plotVR.log.info=T); plotVR::startBlockingServer()}, ...)
   pkg.env$external.proc <- .proc
   invisible(.proc)
 }
+
+#' Stop Server
+#'
+#' @param ... passed to \code{callr::r_bg}
+#'
+#' @return the process object (invisibly)
+#' @export
+stopServer <- function(...){
+  pkg.env$external.proc$kill()
+}
+
+

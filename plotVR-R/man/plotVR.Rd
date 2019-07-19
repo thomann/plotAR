@@ -5,8 +5,8 @@
 \title{Plot data into the Cardboard VR}
 \usage{
 plotVR(data, col = NULL, size = NULL, type = "p", lines = NULL,
-  name = NULL, description = NULL, speed = 0L, autoScale = T,
-  digits = 5, doOpenController = TRUE, .send = TRUE)
+  label = NULL, name = NULL, description = NULL, speed = 0L,
+  autoScale = T, digits = 5, doOpenController = TRUE, .send = TRUE)
 }
 \arguments{
 \item{data}{data frame of which the first three columns will be used in the scatter.}
@@ -18,6 +18,8 @@ plotVR(data, col = NULL, size = NULL, type = "p", lines = NULL,
 \item{type}{point (p) or line (l)}
 
 \item{lines}{if you want to have lines addition to data}
+
+\item{label}{text labels of data}
 
 \item{name}{the name of this dataset - by default will be inferred from \code{data}.}
 
