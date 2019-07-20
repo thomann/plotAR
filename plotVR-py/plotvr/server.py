@@ -9,6 +9,8 @@ from tornado.log import enable_pretty_logging
 
 import pyqrcode
 
+from . import __version__
+
 handler = logging.StreamHandler() # FileHandler(log_file_filename)
 enable_pretty_logging()
 for i in ["tornado.access","tornado.application","tornado.general"]:
@@ -45,13 +47,19 @@ class DataHandler(tornado.web.RequestHandler):
     def get(self):
         return self.write(json.dumps(DATA)+"\n")
 
+class StatusHandler(tornado.web.RequestHandler):
+    """Renders QR Codes"""
+    def get(self):
+        self.set_header("X-Plotvr-Version", __version__)
+        return self.write(json.dumps(status())+"\n")
+
 
 def defaultData():
     import numpy as np
     from . import plotvr
     data = np.random.normal(size=(100,3))
     col = np.random.randint(4, size=100)
-    return plotvr(data, col, returnData=True, host=None)
+    return plotvr(data, col, returnData=True, host=None, name='Gaussian Sample')
 
 # The list of currently connected clients
 CLIENTS = []
@@ -71,13 +79,19 @@ def broadcast(message):
         c.write_message(message)
 
 def broadcast_status():
-    dev, contr, focus = 0,0,0
+    broadcast(status())
+
+
+def status():
+    dev, contr, focus = 0, 0, 0
     for c in CLIENTS:
         dev += int(c.is_device)
         contr += int(c.is_controller)
         focus += int(c.has_focus)
     status = {'numDevices': dev, 'numControllers': contr, 'numFocus': focus}
-    broadcast({'status': status})
+    md = DATA['metadata'] if DATA is not None and 'metadata' in DATA else {}
+    return {'status': status, 'metadata': md}
+
 
 class PlotVRWebSocketHandler(tornado.websocket.WebSocketHandler):
     """ The chat implemententation, all data send to server is json, all responses are json """
@@ -124,6 +138,7 @@ def html(x):
 _app = tornado.web.Application([
     (r"/", MainHandler),
     (r"/data.json", DataHandler),
+    (r"/status.json", StatusHandler),
     (r"/qr.json", QRHandler),
     (r"/ws", PlotVRWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
