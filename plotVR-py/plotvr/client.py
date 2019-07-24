@@ -47,6 +47,27 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
     if return_data:
         return body
 
+def surfacevr(data, col=None,
+           name=None, description=None, speed=None, autoScale=True,
+           digits=5, host="http://localhost:2908", returnData=False):
+    global _host
+    _host = host
+    # TODO assert compatibility checks
+    n,m = data.shape
+    for i in [col]:
+        assert i is None or i.shape == data.shape, f"Parameters need to have same shape: {i} has shape {i.shape} but would need {data.shape}"
+    # todo: remove NAs, center and scale...
+    body = {'surface': {'data':data.tolist(), 'col':col},'speed': 0, 'protocolVersion': '0.3.0'}
+    if speed is not None: body['speed'] = speed
+    metadata = { 'n': n, 'm': m, 'created': time.ctime() }
+    metadata['name'] = name or "Dataset"
+    if description is not None: metadata['description'] = description
+    body['metadata'] = metadata
+    # data_json = json.dumps(, allow_nan=False)
+    if host is not None:
+        requests.post(host, json=body)
+    if returnData:
+        return body
 
 def controller(width="100%", height="200px"):
     url = get_host().external_url("keyboard.html")
