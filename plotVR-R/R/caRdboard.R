@@ -42,7 +42,7 @@ process_request <- function(req, base="~/density/vr/") {
   wsUrl = paste0('ws://', ifelse(is.null(req$HTTP_HOST), req$SERVER_NAME, req$HTTP_HOST),'/ws')
   if(path=="/") path <- "/index.html"
   if(path=="/plotVR.html") path <- "/index.html"
-  if( path == '/echo' )
+  if(path == '/echo')
     return(handle_echo(wsUrl))
   if(path == "/qr.json"){
     url <- getUrl()
@@ -51,6 +51,13 @@ process_request <- function(req, base="~/density/vr/") {
     return(list(status = 200L,
                 headers = list('Content-Type' = 'application/json'),
                 body = qr_json ))
+  }else if(path == '/status.json'){
+    status <- getStatus()
+    return(list(status = 200L,
+                headers = list("X-Plotvr-Version" = packageVersion('plotVR'),
+                               'Content-Type' = 'application/json'),
+                body = jsonlite::toJSON(status, auto_unbox=TRUE)
+    ))
   }else if(path == "/data.json"){
     if(is.null(pkg.env$vr_data_json))
       pkg.env$vr_data_json <- defaultDataJson()
@@ -237,14 +244,21 @@ broadcastRefresh <- function(data){
   broadcast(list(key='reload_data'))
 }
 
+getStatus <- function(){
+  clients <- pkg.env$clients
+  status <- if(length(clients) > 0)
+    list(
+      numDevices=sum(sapply(clients, `[[`, 'isDevice')),
+      numControllers=sum(sapply(clients, `[[`, 'isController')),
+      numFocus=sum(sapply(clients, `[[`, 'hasFocus'))
+    )
+  else
+    list(numDevices=0,numControllers=0,numFocus=0)
+  return(list(status=status))
+}
+
 broadcastStatus <- function(data){
-  print(length(pkg.env$clients))
-  status <- list(
-    numDevices=sum(sapply(pkg.env$clients, `[[`, 'isDevice')),
-    numControllers=sum(sapply(pkg.env$clients, `[[`, 'isController')),
-    numFocus=sum(sapply(pkg.env$clients, `[[`, 'hasFocus'))
-  )
-  broadcast(list(status=status))
+  broadcast(getStatus())
 }
 
 broadcast <- function(message){
