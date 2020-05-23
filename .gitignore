@@ -5,3 +5,6 @@ data.json
 .ipynb_checkpoints
 inst/doc
 *~
+todo.md
+.vscode/
+tmp/

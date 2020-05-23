@@ -3,7 +3,7 @@
 This is a prototype to get your data into a Google Cardboard (VR) or into Augmented Reality (AR) and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.
-> Check out the recording video on <https://youtu.be/lxXC76jHc98?t=5h20m>. *The video covers the whole day in that room - the talk starts at 5h20m and ends at 5h46m.*
+> Check out the recording video on <https://www.youtube.com/watch?v=O1y96EG0bTw>.
 
 Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? plotVR provides a simple way for data scientists to plot data, pick up a phone, get a real 3d impression - either by VR or by AR - and use the computer's keyboard to walk through the scatter plot (see [live demo](https://thomann.github.io/plotVR/plotVR-R/inst/)):
 
@@ -34,7 +34,7 @@ Also check out the native mobile apps:
 
 ## Quick Tour
 
-Working with the package is meant to be seamless - but it is a little hard to explain in text. Please check out the above [video](https://youtu.be/lxXC76jHc98?t=5h27m) at 5h27m where the demo starts.
+Working with the package is meant to be seamless - but it is a little hard to explain in text. Please check out the above [video](https://www.youtube.com/watch?v=O1y96EG0bTw).
 
 Here we will describe how to plot the data in RStudio or Jupyter, then view it on your device, and finally navigate through the scene.
 
