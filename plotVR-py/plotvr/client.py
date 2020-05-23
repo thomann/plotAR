@@ -8,14 +8,19 @@ import time
 _host = "http://localhost:2908"
 
 def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
-           name=None, description=None, speed=None, autoScale=True,
-           digits=5, host="http://localhost:2908", returnData=False):
+           name=None, description=None, speed=None, auto_scale=True,
+           digits=5, host="http://localhost:2908", return_data=False):
     global _host
     _host = host
     # TODO assert compatibility checks
     n = data.shape[0]
     for i in [col, size, lines, label]:
         assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
+    if auto_scale:
+        # have all variables scaled to [-1,1]
+        ranges = data.max(0) - data.min(0)
+        ranges[ranges == 0] = 1
+        data = (data - data.min(0)) / ranges * 2 - 1
     if col is None:
         payload = data[:,:3]
     else:
@@ -34,7 +39,7 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
     # data_json = json.dumps(, allow_nan=False)
     if host is not None:
         requests.post(host, json=body)
-    if returnData:
+    if return_data:
         return body
 
 def controller(width="100%", height="200px"):

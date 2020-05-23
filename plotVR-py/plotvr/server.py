@@ -59,7 +59,7 @@ def defaultData():
     from . import plotvr
     data = np.random.normal(size=(100,3))
     col = np.random.randint(4, size=100)
-    return plotvr(data, col, returnData=True, host=None, name='Gaussian Sample')
+    return plotvr(data, col, return_data=True, host=None, name='Gaussian Sample')
 
 # The list of currently connected clients
 CLIENTS = []
@@ -135,21 +135,24 @@ def html(x):
     ret = str(pth)
     return ret
 
-_app = tornado.web.Application([
+
+_mappings = [
     (r"/", MainHandler),
     (r"/data.json", DataHandler),
     (r"/status.json", StatusHandler),
     (r"/qr.json", QRHandler),
     (r"/ws", PlotVRWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
-    (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html') }),
+    (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
     (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": html('js')}),
     (r"/textures/(.*)", tornado.web.StaticFileHandler, {"path": html('textures')})
-])
+]
+#_app = tornado.web.Application(_mappings)
 
 def start_server(port=2908):
     print(f"Welcome to PlotVR server on port {port}")
-    global _PORT
+    global _PORT, _app
+    _app = tornado.web.Application(_mappings)
     _PORT = port
     _app.listen(port)
     tornado.ioloop.IOLoop.instance().start()
