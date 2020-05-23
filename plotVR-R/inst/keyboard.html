@@ -188,21 +188,14 @@
       if(ret != null)
         return ret;
       // if we got here from a server, use it:
-      return location.origin;
+      return new URL("index.html", location).href;
     }
     function findWsUrl(){
       var ret = getQueryParams().wsUrl;
       if(ret != null)
         return ret;
-      ret = findServer();
-      // if we got here from a server, use it:
-      if(ret.startsWith("http")){
-        var wsProtocol = (ret.startsWith("https:")) ? "wss" : "ws";
-        var hostAndPort = ret.substring(ret.indexOf("://"));
-        ret = wsProtocol+hostAndPort;
-      }else{
-        ret = null;
-      }
+      ret = new URL("ws", location);
+      ret.protocol = (ret.protocol == "https:") ? "wss:" : "ws:";
       return ret;
     }
 
@@ -238,11 +231,11 @@
 
     var qr_data = DEFAULT_QR_DATA;
 
-    function openTheWebsocket(url){
-      if(url == null)
+    function openTheWebsocket(wsUrl){
+      if(wsUrl == null)
         return;
       try{
-        websocket = new WebSocket(url + "/ws");
+        websocket = new WebSocket(wsUrl);
 
         websocket.onopen = function() {
           sendMessage({'controller': true})
@@ -407,7 +400,7 @@
         }
         //setTimeout(refreshData, 4000);
       }
-      http_request.open("GET", "qr.json", true);
+      http_request.open("GET", "qr.json?location="+location, true);
       http_request.send();
     }
 
@@ -455,7 +448,7 @@
       openTheWebsocket(wsUrl);
 
       updateFocus(event);
-      setURL(findServer()+'/index.html')
+      setURL(findServer())
 
       plotQR();
       getQR_data();

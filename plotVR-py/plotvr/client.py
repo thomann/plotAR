@@ -1,17 +1,21 @@
 import json
 import subprocess
+import os
+import logging
 
 import numpy as np
 import requests
 import time
 
-_host = "http://localhost:2908"
+logger = logging.getLogger(__name__)
+
+_host = None #: PlotHost
+DEFAULT_SERVER = 'http://localhost:2908'
+
 
 def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
            name=None, description=None, speed=None, auto_scale=True,
-           digits=5, host="http://localhost:2908", return_data=False):
-    global _host
-    _host = host
+           digits=5, host=None, return_data=False, push_data=True):
     # TODO assert compatibility checks
     n = data.shape[0]
     for i in [col, size, lines, label]:
@@ -37,26 +41,108 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
     if description is not None: metadata['description'] = description
     body['metadata'] = metadata
     # data_json = json.dumps(, allow_nan=False)
-    if host is not None:
-        requests.post(host, json=body)
+    if push_data:
+        plot_host = get_host(host)
+        plot_host.post(json=body)
     if return_data:
         return body
 
+
 def controller(width="100%", height="200px"):
-    url = _host + "/keyboard.html"
+    url = get_host().external_url("keyboard.html")
     try:
         from IPython.display import IFrame
         return IFrame(url, width=width, height=height)
     except ImportError:
         return url
 
+
 def viewer(width="100%", height="400px"):
-    url = _host + "/index.html"
+    url = get_host().external_url("index.html")
     try:
         from IPython.display import IFrame
         return IFrame(url, width=width, height=height)
     except ImportError:
         return url
+
+
+def get_host(host=None):
+    global _host
+    if host is not None:
+        return PlotHost(host)
+    if _host is None:
+        # actual detection code
+        jpy = my_jupyter_server()
+        if jpy is not None:
+            hub_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX")
+            if hub_prefix is None:
+                ext = jpy['url'] + "plotvr/"
+            else:
+                # on jupyter-/binderhub we don't know the external hostname,
+                # so we use an absolute URL
+                ext = hub_prefix+"plotvr/"
+            _host = PlotHost(jpy['url']+"plotvr/", external_url=ext, params=jpy['params'], headers=jpy['headers'])
+        else:
+            _host = PlotHost(DEFAULT_SERVER)
+    return _host
+
+
+class PlotHost:
+    def __init__(self, url: str, external_url: str = None, params='', headers={}):
+        self.url = url
+        if url is None or len(url) == 0 or not isinstance(url, str):
+            raise ValueError("URL must be not None and a non-empty string.")
+        if self.url[-1] != '/':
+            self.url += '/'
+        if external_url is None:
+            external_url = self.url
+        self._external_url = external_url
+        self.params = "?"+params
+        self.headers = headers
+    def internal_url(self, path):
+        '''Shows the URL that is '''
+        return self.url + path #+ self.params
+    def external_url(self, path):
+        return self._external_url + path + self.params
+    def post(self, json):
+        requests.post(self.internal_url(""), json=json, headers=self.headers)
+    def __repr__(self):
+        return f"PlotHost({self.url})"
+    def _repr_html_(self):
+        return f"PlotVR at <a href='{self.url}'>{self.url}</a>"
+
+def my_jupyter_server(verbose=False, jupyter_parent_pid=None):
+    try:
+        from notebook import notebookapp
+    except ImportError:
+        return None
+    servers = list(notebookapp.list_running_servers())
+    if not len(servers):
+        if verbose:
+            import warnings
+            warnings.warn("no running jupyter server found")
+        return None
+    server_pid = os.getenv('JPY_PARENT_PID', jupyter_parent_pid)
+    if server_pid is None:
+        if len(servers) > 1:
+            pass
+        jpy = servers[0]
+    else:
+        for s in servers:
+            if str(s['pid']) == server_pid:
+                jpy = s
+                break
+        else:
+            # no matching pid found...
+            if verbose:
+                print('no matching jupyter server found!')
+            jpy = servers[0]
+    if jpy is None:
+        return None
+    return dict(url=jpy['url'],
+                params="token="+jpy['token'],
+                headers={'Authorization': 'token ' + jpy['token']},
+                )
 
 def start_server_process(port: int = 2908, showServerURL=True):
     """Start Server in another process.

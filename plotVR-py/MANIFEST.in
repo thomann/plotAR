@@ -5,6 +5,7 @@ include LICENSE
 include README.md
 
 recursive-include plotvr/html *
+recursive-include plotvr/etc *
 
 recursive-include tests *
 recursive-exclude * __pycache__

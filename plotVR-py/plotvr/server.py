@@ -34,11 +34,39 @@ class MainHandler(tornado.web.RequestHandler):
     def broadcastRefresh(self):
         broadcast({'key': 'reload_data'})
 
+    # def check_xsrf_cookie(self):
+    #     """Bypass xsrf cookie checks when token-authenticated"""
+    #     # TODO check whether we really are alrady authenticated - else
+    #     #  this opens some security problems!
+    #     return
+
+_external_url = None
+_base_path = '/'
+_token = None
+_IP = None
+def external_url(client_url):
+    from urllib.parse import urlparse, urljoin
+    o = urlparse(client_url)
+    if o.hostname not in ["localhost","127.0.0.1","0.0.0.0",]:
+        # client is using a host that is probably better
+        # than what we would get out of get_ip, so use that
+        # this is also important in Reverse Proxy-Settings, eg. on binderhub
+        return urljoin(client_url, 'index.html')
+    global _external_url, _IP, _token
+    if _external_url is None:
+        if _IP is None:
+            _IP = get_ip()
+        tok = f'?token={_token}' if _token is not None else ''
+        port = f':{_PORT}' if _PORT is not None else ''
+        _external_url = f'http://{_IP}{port}{_base_path}index.html{tok}'
+    return _external_url
 
 class QRHandler(tornado.web.RequestHandler):
     """Renders QR Codes"""
     def get(self):
-        url = f'http://{_IP}:{_PORT}/index.html'
+        client_url = self.get_argument('location')
+        print(client_url)
+        url = external_url(client_url)
         result = { 'qr': pyqrcode.QRCode(url).code, 'url': url }
         return self.write(json.dumps(result)+"\n")
 
@@ -56,10 +84,10 @@ class StatusHandler(tornado.web.RequestHandler):
 
 def defaultData():
     import numpy as np
-    from . import plotvr
+    from .client import plotvr
     data = np.random.normal(size=(100,3))
     col = np.random.randint(4, size=100)
-    return plotvr(data, col, return_data=True, host=None, name='Gaussian Sample')
+    return plotvr(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False )
 
 # The list of currently connected clients
 CLIENTS = []
@@ -68,7 +96,7 @@ try:
     DATA = defaultData()
 except Exception as e:
     logger.info("Could not load data.json: ", e)
-_PORT = 2908
+_PORT = None
 
 def broadcast(message):
     if not isinstance(message, str):
@@ -172,7 +200,6 @@ def get_ip():
     finally:
         s.close()
     return IP
-_IP = get_ip()
 
 if __name__ == '__main__':
     start_server()

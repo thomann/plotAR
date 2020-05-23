@@ -265,8 +265,9 @@
   <script>
     // the websocket to home to get keyboard input
     try{
-      var wsProtocol = (location.protocol=="https:") ? "wss:" : "ws:";
-      var websocket = new WebSocket(wsProtocol+"//"+location.host+"/ws");
+      wsUrl = new URL("ws", location)
+      wsUrl.protocol = (location.protocol=="https:") ? "wss:" : "ws:";
+      var websocket = new WebSocket(wsUrl);
       
       websocket.onopen = function() {
           websocket.send('{"device": true}')

@@ -46,5 +46,8 @@ setup(
     tests_require=test_requirements,
     url='https://github.com/thomann/plotvr ',
     version='0.1.0',
+    data_files=[
+        ('etc/jupyter/jupyter_notebook_config.d', ['plotvr/etc/plotvr-server-extension.json']),
+    ],
     zip_safe=False,
 )
