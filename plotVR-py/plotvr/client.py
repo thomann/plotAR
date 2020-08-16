@@ -22,9 +22,7 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
         assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
     if auto_scale:
         # have all variables scaled to [-1,1]
-        ranges = data.max(0) - data.min(0)
-        ranges[ranges == 0] = 1
-        data = (data - data.min(0)) / ranges * 2 - 1
+        data = scale(data)
     if col is None:
         payload = data[:,:3]
     else:
@@ -47,27 +45,55 @@ def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
     if return_data:
         return body
 
-def surfacevr(data, col=None,
-           name=None, description=None, speed=None, autoScale=True,
-           digits=5, host="http://localhost:2908", returnData=False):
+def surfacevr(data, col=None, x=None, y=None,
+           name=None, description=None, speed=None, auto_scale=True,
+           digits=5, host=None, return_data=False, push_data=True):
     global _host
     _host = host
     # TODO assert compatibility checks
     n,m = data.shape
     for i in [col]:
         assert i is None or i.shape == data.shape, f"Parameters need to have same shape: {i} has shape {i.shape} but would need {data.shape}"
-    # todo: remove NAs, center and scale...
-    body = {'surface': {'data':data.tolist(), 'col':col},'speed': 0, 'protocolVersion': '0.3.0'}
+    if auto_scale:
+        # have the data scaled to [-1,1]
+        a,b = data.min(),data.max()
+        if a <= 0 <= b:
+            # keep the 0 at 0 and scale around that
+            m = max(-a,b)
+            m = m or 1 # set to 1 if 0
+            data = data / m
+        else:
+            data = scale(data, axis=(1,2))
+        x = scale(x)
+        y = scale(y)
+    # TODO: remove NAs
+    body = {'surface': {'data':data.tolist(), 'col':col, 'shape': (n,m)},'speed': 0, 'protocolVersion': '0.3.0'}
+    if x is not None:
+        body['surface']['x'] = x
+    if y is not None:
+        body['surface']['y'] = y
     if speed is not None: body['speed'] = speed
     metadata = { 'n': n, 'm': m, 'created': time.ctime() }
-    metadata['name'] = name or "Dataset"
+    metadata['name'] = name or f"Dataset {n}x{m}"
     if description is not None: metadata['description'] = description
     body['metadata'] = metadata
-    # data_json = json.dumps(, allow_nan=False)
-    if host is not None:
-        requests.post(host, json=body)
-    if returnData:
+    if push_data:
+        plot_host = get_host(host)
+        plot_host.post(json=body)
+    if return_data:
         return body
+
+
+def scale(data, axis=(0,)):
+    if data is None:
+        return None
+    if min(data.shape) == 0:
+        return data
+    ranges = data.max(axis) - data.min(axis)
+    ranges[ranges == 0] = 1
+    data = (data - data.min(axis)) / ranges * 2 - 1
+    return data
+
 
 def controller(width="100%", height="200px"):
     url = get_host().external_url("keyboard.html")
