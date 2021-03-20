@@ -1,0 +1,15 @@
+#!/bin/bash
+
+pwd
+echo $CONDA_PREFIX
+
+## would need to do this as root
+# mkdir -p $CONDA_PREFIX/etc/jupyter/jupyter_notebook_config.d/
+# cp plotVR-py/plotvr/etc/* $CONDA_PREFIX/etc/jupyter/jupyter_notebook_config.d/
+
+mkdir -p .jupyter/jupyter_notebook_config.d
+cp plotVR-py/plotvr/etc/* .jupyter/jupyter_notebook_config.d/
+
+# let's try to get /lab as default path:
+echo "c.NotebookApp.default_url = '/lab'" >> .jupyter/jupyter_notebook_config.py
+echo "c.ServerApp.default_url = '/lab'" >> .jupyter/jupyter_server_config.py
