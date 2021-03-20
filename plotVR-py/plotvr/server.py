@@ -34,11 +34,12 @@ class MainHandler(tornado.web.RequestHandler):
     def broadcastRefresh(self):
         broadcast({'key': 'reload_data'})
 
-    # def check_xsrf_cookie(self):
-    #     """Bypass xsrf cookie checks when token-authenticated"""
-    #     # TODO check whether we really are alrady authenticated - else
-    #     #  this opens some security problems!
-    #     return
+    def check_xsrf_cookie(self):
+        """Bypass xsrf cookie checks when token-authenticated"""
+        # TODO check whether we really are alrady authenticated - else
+        #  this opens some security problems!
+        print("check_xsrf_cookie")
+        return
 
 _external_url = None
 _base_path = '/'

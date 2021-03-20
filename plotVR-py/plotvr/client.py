@@ -97,12 +97,14 @@ def scale(data, axis=(0,)):
 
 def controller(width="100%", height="200px"):
     url = get_host().external_url("keyboard.html")
-    try:
-        from IPython.display import IFrame
-        return IFrame(url, width=width, height=height)
-    except ImportError:
+    if is_in_jupyter():
+        try:
+            from IPython.display import IFrame
+            return IFrame(url, width=width, height=height)
+        except ImportError:
+            return url
+    else:
         return url
-
 
 def viewer(width="100%", height="400px"):
     url = get_host().external_url("index.html")
@@ -152,22 +154,32 @@ class PlotHost:
     def external_url(self, path):
         return self._external_url + path + self.params
     def post(self, json):
-        requests.post(self.internal_url(""), json=json, headers=self.headers)
+        response = requests.post(self.internal_url(""), json=json, headers=self.headers)
+        response.raise_for_status()
     def __repr__(self):
         return f"PlotHost({self.url})"
     def _repr_html_(self):
         return f"PlotVR at <a href='{self.url}'>{self.url}</a>"
 
 def my_jupyter_server(verbose=False, jupyter_parent_pid=None):
+    servers = []
+    imported_notebookapp = imported_serverapp = False
+    try:
+        from jupyter_server import serverapp
+        servers += serverapp.list_running_servers()
+        imported_serverapp = True
+    except ImportError:
+        pass
     try:
         from notebook import notebookapp
+        imported_notebookapp = True
+        servers += notebookapp.list_running_servers()
     except ImportError:
-        return None
-    servers = list(notebookapp.list_running_servers())
+        pass
     if not len(servers):
         if verbose:
             import warnings
-            warnings.warn("no running jupyter server found")
+            warnings.warn(f"no running jupyter server found - imported jupyter_server: {imported_serverapp} notebook: {imported_notebookapp}")
         return None
     server_pid = os.getenv('JPY_PARENT_PID', jupyter_parent_pid)
     if server_pid is None:
@@ -232,3 +244,16 @@ def start_server_process(port: int = 2908, showServerURL=True):
             print(f"Visit: {url}")
 
     return proc
+
+def is_in_jupyter() -> bool:
+    # https://stackoverflow.com/a/39662359/6400719
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+    except:
+        return False  # Probably standard Python interpreter
+    return False
+
+
