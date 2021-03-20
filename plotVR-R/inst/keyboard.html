@@ -7,6 +7,11 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> -->
+
+    <!-- Import the model-viewer component -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script nomodule src="https://unpkg.com/@google/model-viewer/dist/model-viewer-legacy.js"></script>
+
     <style>
     body {
       /*width: 100%;
@@ -28,10 +33,17 @@
       text-align: center;
       border-radius: 10px;
       margin: 15px;
+      word-wrap: none;
+      white-space: nowrap;
+      padding: 1ex;
     }
 
     #keyboard td.empty {
       border: none;
+    }
+
+    .keyboard-empty-row {
+      height: 1ex;
     }
 
     td:active, td.active {
@@ -50,6 +62,11 @@
       background-color: gray;
     }
 
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
     a#magic-window {
       /*display: block;
       color: white;
@@ -66,7 +83,7 @@
     }
 
     #hostLink {
-      float: right
+      /* float: right */
     }
 
     #hostLink div {
@@ -77,6 +94,12 @@
       display: none
     }
 
+    #hostLink_text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      word-wrap: none;
+    }
     #hostInput_TF{
       position: absolute;
       left: -9999px;
@@ -109,44 +132,62 @@
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
              this somehow backfires and httpuv in the R-session crashes with segfault -->
   <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onkeyup="keyUp(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
-    <div id='hostLink'>
-      <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
-      <div>
-        <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
-        <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
-        <button onclick="copyUrl()" id="hostInput_copy">Copy</button>
+    
+    <div class="container">
+      <div id='hostLink'>
+        <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
+        <div id='hostLink_text'>
+          <button onclick="copyUrl()" id="hostInput_copy">Copy</button>
+          <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
+          <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
+        </div>
       </div>
-    </div>
-        
-    <div id="keyboard">
-      <table>
-        <tr>
-          <td rowspan="2" class="keysRowHead">move</td>
-          <td colspan="1" onclick="sendKey('q')" id='key.q'>down (q)</td>
-          <td colspan="1" onclick="sendKey('w')" id='key.w'>forward (w)</td>
-          <td colspan="1" onclick="sendKey('e')" id='key.e'>up (e)</td>
-        </tr>
-        <tr>
-          <td colspan="1" onclick="sendKey('a')" id='key.a'>left (a)</td>
-          <td colspan="1" onclick="sendKey('s')" id='key.s'>back (s)</td>
-          <td colspan="1" onclick="sendKey('d')" id='key.d'>right (d)</td>
-        </tr>
-        <tr>
-          <td rowspan="2" class="keysRowHead">look</td>
-          <td colspan="1" class="empty"></td>
-          <td colspan="1" onclick="sendKey('Up')" id='key.Up'>up (up)</td>
-        </tr>
-        <tr>
-          <td colspan="1" onclick="sendKey('Left')" id='key.Left'>left (left)</td>
-          <td colspan="1" onclick="sendKey('Down')" id='key.Down'>down (down)</td>
-          <td colspan="1" onclick="sendKey('Right')" id='key.Right'>right (right)</td>
-        </tr>
-        <tr>
-            <td rowspan="2" class="keysRowHead">other</td>
-            <td colspan="1" onclick="sendKey('r')" id='key.r'>reload (r)</td>
-          <td colspan="6" onclick="sendKey('space')" id='key.space'>toggle flying mode (space)</td>
-        </tr>
-      </table>
+
+      <div>
+        <model-viewer
+          data-name="data"
+          src="data.gltf"
+          ios-src="data.usdz"
+          ar
+          ar-modes="scene-viewer quick-look"
+          camera-controls
+          auto-rotate
+          poster="textures/patterns/checker.png"
+        ></model-viewer>
+      </div>
+          
+      <div id="keyboard">
+        <table>
+          <tr>
+            <td rowspan="2" class="keysRowHead">move</td>
+            <td colspan="1" onclick="sendKey('q')" id='key.q'>down (q)</td>
+            <td colspan="1" onclick="sendKey('w')" id='key.w'>forward (w)</td>
+            <td colspan="1" onclick="sendKey('e')" id='key.e'>up (e)</td>
+          </tr>
+          <tr>
+            <td colspan="1" onclick="sendKey('a')" id='key.a'>left (a)</td>
+            <td colspan="1" onclick="sendKey('s')" id='key.s'>back (s)</td>
+            <td colspan="1" onclick="sendKey('d')" id='key.d'>right (d)</td>
+          </tr>
+          <tr class="keyboard-empty-row"></tr>
+          <tr>
+            <td rowspan="2" class="keysRowHead">look</td>
+            <td colspan="1" class="empty"></td>
+            <td colspan="1" onclick="sendKey('Up')" id='key.Up'>up (up)</td>
+          </tr>
+          <tr>
+            <td colspan="1" onclick="sendKey('Left')" id='key.Left'>left (left)</td>
+            <td colspan="1" onclick="sendKey('Down')" id='key.Down'>down (down)</td>
+            <td colspan="1" onclick="sendKey('Right')" id='key.Right'>right (right)</td>
+          </tr>
+          <tr class="keyboard-empty-row"></tr>
+          <tr>
+              <td rowspan="2" class="keysRowHead">other</td>
+              <td colspan="1" onclick="sendKey('r')" id='key.r'>reload (r)</td>
+            <td colspan="6" onclick="sendKey('space')" id='key.space'>toggle flying mode (space)</td>
+          </tr>
+        </table>
+      </div>
     </div>
     <div id="status">
       <span id="focusWidget"></span>
@@ -155,7 +196,7 @@
       <span id="status_numFocus">0</span>💻
     </div>
     <div class="modal" id="focusBox"><div class="modal-content">No keyboard focus</div></div>
-    
+
     <pre id='debug'></pre>
   </body>
 
@@ -408,6 +449,8 @@
     function plotQR(){
       canvas = document.getElementById('canvasQR');
       canvas.height = canvas.width = (qr_data.length + 1)*4
+      hostLink_text = document.getElementById('hostLink');
+      hostLink_text.style.width = (canvas.width+20)+"px"
       if(canvas.getContext){
         var ctx = canvas.getContext("2d");
         ctx.fillStyle = "rgb(255,255,255)";
