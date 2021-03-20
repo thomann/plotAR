@@ -44,7 +44,7 @@ _external_url = None
 _base_path = '/'
 _token = None
 _IP = None
-def external_url(client_url):
+def external_url(client_url, file='index.html'):
     from urllib.parse import urlparse, urljoin
     o = urlparse(client_url)
     if o.hostname not in ["localhost","127.0.0.1","0.0.0.0",]:
@@ -58,15 +58,17 @@ def external_url(client_url):
             _IP = get_ip()
         tok = f'?token={_token}' if _token is not None else ''
         port = f':{_PORT}' if _PORT is not None else ''
-        _external_url = f'http://{_IP}{port}{_base_path}index.html{tok}'
+        _external_url = f'http://{_IP}{port}{_base_path}{file}{tok}'
     return _external_url
 
 class QRHandler(tornado.web.RequestHandler):
     """Renders QR Codes"""
     def get(self):
+        # TODO check these arguments - they could be malicious!
         client_url = self.get_argument('location')
+        file = self.get_argument('file', 'index.html')
         print(client_url)
-        url = external_url(client_url)
+        url = external_url(client_url, file=file)
         result = { 'qr': pyqrcode.QRCode(url).code, 'url': url }
         return self.write(json.dumps(result)+"\n")
 
