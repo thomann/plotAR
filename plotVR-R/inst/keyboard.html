@@ -342,7 +342,8 @@
       var keychar = getKeyChar(key)
       log("Keyboard: keyCode "+key+", keychar "+keychar);
       console.log("key."+keychar)
-      document.getElementById("key."+keychar).classList.add('active');
+      var elem = document.getElementById("key."+keychar)
+      if(elem) elem.classList.add('active');
       sendKey(keychar)
     }
 
@@ -400,7 +401,7 @@
         }
         //setTimeout(refreshData, 4000);
       }
-      http_request.open("GET", "qr.json?location="+location, true);
+      http_request.open("GET", "qr.json?location="+location+"&file=keyboard.html", true);
       http_request.send();
     }
 
