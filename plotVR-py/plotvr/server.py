@@ -41,7 +41,7 @@ class MainHandler(tornado.web.RequestHandler):
         print("check_xsrf_cookie")
         return
 
-_external_url = None
+_external_base_url = None
 _base_path = '/'
 _token = None
 _IP = None
@@ -52,15 +52,15 @@ def external_url(client_url, file='index.html'):
         # client is using a host that is probably better
         # than what we would get out of get_ip, so use that
         # this is also important in Reverse Proxy-Settings, eg. on binderhub
-        return urljoin(client_url, 'index.html')
-    global _external_url, _IP, _token
-    if _external_url is None:
+        return urljoin(client_url, file)
+    global _external_base_url, _IP, _token
+    if _external_base_url is None:
         if _IP is None:
             _IP = get_ip()
-        tok = f'?token={_token}' if _token is not None else ''
         port = f':{_PORT}' if _PORT is not None else ''
-        _external_url = f'http://{_IP}{port}{_base_path}{file}{tok}'
-    return _external_url
+        _external_base_url = f'http://{_IP}{port}{_base_path}'
+    tok = f'?token={_token}' if _token is not None else ''
+    return _external_base_url+file+tok
 
 class QRHandler(tornado.web.RequestHandler):
     """Renders QR Codes"""
