@@ -81,13 +81,30 @@ class StatusHandler(tornado.web.RequestHandler):
         self.set_header("X-Plotvr-Version", __version__)
         return self.write(json.dumps(status())+"\n")
 
+from . import export
+
 class USDHandler(tornado.web.RequestHandler):
+    """Renders the USDZ format used on iOS"""
+    def get(self):
+        result = export.data2usdz(DATA)
+
+        self.write(result)
+        self.set_header('Content-Type', 'model/vnd.usd+zip')
+
+class GLTFHandler(tornado.web.RequestHandler):
+    """Renders the GLTF format used on Android"""
+    def get(self):
+        result = export.data2gltf(DATA)
+
+        self.write(result)
+        self.set_header('Content-Type', 'model/gltf+json')
+
+class OBJHandler(tornado.web.RequestHandler):
     """Renders the USDA format usably on iOS"""
     def get(self):
-        from .usd import makeUsdz
-        result = makeUsdz(DATA)
+        result = export.data2obj(DATA)
 
-        self.set_header('Content-Type', 'model/usd')
+        self.set_header('Content-Type', 'text/plain')
         self.write(result)
 
 def defaultData():
@@ -178,6 +195,8 @@ _mappings = [
     (r"/status.json", StatusHandler),
     (r"/qr.json", QRHandler),
     (r"/data.usdz", USDHandler),
+    (r"/data.gltf", GLTFHandler),
+    (r"/data.obj", OBJHandler),
     (r"/ws", PlotVRWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
