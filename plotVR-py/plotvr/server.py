@@ -46,6 +46,7 @@ _base_path = '/'
 _token = None
 _IP = None
 def external_url(client_url, file='index.html'):
+    global _external_base_url, _IP, _token
     from urllib.parse import urlparse, urljoin
     o = urlparse(client_url)
     tok = f'?token={_token}' if _token is not None else ''
@@ -54,7 +55,6 @@ def external_url(client_url, file='index.html'):
         # than what we would get out of get_ip, so use that
         # this is also important in Reverse Proxy-Settings, eg. on binderhub
         return urljoin(client_url, file+tok)
-    global _external_base_url, _IP, _token
     if _external_base_url is None:
         if _IP is None:
             _IP = get_ip()
