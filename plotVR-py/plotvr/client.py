@@ -4,6 +4,7 @@ import os
 import logging
 
 import numpy as np
+import pandas as pd
 import requests
 import time
 
@@ -13,27 +14,64 @@ _host = None #: PlotHost
 DEFAULT_SERVER = 'http://localhost:2908'
 
 
-def plotvr(data, col=None, size=None, type='p', lines=None, label=None,
+def plotvr(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
+           axis_names=None, col_labels=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=False, push_data=True):
     # TODO assert compatibility checks
     n = data.shape[0]
+    df = None
+    if isinstance(data, pd.DataFrame):
+        df = data
+        if xyz is not None:
+            assert len(xyz)==3
+            data = df[xyz].values
+            axis_names = axis_names or xyz
+        else:
+            data = df.iloc[:,0:3].values
+            val = locals().get(i)
+            axis_names = axis_names or df.columns[xyz].tolist()
+
+    def _mk_val(df, val):
+        if val is not None and isinstance(val, str) and val in df.columns:
+            return df[val].values
+        elif isinstance(val, float):
+            return np.zeros((n,)) + val
+        else:
+            return val
+
+    col   = _mk_val(df, col)
+    size  = _mk_val(df, size)
+    lines = _mk_val(df, lines)
+    label = _mk_val(df, label)
+
     for i in [col, size, lines, label]:
         assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
     if auto_scale:
         # have all variables scaled to [-1,1]
         data = scale(data)
+        if size is not None:
+            # scale the sizes between 0.5 and 1.5:
+            size = scale(size.reshape((-1, 1)))[:,0] + 1.5
+    if col.dtype == np.dtype('O'):
+        x = pd.Series(col, dtype='category')
+        col = x.cat.codes.values
+        col_labels = x.cat.categories.values.tolist()
     if col is None:
         payload = data[:,:3]
     else:
         payload = np.hstack((data[:,:3],col.reshape((-1,1))))
     # todo: remove NAs, center and scale...
     body = {'data': payload.tolist(),'speed': 0, 'protocolVersion': '0.3.0'}
+
     if col is not None: body['col'] = col.tolist()
     if size is not None: body['size'] = size.tolist()
     if type is not None: body['type'] = type
     if label is not None: body['label'] = label.tolist()
     if speed is not None: body['speed'] = speed
+    if axis_names is not None: body['axis_names'] = axis_names
+    if col_labels is not None: body['col_labels'] = col_labels
+
     metadata = { 'n': n, 'created': time.ctime() }
     metadata['name'] = name or "Dataset"
     if description is not None: metadata['description'] = description
