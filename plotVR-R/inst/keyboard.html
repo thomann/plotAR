@@ -100,9 +100,12 @@
       white-space: nowrap;
       word-wrap: none;
     }
-    #hostInput_TF{
+    #hostInput_TF {
       position: absolute;
       left: -9999px;
+    }
+    #hostInput_copy {
+      text-align: center;
     }
 
     .modal {
@@ -137,7 +140,7 @@
       <div id='hostLink'>
         <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
         <div id='hostLink_text'>
-          <button onclick="copyUrl()" id="hostInput_copy">Copy</button>
+          <button onclick="copyUrl()" id="hostInput_copy">📋</button>
           <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
           <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
         </div>

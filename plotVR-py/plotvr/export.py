@@ -56,13 +56,14 @@ def data2usd_ascii(data):
         if 'col' in data:
             col = data['col'][i] % COLORS_LEN
         # color = colors[col]
+        size = data['size'][i] if 'size' in data else 1.0
         spheres += f"""
         def Sphere "Point{i}" {{
             double3 xformOp:translate = ({x},{y},{z})
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </Spheres/Materials/material_{col}>
 
-            double radius = 0.02
+            double radius = {0.02*size}
         }}
         """
             # color3f[] primvars:displayColor = [({color})]
@@ -113,8 +114,8 @@ def data2gltf(data, subdiv=16):
         scale = 0.01
         if 'col' in data:
             col = data['col'][i] % COLORS_LEN
-        if 'scale' in data:
-            scale *= data['scale'][i]
+        if 'size' in data:
+            scale *= data['size'][i]
         spheres += [{
           "mesh" : col,
           "translation": [x,z,-y],
@@ -355,7 +356,7 @@ def runXcrun(content, in_suffix='.obj', out_suffix='.usdz'):
 
 def obj2usdz(data):
     obj = data2obj(data)
-    usdz = run_usdconvert(obj, in_suffix='obj')
+    usdz = run_usdconvert_python_cli(obj, in_suffix='obj')
     return usdz
 
 if __name__ == '__main__':
