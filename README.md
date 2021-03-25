@@ -1,5 +1,14 @@
 # plotVR - Walk Through Your Data
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotVR/binder)
+
+| Example | Screenshot | iOS (usdz)  | Android (gltf)|
+| :---         |     :---:        |     :---:      |          :---: |
+| iris | <img src="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/iris.png" width=100> | <a rel="ar" href="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/iris.usdz">iris.usdz</a> | <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://raw.githubusercontent.com/thomann/plotVR/binder/examples/iris.gltf">iris.gltf</a>   |
+| gapminder | <img src="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/gapminder.png" width=100> | <a rel="ar" href="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/gapminder.usdz">gapminder.usdz</a> | <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://raw.githubusercontent.com/thomann/plotVR/binder/examples/gapminder.gltf">gapminder.gltf</a>   |
+| PLZ | <img src="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/PLZ.png" width=100> | <a rel="ar" href="https://raw.githubusercontent.com/thomann/plotVR/binder/examples/PLZ.usdz">PLZ.usdz</a> | <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://raw.githubusercontent.com/thomann/plotVR/binder/examples/PLZ.gltf">PLZ.gltf</a>   |
+
+
 This is a prototype to get your data into a Google Cardboard (VR) or into Augmented Reality (AR) and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.

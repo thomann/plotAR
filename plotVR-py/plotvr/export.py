@@ -1,6 +1,9 @@
 
 from .server import logger
 import struct, base64, math
+import click
+import json
+from pathlib import Path
 
 COLORS = [(1, 0, 0), (0, 0, 1), (0, 1, 0)]
 COLORS_LEN = len(COLORS)
@@ -359,7 +362,7 @@ def obj2usdz(data):
     usdz = run_usdconvert_python_cli(obj, in_suffix='obj')
     return usdz
 
-if __name__ == '__main__':
+if False:
     print("Welcome")
     input = 'iris.json'
     output = 'data_tmp.usdz'
@@ -375,3 +378,37 @@ if __name__ == '__main__':
         result = data2gltf(payload)
         json.dump(result, f, indent=4)
     print("Byebye.")
+
+@click.command()
+@click.argument('data', type=click.Path(exists=True))
+@click.argument('out', default='', type=click.Path())
+@click.option('-f', '--format', default=None, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
+def export(data, out=None, format=None):
+    """Convert the DATA.json to OUT.format."""
+    data_path = Path(data)
+    with open(data, 'r') as f:
+        input = json.load(f)
+    if format is None:
+        assert out is not None
+        # data_path.suffix might be '' !
+        format = Path(out).suffix.lstrip('.')
+    elif out is None or out == '':
+        format = format or 'usdz'
+        out = data_path.with_suffix("."+format)
+    mode = 'wb' if format.startswith("usd") else 'w'
+    with open(out, mode) as outfile:
+        if format == 'gltf':
+            result = data2gltf(input)
+            json.dump(result, outfile)
+        elif format == 'obj':
+            result = data2obj(input)
+            outfile.write(result)
+        elif format == 'usda':
+            result = data2usdz(input, save_usda=True)
+            outfile.write(result)
+        else:
+            result = data2usdz(input, save_usda=False)
+            outfile.write(result)
+
+if __name__ == '__main__':
+    export()
