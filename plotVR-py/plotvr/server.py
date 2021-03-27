@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import logging
 
+import click
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -89,6 +90,12 @@ from . import export
 class USDHandler(tornado.web.RequestHandler):
     """Renders the USDZ format used on iOS"""
     def get(self):
+        if self.request.path.endswith(".usda"):
+            result, _assets = export.data2usd_ascii(DATA)
+
+            self.write(result)
+            self.set_header('Content-Type', 'text/plain')
+            return
         result = export.data2usdz(DATA)
 
         self.write(result)
@@ -198,6 +205,7 @@ _mappings = [
     (r"/status.json", StatusHandler),
     (r"/qr.json", QRHandler),
     (r"/data.usdz", USDHandler),
+    (r"/data.usda", USDHandler),
     (r"/data.gltf", GLTFHandler),
     (r"/data.obj", OBJHandler),
     (r"/ws", PlotVRWebSocketHandler),
@@ -208,10 +216,18 @@ _mappings = [
 ]
 #_app = tornado.web.Application(_mappings)
 
-def start_server(port=2908):
+@click.command()
+@click.option('-p', '--port', default=2908, help="Port to listen on")
+# @click.option('-h', '--host', default=, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
+@click.option('-d', '--data', default="", type=click.File(), help="Data.json file to open initially")
+@click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
+def start_server(port=2908, data=None, debug=False):
     print(f"Welcome to PlotVR server on port {port}")
-    global _PORT, _app
-    _app = tornado.web.Application(_mappings)
+    global _PORT, _app, DATA
+    if data:
+        global DATA
+        DATA = json.load(data)
+    _app = tornado.web.Application(_mappings, debug=debug)
     _PORT = port
     _app.listen(port)
     tornado.ioloop.IOLoop.instance().start()
