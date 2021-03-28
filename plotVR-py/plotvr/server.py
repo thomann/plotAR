@@ -10,6 +10,8 @@ from tornado.log import enable_pretty_logging
 
 import pyqrcode
 
+from .export import data2usd_ascii, data2usdz, data2gltf, data2obj
+
 from . import __version__
 
 handler = logging.StreamHandler() # FileHandler(log_file_filename)
@@ -91,12 +93,12 @@ class USDHandler(tornado.web.RequestHandler):
     """Renders the USDZ format used on iOS"""
     def get(self):
         if self.request.path.endswith(".usda"):
-            result, _assets = export.data2usd_ascii(DATA)
+            result, _assets = data2usd_ascii(DATA)
 
             self.write(result)
             self.set_header('Content-Type', 'text/plain')
             return
-        result = export.data2usdz(DATA)
+        result = data2usdz(DATA)
 
         self.write(result)
         self.set_header('Content-Type', 'model/vnd.usd+zip')
@@ -104,7 +106,7 @@ class USDHandler(tornado.web.RequestHandler):
 class GLTFHandler(tornado.web.RequestHandler):
     """Renders the GLTF format used on Android"""
     def get(self):
-        result = export.data2gltf(DATA)
+        result = data2gltf(DATA)
 
         self.write(result)
         self.set_header('Content-Type', 'model/gltf+json')
@@ -112,7 +114,7 @@ class GLTFHandler(tornado.web.RequestHandler):
 class OBJHandler(tornado.web.RequestHandler):
     """Renders the USDA format usably on iOS"""
     def get(self):
-        result = export.data2obj(DATA)
+        result = data2obj(DATA)
 
         self.set_header('Content-Type', 'text/plain')
         self.write(result)

@@ -1,55 +1,10 @@
+import logging
+
 import jinja2
 
-from .server import logger
-import struct, base64, math
-import click
-import json
-from pathlib import Path
+from .common import COLORS, COLORS_LEN, text2png
 
-COLORS = [(1, 0, 0), (0, 0, 1), (0, 1, 0)]
-COLORS_LEN = len(COLORS)
-
-GLTF_ELEMENT_ARRAY_BUFFER = 34963
-GLTF_ARRAY_BUFFER = 34962
-GLTF_TYPE_UNSIGNED_SHORT = 5123
-GLTF_TYPE_FLOAT = 5126
-
-# with mac developer account: https://developer.apple.com/augmented-reality/tools/
-
-
-def data2obj(data):
-    result = ['# OBJ file for dataset']
-    def add(x):
-        result.append(x)
-    numVert = 1
-    colors = [ " ".join(_) for _ in COLORS ]
-    for i,row in enumerate(data['data']):
-        x, y, z = row[:3]
-        col = COLORS[0]
-        if 'col' in data and i <= len( data['col']):
-            col = colors[ data['col'][i] % COLORS_LEN ]
-        add(f'o Point {i}')
-        for a in [1,-1]:
-            for b in [1,-1]:
-                for c in [1,-1]:
-                    r = 0.05
-                    v = " ".join(map(str, [x+a*r,y+b*r,z+c*r]))
-                    add(f'v {v} {col}')
-        f = [
-            [0, 1, 2, 3],
-            [4, 5, 6, 7],
-            [0, 2, 4, 6],
-            [1, 3, 5, 7],
-            [0, 1, 4, 5],
-            [2, 3, 6, 7],
-        ]
-        for a,b,c,d in f:
-            add(f"f {a+numVert} {b+numVert} {c+numVert} {a+numVert}")
-            add(f"f {a+numVert} {c+numVert} {b+numVert} {a+numVert}")
-            add(f"f {d + numVert} {b + numVert} {c + numVert} {d + numVert}")
-            add(f"f {d + numVert} {c + numVert} {b + numVert} {d + numVert}")
-        numVert += 8
-    return "\n".join(result)
+logger = logging.getLogger(__name__)
 
 def data2usd_ascii(data):
     spheres = ""
@@ -186,172 +141,6 @@ def data2usd_ascii(data):
     """
     return usda, assets
 
-def data2gltf(data, subdiv=16):
-    spheres = []
-    for i, row in enumerate(data['data']):
-        x, y, z = row[:3]
-        col = 0
-        scale = 0.01
-        if 'col' in data:
-            col = data['col'][i] % COLORS_LEN
-        if 'size' in data:
-            scale *= data['size'][i]
-        spheres += [{
-          "mesh" : col,
-          "translation": [x,z,-y],
-          "scale": [scale] * 3,
-        }]
-
-    indices, vertices, normals = create_sphere(subdiv=subdiv)
-    mesh = create_gltf_mesh(indices, vertices, normals, colors=COLORS)
-    gltf = {
-      "scenes" : [
-        {
-          "nodes" : list(range(len(spheres)))
-        }
-      ],
-      "nodes" : spheres,
-      "asset" : {
-        "version" : "2.0"
-      }
-    }
-    gltf.update(mesh)
-    return gltf
-
-def create_sphere(subdiv=8):
-    """
-    Divide into subdiv latitudinal stripes of 2*subdiv trapeces, and each into 2 triangles.
-    :param subdiv:
-    :return:
-    """
-    vertices = [] #[0.0,0.0,0.0] * ((subdiv-1)*(subdiv * 2)+2)
-    # normals = [0.0] * len(vertices)
-    indices = [] # [0,0,0] * ( subdiv * 2*subdiv * 2 )
-    coord2index = []
-    # calculate vertices and normals:
-    i = 0
-    vertices += [0,-1,0] # south pole
-    coord2index.append([i])
-    i += 1
-    for lat in range(1,subdiv):
-        alpha = math.pi * (2*lat / subdiv - 0.5)
-        y = math.cos(alpha)
-        radius_lat = math.sin(alpha)
-        coords = []
-        for lon in range(2*subdiv):
-            beta = math.pi * lon / subdiv
-            x = math.sin(beta) * radius_lat
-            z = math.cos(beta) * radius_lat
-            vertices += [x,y,z]
-            coords.append(i)
-            i+=1
-        coord2index.append(coords)
-    vertices += [0,1,0] # north pole
-    coord2index.append([i])
-    # create triangles
-    for lat in range(subdiv):
-        a = coord2index[lat]
-        if len(a) == 1:
-            a = a*2*subdiv
-        b = coord2index[lat+1]
-        if len(b) == 1:
-            b = b*2*subdiv
-        for lon in range(2*subdiv):
-            lon1 = (lon + 1) % (2*subdiv)
-            if b[lon] != b[lon1]:
-                indices += [ a[lon] , b[lon], b[lon1]]
-            if a[lon] != a[lon1]:
-                indices += [ b[lon1], a[lon1], a[lon] ]
-    # in a sphere of radius 1 the vertices are also their normals
-    normals = vertices
-    return indices, vertices, normals
-
-def create_gltf_mesh(indices, vertices, normals, colors):
-    buffer_format = "H"*len(indices) + "f"*len(vertices) + "f"*len(normals)
-    buffer = struct.pack( buffer_format, * indices + vertices + normals )
-    buffer_url = "data:application/octet-stream;base64,"+base64.b64encode(buffer).decode("ASCII")
-    return {
-        "meshes": [
-            {
-                "primitives": [{
-                    "attributes": {
-                        "POSITION": 1,
-                        "NORMAL": 2,
-                    },
-                    "indices": 0,
-                    "material": col
-                }]
-            }
-            for col in range(len(colors))
-        ],
-
-        "buffers": [
-            {
-                "uri": buffer_url,
-                "byteLength": len(buffer)
-            }
-        ],
-        "bufferViews": [
-            {
-                "buffer": 0,
-                "byteOffset": 0,
-                "byteLength": len(indices) * 2,
-                "target": GLTF_ELEMENT_ARRAY_BUFFER
-            },
-            {
-                "buffer": 0,
-                "byteOffset": struct.calcsize("H"*len(indices)),
-                "byteLength": struct.calcsize("f"*len(vertices)),
-                "target": GLTF_ARRAY_BUFFER
-            },
-            {
-                "buffer": 0,
-                "byteOffset": struct.calcsize("H" * len(indices) + "f"*len(vertices)),
-                "byteLength": struct.calcsize("f"*len(normals)),
-                "target": GLTF_ARRAY_BUFFER
-            }
-        ],
-        "accessors": [
-            {
-                "bufferView": 0,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_UNSIGNED_SHORT,
-                "count": len(indices),
-                "type": "SCALAR",
-                "max": [max(indices)],
-                "min": [min(indices)]
-            },
-            {
-                "bufferView": 1,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_FLOAT,
-                "count": len(vertices)//3,
-                "type": "VEC3",
-                "max": [1.0, 1.0, 1.0],
-                "min": [-1.0, -1.0, -1.0]
-            },
-            {
-                "bufferView": 2,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_FLOAT,
-                "count": len(normals)//3,
-                "type": "VEC3",
-                "max": [1.0, 1.0, 1.0],
-                "min": [-1.0, -1.0, -1.0]
-            },
-        ],
-        "materials": [
-            {
-                "pbrMetallicRoughness": {
-                    "baseColorFactor": list(col) + [1.0],
-                    "metallicFactor": 0.5,
-                    "roughnessFactor": 0.1
-                }
-            }
-            for col in colors
-        ],
-
-    }
 
 def data2usdz(data, use_tools=True, save_usda=False):
     usda, assets = data2usd_ascii(data)
@@ -387,8 +176,7 @@ def data2usdz(data, use_tools=True, save_usda=False):
 def run_usdconvert_python_package(content, assets={}, inSuffix='.usda', tmpSuffix='.usdc', outSuffix='.usdz', check_output=False):
     from pxr import Usd
     from pxr import Sdf
-    from pxr import Ar
-    import tempfile, os
+    import tempfile
     a = tempfile.mktemp(inSuffix)
     b = tempfile.mktemp(tmpSuffix)
     c = tempfile.mktemp(outSuffix)
@@ -425,6 +213,7 @@ def run_usdconvert_python_package(content, assets={}, inSuffix='.usda', tmpSuffi
         result = out.read()
     return result
 
+
 def run_usdconvert_python_cli(content, inSuffix='.usda', outSuffix='.usdz'):
     # with mac developer account: https://developer.apple.com/augmented-reality/tools/
     # https://developer.nvidia.com/usd-20.05-binary-linux-python-3.6
@@ -442,6 +231,7 @@ def run_usdconvert_python_cli(content, inSuffix='.usda', outSuffix='.usdz'):
         result = out.read()
     return result
 
+
 def runXcrun(content, in_suffix='.obj', out_suffix='.usdz'):
     import tempfile, os
     a = tempfile.mktemp(in_suffix)
@@ -455,6 +245,7 @@ def runXcrun(content, in_suffix='.obj', out_suffix='.usdz'):
     with open(b, 'rb') as out:
         result = out.read()
     return result
+
 
 def usd_check(inputFile, arkit=True, verbose=True):
     from pxr import UsdUtils
@@ -471,79 +262,3 @@ def usd_check(inputFile, arkit=True, verbose=True):
     if len(errors) > 0 or len(failedChecks) > 0:
         for msg in errors + failedChecks:
             print(msg)
-
-def obj2usdz(data):
-    obj = data2obj(data)
-    usdz = run_usdconvert_python_cli(obj, in_suffix='obj')
-    return usdz
-
-def text2png(text, truetype=None, fontsize=100):
-    from PIL import Image, ImageDraw, ImageFont
-    from io import BytesIO
-
-    f = ImageFont.load_default()
-    w, h = f.getsize(text)
-
-    img = Image.new("RGBA", (w, h), (0,0,0,0))
-    # get a drawing context
-    d = ImageDraw.Draw(img)
-    # draw text, half opacity
-    d.text((0, 0), text, font=f, fill=(255, 0, 255, 128))
-
-    buffer = BytesIO()
-    img.save(buffer, format='png')
-    return w, h, buffer.getvalue()
-
-if False:
-    print("Welcome")
-    input = 'iris.json'
-    output = 'data_tmp.usdz'
-    # output = 'iris.gltf'
-    import json
-    with open(input) as f:
-        payload = json.load(f)
-    result = data2usdz(payload, save_usda=True)
-    with open(output, 'wb') as f:
-        f.write(result)
-        # json.dump(result, f, indent=True)
-    with open('data_tmp.gltf', 'w') as f:
-        result = data2gltf(payload)
-        json.dump(result, f, indent=4)
-    print("Byebye.")
-
-@click.command()
-@click.argument('data', type=click.Path(exists=True))
-@click.argument('out', default='', type=click.Path())
-@click.option('-f', '--format', default=None, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
-def export(data, out=None, format=None):
-    """Convert the DATA.json to OUT.format."""
-    data_path = Path(data)
-    with open(data, 'r') as f:
-        input = json.load(f)
-    if format is None:
-        assert out is not None
-        # data_path.suffix might be '' !
-        format = Path(out).suffix.lstrip('.')
-    elif out is None or out == '':
-        format = format or 'usdz'
-        out = data_path.with_suffix("."+format)
-    mode = 'wb' if format.startswith("usd") else 'w'
-    with open(out, mode) as outfile:
-        if format == 'gltf':
-            result = data2gltf(input)
-            json.dump(result, outfile)
-        elif format == 'obj':
-            result = data2obj(input)
-            outfile.write(result)
-        elif format == 'usda':
-            usda, assets = data2usd_ascii(input)
-            outfile.write(usda.encode("utf-8"))
-            for key, val in assets.items():
-                with open(key, 'wb') as f:
-                    f.write(val)
-        else:
-            result = data2usdz(input, save_usda=False)
-            outfile.write(result)
-
-if __name__ == '__main__':
-    export()
