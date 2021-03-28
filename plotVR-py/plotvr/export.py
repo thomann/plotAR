@@ -1,3 +1,4 @@
+import jinja2
 
 from .server import logger
 import struct, base64, math
@@ -52,6 +53,8 @@ def data2obj(data):
 
 def data2usd_ascii(data):
     spheres = ""
+    texts = ""
+    assets = {}
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
     for i, row in enumerate(data['data']):
         x, y, z = row[:3]
@@ -60,15 +63,85 @@ def data2usd_ascii(data):
             col = data['col'][i] % COLORS_LEN
         # color = colors[col]
         size = data['size'][i] if 'size' in data else 1.0
-        spheres += f"""
-        def Sphere "Point{i}" {{
-            double3 xformOp:translate = ({x},{y},{z})
-            uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </Spheres/Materials/material_{col}>
-
-            double radius = {0.02*size}
-        }}
-        """
+        if 'label' not in data:
+            spheres += f"""
+            def Sphere "Point{i}" {{
+                double3 xformOp:translate = ({x},{y},{z})
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_{col}>
+    
+                double radius = {0.02*size}
+            }}
+            """
+        else:
+            w,h, img = text2png(data['label'][i])
+            w /= 100
+            h /= 100
+            file = f"text_{i}.png"
+            # assets[file] = img
+            text_template = """
+            def Preliminary_Text "text_{{i}}"
+            {
+                string content = "{{text}}"
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = ({{x}},{{y}},{{z}})
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_{{col}}>
+            }
+            """
+            ## the following
+            _template_image = """
+            def Mesh "text_{{i}}"
+            {
+                // float3[] extent = [(-430, -145, 0), (430, 145, 0)]
+                int[] faceVertexCounts = [4]
+                int[] faceVertexIndices = [0, 1, 2, 3]
+                rel material:binding = </Spheres/Texts/text_{{i}}/boardMat>
+                point3f[] points = [ ({{x}}, {{y}}, {{z}}), ({{x+w}}, {{y}}, {{z}}), ({{x+w}}, {{y+h}}, {{z}}), ({{x}}, {{y+h}}, {{z}}) ]
+                texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                    interpolation = "varying"
+                )
+        
+                def Material "boardMat"
+                {
+                    token inputs:frame:stPrimvarName = "st"
+                    token outputs:surface.connect = </Spheres/Texts/text_{{i}}/boardMat/PBRShader.outputs:surface>
+        
+                    def Shader "PBRShader"
+                    {
+                        uniform token info:id = "UsdPreviewSurface"
+                        color3f inputs:diffuseColor.connect = </Spheres/Texts/text_{{i}}/boardMat/diffuseTexture.outputs:rgb>
+                        float inputs:metallic = 0
+                        float inputs:roughness = 0.4
+                        token outputs:surface
+                    }
+        
+                    def Shader "stReader"
+                    {
+                        uniform token info:id = "UsdPrimvarReader_float2"
+                        token inputs:varname.connect = </Spheres/Texts/text_{{i}}/boardMat.inputs:frame:stPrimvarName>
+                        float2 outputs:result
+                    }
+        
+                    def Shader "diffuseTexture"
+                    {
+                        uniform token info:id = "UsdUVTexture"
+                        asset inputs:file = @{{file}}@
+                        float2 inputs:st.connect = </Spheres/Texts/text_{{i}}/boardMat/stReader.outputs:result>
+                        float3 outputs:rgb
+                    }
+                }
+            }
+            """
+            texts += jinja2.Template(text_template).render(
+                i=i, x=x, y=y, z=z, w=w, h=h, file=file,
+                text=data['label'][i], col=col,
+            )
             # color3f[] primvars:displayColor = [({color})]
     materials = ""
     for i,col in enumerate(COLORS):
@@ -98,6 +171,10 @@ def data2usd_ascii(data):
         metersPerUnit = 1
     )
     def Xform "Spheres" {
+        def Scope "Texts"
+        {
+            """ + texts + """
+        }
         def Xform "Nodes" {
             """ + spheres + """
         }
@@ -107,7 +184,7 @@ def data2usd_ascii(data):
         }
     }
     """
-    return usda
+    return usda, assets
 
 def data2gltf(data, subdiv=16):
     spheres = []
@@ -277,12 +354,12 @@ def create_gltf_mesh(indices, vertices, normals, colors):
     }
 
 def data2usdz(data, use_tools=True, save_usda=False):
-    usda = data2usd_ascii(data)
+    usda, assets = data2usd_ascii(data)
     if save_usda:
         with open('data_tmp.usda', 'w') as f:
             f.writelines(usda)
     if use_tools:
-        result = run_usdconvert_python_package(usda, inSuffix='.usda')
+        result = run_usdconvert_python_package(usda, assets, inSuffix='.usda')
         # n = len(usdc)
         # n_align = math.ceil(n / 64) * 64
         # logger.info(f"Padding usdc to 64 bytes align {n} --> {n_align}")
@@ -307,9 +384,10 @@ def data2usdz(data, use_tools=True, save_usda=False):
     return result
 
 
-def run_usdconvert_python_package(content, inSuffix='.usda', tmpSuffix='.usdc', outSuffix='.usdz'):
+def run_usdconvert_python_package(content, assets={}, inSuffix='.usda', tmpSuffix='.usdc', outSuffix='.usdz', check_output=False):
     from pxr import Usd
     from pxr import Sdf
+    from pxr import Ar
     import tempfile, os
     a = tempfile.mktemp(inSuffix)
     b = tempfile.mktemp(tmpSuffix)
@@ -322,6 +400,27 @@ def run_usdconvert_python_package(content, inSuffix='.usda', tmpSuffix='.usdc', 
     with Usd.ZipFileWriter.CreateNew(c) as zfw:
         addedFile = zfw.AddFile(b, 'data.usdc')
         logger.info(f"addedFile {b} as data.usdc")
+        ## Actually this seems not to work as expected
+        ## right now:
+        for key, val in assets.items():
+            d = tempfile.mktemp()
+            with open(d, 'w') as f:
+                f.write(content)
+            zfw.AddFile(d, key)
+
+    # r = Ar.GetResolver()
+    # resolvedAsset = r.Resolve(args.arkitAsset)
+    # if args.checkCompliance:
+    #     success = _CheckCompliance(resolvedAsset, arkit=True) and success
+    #
+    # context = r.CreateDefaultContextForAsset(resolvedAsset)
+    # with Ar.ResolverContextBinder(context):
+    #     # Create the package only if the compliance check was passed.
+    #     success = success and UsdUtils.CreateNewARKitUsdzPackage(
+    #         Sdf.AssetPath(args.arkitAsset), usdzFile)
+
+    if check_output:
+        usd_check(c)
     with open(c, 'rb') as out:
         result = out.read()
     return result
@@ -357,10 +456,43 @@ def runXcrun(content, in_suffix='.obj', out_suffix='.usdz'):
         result = out.read()
     return result
 
+def usd_check(inputFile, arkit=True, verbose=True):
+    from pxr import UsdUtils
+    checker = UsdUtils.ComplianceChecker(arkit=arkit, verbose=verbose,
+                                         # skipARKitRootLayerCheck=False, rootPackageOnly=args.rootPackageOnly,
+                                         # skipVariants=args.skipVariants
+                                         )
+
+    checker.CheckCompliance(inputFile)
+
+    errors = checker.GetErrors()
+    failedChecks = checker.GetFailedChecks()
+
+    if len(errors) > 0 or len(failedChecks) > 0:
+        for msg in errors + failedChecks:
+            print(msg)
+
 def obj2usdz(data):
     obj = data2obj(data)
     usdz = run_usdconvert_python_cli(obj, in_suffix='obj')
     return usdz
+
+def text2png(text, truetype=None, fontsize=100):
+    from PIL import Image, ImageDraw, ImageFont
+    from io import BytesIO
+
+    f = ImageFont.load_default()
+    w, h = f.getsize(text)
+
+    img = Image.new("RGBA", (w, h), (0,0,0,0))
+    # get a drawing context
+    d = ImageDraw.Draw(img)
+    # draw text, half opacity
+    d.text((0, 0), text, font=f, fill=(255, 0, 255, 128))
+
+    buffer = BytesIO()
+    img.save(buffer, format='png')
+    return w, h, buffer.getvalue()
 
 if False:
     print("Welcome")
@@ -404,8 +536,11 @@ def export(data, out=None, format=None):
             result = data2obj(input)
             outfile.write(result)
         elif format == 'usda':
-            result = data2usdz(input, save_usda=True)
-            outfile.write(result)
+            usda, assets = data2usd_ascii(input)
+            outfile.write(usda.encode("utf-8"))
+            for key, val in assets.items():
+                with open(key, 'wb') as f:
+                    f.write(val)
         else:
             result = data2usdz(input, save_usda=False)
             outfile.write(result)
