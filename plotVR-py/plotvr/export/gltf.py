@@ -2,16 +2,121 @@ import base64
 import math
 import struct
 
-from .common import COLORS, COLORS_LEN
+import numpy as np
+
+from .common import COLORS, COLORS_LEN, text2png
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
 GLTF_ARRAY_BUFFER = 34962
 GLTF_TYPE_UNSIGNED_SHORT = 5123
 GLTF_TYPE_FLOAT = 5126
+GLTF_WRAP_MIRRORED_REPEAT = 33648
+GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR = 9987
+GLTF_MAGFILTER_LINEAR = 9729
 
+class GLTF(object):
+    def __init__(self):
+        self.d = {
+            "asset" : {"version" : "2.0"}
+        }
+        for i in ['scenes', 'nodes', 'meshes', 'buffers', 'bufferViews', 'accessors', 'materials', 'textures', 'samplers', 'images', ]:
+            self.d[i] = []
+    def add(self, path, x):
+        lst = self.d.get(path)
+        id = len(lst)
+        lst.append(x)
+        return id
+
+    def add_buffer_data(self, arrays, target, type):
+        buffer_format = ""
+        acc_id = []
+        byte_offset = 0
+        buffer_dict = {}
+        b_id = self.add('buffers', buffer_dict)
+        for x, tg, tp in zip(arrays, target, type):
+            arr_format = len(x) * ('h' if tg==GLTF_ELEMENT_ARRAY_BUFFER else 'f')
+            buffer_format += arr_format
+            n = struct.calcsize(arr_format)
+            view_id = self.add('bufferViews', {
+                    "buffer": b_id,
+                    "byteOffset": byte_offset,
+                    "byteLength": n,
+                    "target": tg
+                })
+            byte_offset += n
+            if tp == 'SCALAR':
+                dim = 1
+                component_type = GLTF_TYPE_UNSIGNED_SHORT
+            else:
+                dim = int(tp[-1])
+                component_type = GLTF_TYPE_FLOAT
+            arr = np.array(x).reshape((-1,dim))
+            print(arr.shape)
+            acc_id.append(self.add("accessors", {
+                "bufferView": view_id,
+                "byteOffset": 0,
+                "componentType": component_type,
+                "count": len(x) // dim,
+                "type": tp,
+                "max": arr.max(0).tolist(),
+                "min": arr.min(0).tolist(),
+            }))
+        buffer = struct.pack(buffer_format, *sum(arrays, []))
+        buffer_url = "data:application/octet-stream;base64," + base64.b64encode(buffer).decode("ASCII")
+        buffer_dict["uri"] = buffer_url
+        buffer_dict["byteLength"] = len(buffer)
+
+        return acc_id
 
 def data2gltf(data, subdiv=16):
+
+    gltf = GLTF()
+    indices, vertices, normals = create_sphere(subdiv=subdiv)
+    sphere_acc_id = gltf.add_buffer_data(
+        [indices, vertices, normals],
+        [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+        "SCALAR VEC3 VEC3".split(),
+    )
+
+    # board_acc_id, sampler_id = -1,-1
+    if 'label' in data:
+        indices, vertices, normals, st = create_board()
+        board_acc_id = gltf.add_buffer_data(
+            [indices, vertices, normals, st],
+            [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+            "SCALAR VEC3 VEC3 VEC2".split(),
+        )
+        sampler_id = gltf.add('samplers', {
+                "magFilter": GLTF_MAGFILTER_LINEAR,
+                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+            })
+
+    col_mat_ids = [ gltf.add("materials", {
+                "pbrMetallicRoughness": {
+                    "baseColorFactor": list(col) + [1.0],
+                    "metallicFactor": 0.5,
+                    "roughnessFactor": 0.1
+                }
+            })
+            for col in COLORS
+        ]
+    col_mesh_id = [ gltf.add("meshes", {
+                "primitives": [{
+                    "attributes": {
+                        "POSITION": sphere_acc_id[1],
+                        "NORMAL": sphere_acc_id[2],
+                    },
+                    "indices": sphere_acc_id[0],
+                    "material": mat_id
+                }]
+            })
+            for mat_id in col_mat_ids
+        ]
+
     spheres = []
+
     for i, row in enumerate(data['data']):
         x, y, z = row[:3]
         col = 0
@@ -20,28 +125,58 @@ def data2gltf(data, subdiv=16):
             col = data['col'][i] % COLORS_LEN
         if 'size' in data:
             scale *= data['size'][i]
+        scale = [scale] * 3
+        mesh_id = col_mesh_id[col]
+        if 'label' in data:
+            text = data['label'][i]
+            h, w, img = text2png(text, color=COLORS[col])
+            img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
+            src_id = gltf.add("images", {
+                "uri": img_uri
+            })
+            texture_id = gltf.add("textures", {
+                "sampler": sampler_id,
+                "source": src_id
+            })
+            mat_id = gltf.add('materials', {
+                    "pbrMetallicRoughness": {
+                        "baseColorTexture": {"index": texture_id},
+                        "metallicFactor": 0.5,
+                        "roughnessFactor": 0.1,
+                    },
+                    "alphaMode": "BLEND",
+                    "doubleSided": True,
+                })
+            mesh_id = gltf.add('meshes',
+                {
+                    "primitives": [{
+                        "attributes": {
+                            "POSITION": board_acc_id[1],
+                            "NORMAL": board_acc_id[2],
+                            "TEXCOORD_0": board_acc_id[3],
+                        },
+                        "indices": board_acc_id[0],
+                        "material": mat_id
+                    }]
+                })
+            scale = [scale[0] * h, scale[1] * w, scale[2] ]
         spheres += [{
-          "mesh" : col,
+          "mesh" : mesh_id,
           "translation": [x,z,-y],
-          "scale": [scale] * 3,
+          "scale": scale,
         }]
-
-    indices, vertices, normals = create_sphere(subdiv=subdiv)
-    mesh = create_gltf_mesh(indices, vertices, normals, colors=COLORS)
-    gltf = {
-      "scenes" : [
-        {
+    gltf.d['nodes'] = spheres
+    gltf.add("scenes", {
           "nodes" : list(range(len(spheres)))
-        }
-      ],
-      "nodes" : spheres,
-      "asset" : {
-        "version" : "2.0"
-      }
-    }
-    gltf.update(mesh)
-    return gltf
+        })
+    return gltf.d
 
+def create_board(subdiv=8):
+    vertices = [ 0,0,0, 1,0,0, 1,1,0, 0,1,0 ]
+    indices = [ 0,1,2 , 0,2,3 ]
+    normals = [ 0,0,1 ] * (len(vertices) // 3)
+    st = [ 0,1, 1,1, 1,0, 0,0 ]
+    return indices, vertices, normals, st
 
 def create_sphere(subdiv=8):
     """
@@ -90,91 +225,3 @@ def create_sphere(subdiv=8):
     # in a sphere of radius 1 the vertices are also their normals
     normals = vertices
     return indices, vertices, normals
-
-
-def create_gltf_mesh(indices, vertices, normals, colors):
-    buffer_format = "H"*len(indices) + "f"*len(vertices) + "f"*len(normals)
-    buffer = struct.pack( buffer_format, * indices + vertices + normals )
-    buffer_url = "data:application/octet-stream;base64,"+base64.b64encode(buffer).decode("ASCII")
-    return {
-        "meshes": [
-            {
-                "primitives": [{
-                    "attributes": {
-                        "POSITION": 1,
-                        "NORMAL": 2,
-                    },
-                    "indices": 0,
-                    "material": col
-                }]
-            }
-            for col in range(len(colors))
-        ],
-
-        "buffers": [
-            {
-                "uri": buffer_url,
-                "byteLength": len(buffer)
-            }
-        ],
-        "bufferViews": [
-            {
-                "buffer": 0,
-                "byteOffset": 0,
-                "byteLength": len(indices) * 2,
-                "target": GLTF_ELEMENT_ARRAY_BUFFER
-            },
-            {
-                "buffer": 0,
-                "byteOffset": struct.calcsize("H"*len(indices)),
-                "byteLength": struct.calcsize("f"*len(vertices)),
-                "target": GLTF_ARRAY_BUFFER
-            },
-            {
-                "buffer": 0,
-                "byteOffset": struct.calcsize("H" * len(indices) + "f"*len(vertices)),
-                "byteLength": struct.calcsize("f"*len(normals)),
-                "target": GLTF_ARRAY_BUFFER
-            }
-        ],
-        "accessors": [
-            {
-                "bufferView": 0,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_UNSIGNED_SHORT,
-                "count": len(indices),
-                "type": "SCALAR",
-                "max": [max(indices)],
-                "min": [min(indices)]
-            },
-            {
-                "bufferView": 1,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_FLOAT,
-                "count": len(vertices)//3,
-                "type": "VEC3",
-                "max": [1.0, 1.0, 1.0],
-                "min": [-1.0, -1.0, -1.0]
-            },
-            {
-                "bufferView": 2,
-                "byteOffset": 0,
-                "componentType": GLTF_TYPE_FLOAT,
-                "count": len(normals)//3,
-                "type": "VEC3",
-                "max": [1.0, 1.0, 1.0],
-                "min": [-1.0, -1.0, -1.0]
-            },
-        ],
-        "materials": [
-            {
-                "pbrMetallicRoughness": {
-                    "baseColorFactor": list(col) + [1.0],
-                    "metallicFactor": 0.5,
-                    "roughnessFactor": 0.1
-                }
-            }
-            for col in colors
-        ],
-
-    }

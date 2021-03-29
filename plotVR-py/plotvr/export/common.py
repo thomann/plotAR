@@ -45,7 +45,7 @@ def obj2usdz(data):
     return usdz
 
 
-def text2png(text, truetype=None, fontsize=100):
+def text2png(text, truetype=None, fontsize=100, color=(1, 0, 1)):
     from PIL import Image, ImageDraw, ImageFont
     from io import BytesIO
 
@@ -56,8 +56,8 @@ def text2png(text, truetype=None, fontsize=100):
     # get a drawing context
     d = ImageDraw.Draw(img)
     # draw text, half opacity
-    d.text((0, 0), text, font=f, fill=(255, 0, 255, 128))
+    d.text((0, 0), text, font=f, fill=tuple(c*255 for c in color) + (255,) )
 
     buffer = BytesIO()
-    img.save(buffer, format='png')
+    img.save(buffer, format='png', compress_level=0)
     return w, h, buffer.getvalue()
