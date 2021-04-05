@@ -1,17 +1,19 @@
 import logging
 
 import jinja2
+import numpy as np
 
-from .common import COLORS, COLORS_LEN, text2png
+from .common import COLORS, COLORS_LEN, text2png, create_surface
 
 logger = logging.getLogger(__name__)
 
 def data2usd_ascii(data):
     spheres = ""
     texts = ""
+    surface = ""
     assets = {}
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
-    for i, row in enumerate(data['data']):
+    for i, row in enumerate(data.get('data',[])):
         x, y, z = row[:3]
         col = 0
         if 'col' in data:
@@ -98,6 +100,47 @@ def data2usd_ascii(data):
                 text=data['label'][i], col=col,
             )
             # color3f[] primvars:displayColor = [({color})]
+    if 'surface' in data:
+        indices, normals, vertices = create_surface(data['surface'])
+        def serialize(x):
+            x = np.array(x)
+            print(x.shape)
+            inlet = ",".join(f"{tuple(row)}" for row in x)
+            return f"[{inlet}]"
+        vars = dict(
+            vertexCounts = [3] * (indices.shape[0] // 3),
+            extent = serialize([vertices.min(axis=0), vertices.max(axis=0)]),
+            indices = indices.flatten().tolist(),
+            vertices = serialize(vertices),
+            normals = serialize(normals.flatten().reshape((-1,3))),
+        )
+        template = """
+        def Mesh "Mesh"
+        {
+            int[] faceVertexCounts = {{vertexCounts}}
+            int[] faceVertexIndices = {{indices}}
+            normal3f[] normals = {{normals}} (
+                interpolation = "vertex"
+            )
+            point3f[] points = {{vertices}}
+            {#
+            float3[] extent = {{extent}}
+            texCoord2f[] primvars:st = [(0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1)] (
+                interpolation = "faceVarying"
+            )
+            int[] primvars:st:indices = [0, 3, 1, 0, 2, 3, 4, 7, 5, 4, 6, 7, 8, 11, 9, 8, 10, 11, 12, 15, 13, 12, 14, 15, 16, 19, 17, 16, 18, 19, 20, 23, 21, 20, 22, 23]
+            #}
+            uniform token subdivisionScheme = "none"
+            uniform bool doubleSided = 1
+    
+            double3 xformOp:translate = (0,0.2,0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </Spheres/Materials/material_{{col}}>
+        }
+        """
+        surface = jinja2.Template(template).render(
+            **vars, col=0,
+        )
     materials = ""
     for i,col in enumerate(COLORS):
         materials += f"""
@@ -126,19 +169,24 @@ def data2usd_ascii(data):
         metersPerUnit = 1
     )
     def Xform "Spheres" {
-        def Scope "Texts"
+        {% if texts %}def Scope "Texts"
         {
-            """ + texts + """
-        }
-        def Xform "Nodes" {
-            """ + spheres + """
-        }
+            {{texts}}
+        }{%endif%}
+        {% if surface %}def Scope "surface"
+        {
+            {{surface}}
+        }{%endif%}
+        {% if spheres %}def Xform "Nodes" {
+            {{spheres}}
+        }{%endif%}
         def Scope "Materials"
         {
             """ + materials + """
         }
     }
     """
+    usda = jinja2.Template(usda).render(**locals())
     return usda, assets
 
 

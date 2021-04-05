@@ -4,7 +4,7 @@ import struct
 
 import numpy as np
 
-from .common import COLORS, COLORS_LEN, text2png
+from .common import COLORS, COLORS_LEN, text2png, create_surface
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
 GLTF_ARRAY_BUFFER = 34962
@@ -36,7 +36,17 @@ class GLTF(object):
         buffer_dict = {}
         b_id = self.add('buffers', buffer_dict)
         for x, tg, tp in zip(arrays, target, type):
-            arr_format = f"{len(x)}{'H' if tg == GLTF_ELEMENT_ARRAY_BUFFER else 'f'}"
+            if tg == GLTF_ELEMENT_ARRAY_BUFFER:
+                if max(x) < 2**16:
+                    bin_format = GLTF_TYPE_UNSIGNED_SHORT
+                    arr_format = "H"
+                else:
+                    bin_format = GLTF_TYPE_UNSIGNED_INT
+                    arr_format = "I"
+            else:
+                bin_format = GLTF_TYPE_FLOAT
+                arr_format = "f"
+            arr_format = f"{len(x)}{arr_format}"
             buffer_format += arr_format
             n = struct.calcsize(arr_format)
             view_id = self.add('bufferViews', {
@@ -48,7 +58,7 @@ class GLTF(object):
             byte_offset += n
             if tp == 'SCALAR':
                 dim = 1
-                component_type = GLTF_TYPE_UNSIGNED_SHORT
+                component_type = bin_format
             else:
                 dim = int(tp[-1])
                 component_type = GLTF_TYPE_FLOAT
@@ -199,6 +209,32 @@ def data2gltf(data, subdiv=16):
           "scale": scale,
         }))
 
+    if 'surface' in data:
+        surface = data['surface']
+        indices, normals, vertices = create_surface(surface)
+        surface_acc_id = gltf.add_buffer_data(
+            [ _.flatten().tolist() for _ in [indices, vertices, normals] ],
+            [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+            "SCALAR VEC3 VEC3".split(),
+        )
+        mesh_id = gltf.add('meshes',
+            {
+                "primitives": [{
+                    "attributes": {
+                        "POSITION": surface_acc_id[1],
+                        "NORMAL": surface_acc_id[2],
+                        # "TEXCOORD_0": surface_acc_id[3],
+                    },
+                    "indices": surface_acc_id[0],
+                    "material": grey_mat_id
+                }]
+            })
+        data_node['children'].append(gltf.add('nodes', {
+          "mesh" : mesh_id,
+          # "translation": [x,z,-y],
+          # "scale": scale,
+        }))
+
     for i, text in enumerate(data.get('col_labels',[])):
         col = i % COLORS_LEN
         scale = [0.01] * 3
@@ -301,6 +337,7 @@ def data2gltf(data, subdiv=16):
           "nodes" : [data_node_id, legend_node_id, axes_node_id]
         })
     return gltf.d
+
 
 def create_board(subdiv=8):
     vertices = [ 0,0,0, 1,0,0, 1,1,0, 0,1,0 ]
