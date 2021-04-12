@@ -33,12 +33,14 @@ def plotvr(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
             axis_names = axis_names or df.columns[xyz].tolist()
 
     def _mk_val(df, val):
-        if val is not None and isinstance(val, str) and val in df.columns:
+        if val is None:
+            return None
+        elif val is not None and isinstance(val, str) and val in df.columns:
             return df[val].values
         elif isinstance(val, float):
             return np.zeros((n,)) + val
         else:
-            return val
+            return np.array(val)
 
     col   = _mk_val(df, col)
     size  = _mk_val(df, size)
@@ -53,7 +55,7 @@ def plotvr(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
         if size is not None:
             # scale the sizes between 0.5 and 1.5:
             size = scale(size.reshape((-1, 1)))[:,0] + 1.5
-    if col.dtype == np.dtype('O'):
+    if col is not None and col.dtype == np.dtype('O'):
         x = pd.Series(col, dtype='category')
         col = x.cat.codes.values
         col_labels = x.cat.categories.values.tolist()
@@ -97,19 +99,19 @@ def surfacevr(data, col=None, x=None, y=None,
         a,b = data.min(),data.max()
         if a <= 0 <= b:
             # keep the 0 at 0 and scale around that
-            m = max(-a,b)
-            m = m or 1 # set to 1 if 0
-            data = data / m
+            mx = max(-a,b)
+            mx = mx or 1 # set to 1 if 0
+            data = data / mx
         else:
-            data = scale(data, axis=(1,2))
+            data = scale(data, axis=(0,1))
         x = scale(x)
         y = scale(y)
     # TODO: remove NAs
     body = {'surface': {'data':data.tolist(), 'col':col, 'shape': (n,m)},'speed': 0, 'protocolVersion': '0.3.0'}
     if x is not None:
-        body['surface']['x'] = x
+        body['surface']['x'] = np.array(x).tolist()
     if y is not None:
-        body['surface']['y'] = y
+        body['surface']['y'] = np.array(y).tolist()
     if speed is not None: body['speed'] = speed
     metadata = { 'n': n, 'm': m, 'created': time.ctime() }
     metadata['name'] = name or f"Dataset {n}x{m}"
@@ -127,7 +129,7 @@ def scale(data, axis=(0,)):
         return None
     if min(data.shape) == 0:
         return data
-    ranges = data.max(axis) - data.min(axis)
+    ranges = np.array(data.max(axis) - data.min(axis))
     ranges[ranges == 0] = 1
     data = (data - data.min(axis)) / ranges * 2 - 1
     return data
