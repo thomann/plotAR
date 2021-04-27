@@ -1,0 +1,152 @@
+#usda 1.0
+    (
+        defaultPrim = "Spheres"
+        upAxis = "Y"
+        metersPerUnit = 1
+    )
+    def Xform "Spheres" {
+        
+        
+        def Xform "Nodes" {
+            
+            def Sphere "Point0" {
+                double3 xformOp:translate = (-0.9635865156380053,0.4120777301961709,0.9466008967163015)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point1" {
+                double3 xformOp:translate = (-0.902103289820209,0.40226311610660836,0.8167192498266467)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point2" {
+                double3 xformOp:translate = (-1.0,0.43985644101309096,0.9121079863662251)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point3" {
+                double3 xformOp:translate = (-0.9476696466487728,0.4948843452132785,1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point4" {
+                double3 xformOp:translate = (-0.7180949779995942,0.24922194377955798,0.7667672487794384)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point5" {
+                double3 xformOp:translate = (-0.5624662951951684,0.04958338319733935,0.7016585623978018)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point6" {
+                double3 xformOp:translate = (0.060585083719926436,1.0,0.5458228877024922)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point7" {
+                double3 xformOp:translate = (1.0,0.19175128113059414,-0.4922523220073881)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point8" {
+                double3 xformOp:translate = (-0.0038900010924715067,-1.0,-1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+            def Sphere "Point9" {
+                double3 xformOp:translate = (-0.9396307625399232,0.42286902506545965,0.9121441761329638)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+    
+                double radius = 0.02
+            }
+            
+        }
+        def Scope "Materials"
+        {
+            
+        def Material "material_0"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_0/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (1, 0, 0)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 0.5
+                normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+
+        def Material "material_1"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_1/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 1)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 0.5
+                normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+
+        def Material "material_2"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_2/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 1, 0)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 0.5
+                normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+
+        }
+    }
+    
