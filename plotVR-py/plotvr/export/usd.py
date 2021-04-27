@@ -11,10 +11,13 @@ def data2usd_ascii(data):
     spheres = ""
     texts = ""
     surface = ""
+    axes = ""
+    legend = ""
     assets = {}
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
     for i, row in enumerate(data.get('data',[])):
-        x, y, z = row[:3]
+        x, z, y = row[:3]
+        z = -z
         col = 0
         if 'col' in data:
             col = data['col'][i] % COLORS_LEN
@@ -39,7 +42,7 @@ def data2usd_ascii(data):
             text_template = """
             def Preliminary_Text "text_{{i}}"
             {
-                string content = "{{text}}"
+                string content = "{{text|e}}"
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
@@ -161,7 +164,111 @@ def data2usd_ascii(data):
                 token outputs:surface
             }}
         }}
-"""
+        """
+
+    for i, text in enumerate(data.get('col_labels',[])):
+        col = i % COLORS_LEN
+        x, y, z = 1,1-i/10,-1
+        template = """
+            def Xform "Legend_{{i}}" {
+                def Preliminary_Text "Legend_Text_{{i}}"
+                {
+                    string content = "{{text|e}}"
+                    string[] font = [ "Helvetica", "Arial" ]
+                    token wrapMode = "singleLine"
+                    token horizontalAlignment = "left"
+                    token verticalAlignment = "baseline"
+                    float depth = 0.01
+        
+                    double3 xformOp:translate = (0.03,-.03,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                }
+                
+                def Sphere "Legend_Point{{i}}" {
+                    double3 xformOp:translate = (0,0,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+        
+                    double radius = 0.02
+                }
+    
+                double3 xformOp:translate = ({{x}},{{y}},{{z}})
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_{{col}}>
+            }
+        """
+        legend += jinja2.Template(template).render(
+            i=i, x=x, y=y, z=z,
+            text=text, col=col,
+        )
+
+    for i, text in enumerate(data.get('axis_names',[])):
+        scale = [0.01] * 3
+        translation = [0,0,0]
+        translation[(2*i) % 3] = (-1 if i==1 else 1) * 1.02
+        rotation = [0,0,0,0]
+        if i<2:
+            rotation[0] = np.sqrt(2)/2 * (1-2*i)
+            rotation[1 if i==0 else 3] = np.sqrt(2)/2
+        else:
+            rotation[1] = -1
+        # axes_node['children'].append(gltf.add('nodes', {
+        #   "mesh" : mesh_id,
+        #   "translation": translation,
+        #   "scale": scale,
+        # }))
+        # axes_node['children'].append(gltf.add('nodes', {
+        #   "mesh" : arrow_mesh_id,
+        #   # "translation": [i,0,0],
+        #   "rotation": rotation,
+        #   # "scale": scale,
+        # }))
+        if i==0:
+            transform = "(-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (1, 0, 0, 1)"
+        elif i==1:
+            transform = "(-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, -1, 1)"
+        else:
+            transform = "(1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)"
+        radius = 0.01
+        template = """
+            def Xform "Axis_{{i}}" {
+                def Preliminary_Text "Axis_Text_{{i}}"
+                {
+                    string content = "{{text|e}}"
+                    string[] font = [ "Helvetica", "Arial" ]
+                    token wrapMode = "singleLine"
+                    token horizontalAlignment = "left"
+                    token verticalAlignment = "baseline"
+                    float depth = 0.01
+
+                    double3 xformOp:translate = ({{translation}})
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                }
+
+                def Cylinder "Axis_Cyl_{{i}}" {
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                    double radius = {{radius}}
+                    double height = {{2-2*radius}}
+                    uniform token axis = "{{axis}}"
+                }
+                def Cone "Axis_Cone_{{i}}" {
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                    double radius = {{2*radius}}
+                    double height = {{2*radius}}
+                    uniform token axis = "{{axis}}"
+                    matrix4d xformOp:transform = ( {{transform}} )
+                    uniform token[] xformOpOrder = ["xformOp:transform"]
+                }
+            }
+        """
+        axes += jinja2.Template(template).render(
+            i=i, axis="XZY"[i], radius=radius, transform=transform,
+            translation=str(translation)[1:-1],
+            rotation=str(rotation)[1:-1],
+            text=text, col=i,
+        )
     usda = """#usda 1.0
     (
         defaultPrim = "Spheres"
@@ -177,8 +284,14 @@ def data2usd_ascii(data):
         {
             {{surface}}
         }{%endif%}
-        {% if spheres %}def Xform "Nodes" {
+        {% if spheres %}def Scope "Nodes" {
             {{spheres}}
+        }{%endif%}
+        {% if legend %}def Scope "Legend" {
+            {{legend}}
+        }{%endif%}
+        {% if axes %}def Scope "Axes" {
+            {{axes}}
         }{%endif%}
         def Scope "Materials"
         {
