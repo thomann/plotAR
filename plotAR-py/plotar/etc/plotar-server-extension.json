@@ -1,7 +1,7 @@
 {
   "NotebookApp": {
     "nbserver_extensions": {
-      "plotvr.jupyter_server_extension": true
+      "plotar.jupyter_server_extension": true
     }
   }
 }

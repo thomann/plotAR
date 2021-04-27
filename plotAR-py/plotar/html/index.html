@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>plotVR</title>
+    <title>plotAR</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
     <meta name="mobile-web-app-capable" content="yes">
@@ -191,7 +191,7 @@
       // Apply rotation to cube mesh
       cube.rotation.y += delta * 0.0002;
       */
-      plotvr_animate(delta, lastRender)
+      plotar_animate(delta, lastRender)
     
       // Update VR headset position and apply to camera.
       controls.update();
@@ -261,7 +261,7 @@
     
     </script>
     
-  <!-- Now here comes the code of plotVR. It adds things to the scene variable -->
+  <!-- Now here comes the code of plotAR. It adds things to the scene variable -->
   <script>
     // the websocket to home to get keyboard input
     try{
@@ -326,7 +326,7 @@
         vrButton.requestEnterFullscreen();
       });
       
-      // finally start plotVR rendering in the following:
+      // finally start plotAR rendering in the following:
       
       refreshData();
       // response = JSON.parse(DEFAULT_DATA_JSON);
@@ -336,7 +336,7 @@
 
 
     // Request animation frame loop function
-    function plotvr_animate(delta, lastRender) {
+    function plotar_animate(delta, lastRender) {
       // now if we are flying:
       if(speed > 0){
           go(0, 0, -delta/1000);

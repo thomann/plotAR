@@ -84,7 +84,7 @@ class DataHandler(tornado.web.RequestHandler):
 class StatusHandler(tornado.web.RequestHandler):
     """Renders QR Codes"""
     def get(self):
-        self.set_header("X-Plotvr-Version", __version__)
+        self.set_header("X-PlotAR-Version", __version__)
         return self.write(json.dumps(status())+"\n")
 
 from . import export
@@ -121,10 +121,10 @@ class OBJHandler(tornado.web.RequestHandler):
 
 def defaultData():
     import numpy as np
-    from .client import plotvr
+    from .client import plotar
     data = np.random.normal(size=(100,3))
     col = np.random.randint(4, size=100)
-    return plotvr(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False )
+    return plotar(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False )
 
 # The list of currently connected clients
 CLIENTS = []
@@ -158,7 +158,7 @@ def status():
     return {'status': status, 'metadata': md}
 
 
-class PlotVRWebSocketHandler(tornado.websocket.WebSocketHandler):
+class PlotARWebSocketHandler(tornado.websocket.WebSocketHandler):
     """ The chat implemententation, all data send to server is json, all responses are json """
 
     def open(self):
@@ -210,8 +210,9 @@ _mappings = [
     (r"/data.usda", USDHandler),
     (r"/data.gltf", GLTFHandler),
     (r"/data.obj", OBJHandler),
-    (r"/ws", PlotVRWebSocketHandler),
+    (r"/ws", PlotARWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
+    # (r"/model.html(.*)", tornado.web.StaticFileHandler, {"path": html('model.html')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
     (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": html('js')}),
     (r"/textures/(.*)", tornado.web.StaticFileHandler, {"path": html('textures')})
@@ -224,7 +225,7 @@ _mappings = [
 @click.option('-d', '--data', default="", type=click.File(), help="Data.json file to open initially")
 @click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
 def start_server(port=2908, data=None, debug=False):
-    print(f"Welcome to PlotVR server on port {port}")
+    print(f"Welcome to PlotAR server on port {port}")
     global _PORT, _app, DATA
     if data:
         global DATA
@@ -237,11 +238,11 @@ def start_server(port=2908, data=None, debug=False):
 
 def get_ip():
     """Get the publicly visible IP address."""
-    # see https://stackoverflow.com/a/28950776
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
+    # see https://stackoverflow.com/a/28950776
         s.connect(('10.255.255.255', 1))
         IP = s.getsockname()[0]
     except:

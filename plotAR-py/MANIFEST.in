@@ -4,8 +4,9 @@ include HISTORY.md
 include LICENSE
 include README.md
 
-recursive-include plotvr/html *
-recursive-include plotvr/etc *
+recursive-include plotar/html *
+recursive-include plotar/etc *
+recursive-include plotar/export *
 
 recursive-include tests *
 recursive-exclude * __pycache__

@@ -14,7 +14,7 @@ _host = None #: PlotHost
 DEFAULT_SERVER = 'http://localhost:2908'
 
 
-def plotvr(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
+def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
            axis_names=None, col_labels=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=False, push_data=True):
@@ -165,12 +165,12 @@ def get_host(host=None):
         if jpy is not None:
             hub_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX")
             if hub_prefix is None:
-                ext = jpy['url'] + "plotvr/"
+                ext = jpy['url'] + "plotar/"
             else:
                 # on jupyter-/binderhub we don't know the external hostname,
                 # so we use an absolute URL
-                ext = hub_prefix+"plotvr/"
-            _host = PlotHost(jpy['url']+"plotvr/", external_url=ext, params=jpy['params'], headers=jpy['headers'])
+                ext = hub_prefix+"plotar/"
+            _host = PlotHost(jpy['url']+"plotar/", external_url=ext, params=jpy['params'], headers=jpy['headers'])
         else:
             _host = PlotHost(DEFAULT_SERVER)
     return _host
@@ -199,7 +199,7 @@ class PlotHost:
     def __repr__(self):
         return f"PlotHost({self.url})"
     def _repr_html_(self):
-        return f"PlotVR at <a href='{self.url}'>{self.url}</a>"
+        return f"PlotAR at <a href='{self.url}'>{self.url}</a>"
 
 def my_jupyter_server(verbose=False, jupyter_parent_pid=None):
     servers = []
@@ -260,7 +260,7 @@ def start_server_process(port: int = 2908, showServerURL=True):
     python = sys.executable
     # or os.__file__.split("lib/")[0],"bin","python") ?
     
-    proc = subprocess.Popen([python, '-m', 'plotvr.server', str(port)])
+    proc = subprocess.Popen([python, '-m', 'plotar.server', str(port)])
 
     if showServerURL:
         url = _host+'/index.html'

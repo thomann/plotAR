@@ -1,8 +1,8 @@
-function json = plotVR(data, host, port)
-% PLOTVR  plot the data to the DataVR-server and relad all attached cardboards.
-%   PLOTVR(data) plots data in VR.
-%   PLOTVR(data, host) plots data to server at host.
-%   PLOTVR(data, host, port) plots data to server at host listening on port.
+function json = plotAR(data, host, port)
+% PLOTAR  plot the data to the PlotAR-server and relad all attached cardboards.
+%   PLOTAR(data) plots data in VR.
+%   PLOTAR(data, host) plots data to server at host.
+%   PLOTAR(data, host, port) plots data to server at host listening on port.
 %
 %   In order for this to work a server has to be started using
 %   ./startServer.sh.
@@ -11,7 +11,7 @@ function json = plotVR(data, host, port)
 %   MATLAB is running.
 %
 %   As an example run
-%   plotVR( [1 2 3 4;5 6 7 8] )
+%   plotAR( [1 2 3 4;5 6 7 8] )
 %
 
 if nargin <= 2

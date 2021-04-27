@@ -1,6 +1,6 @@
-plotVR/inst/js/third-party/* linguist-vendored
+plotAR-py/plotar/html/js/third-party/* linguist-vendored
 **/doc/* linguist-documentation
-plotVR/vignettes linguist-documentation
+plotAR-R/vignettes linguist-documentation
 *.ipynb linguist-documentation
 
 *.R linguist-language=R

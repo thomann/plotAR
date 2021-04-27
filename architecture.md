@@ -1,6 +1,6 @@
-# plotVR - Architecture and protocols
+# plotAR - Architecture and protocols
 
-For an active plotVR session there are four realms: 
+For an active plotAR session there are four realms: 
 
 * The data source from which you want to visualize some data:
   - Currently an R/Python/MATLAB-session

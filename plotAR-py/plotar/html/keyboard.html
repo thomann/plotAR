@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>plotVR -keyboard</title>
+    <title>plotAR Keyboard</title>
     <meta charset="utf-8">
     <!-- <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
     <meta name="mobile-web-app-capable" content="yes">
@@ -130,6 +130,11 @@
       border: 1px solid #888;
       width: 50%; /* Could be more or less, depending on screen size */
     }
+
+    model-viewer {
+      height:100%;
+      /* width:100%; */
+		}
     </style>
   </head>
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -158,7 +163,7 @@
           poster="textures/patterns/checker.png"
         ></model-viewer>
       </div>
-          
+
       <div id="keyboard">
         <table>
           <tr>
@@ -190,6 +195,7 @@
             <td colspan="6" onclick="sendKey('space')" id='key.space'>toggle flying mode (space)</td>
           </tr>
         </table>
+        <div class="modal" id="focusBox"><div class="modal-content">No keyboard focus</div></div>
       </div>
     </div>
     <div id="status">
@@ -198,7 +204,6 @@
       <span id="status_numControllers">0</span>⌨
       <span id="status_numFocus">0</span>💻
     </div>
-    <div class="modal" id="focusBox"><div class="modal-content">No keyboard focus</div></div>
 
     <pre id='debug'></pre>
   </body>

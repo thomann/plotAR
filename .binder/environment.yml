@@ -15,4 +15,4 @@ dependencies:
   - pip:
     - pyqrcode
     - usd-core
-    - -e ../plotVR-py
+    - -e ../plotAR-py
