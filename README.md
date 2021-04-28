@@ -16,7 +16,7 @@ This is a prototype to get your data into a Google Cardboard (VR) or into Augmen
 > This package was presented at EuroPython 2019.
 > Check out the recording video on <https://www.youtube.com/watch?v=O1y96EG0bTw>.
 
-Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? plotAR provides a simple way for data scientists to plot data, pick up a phone, get a real 3d impression - either by VR or by AR - and use the computer's keyboard to walk through the scatter plot (see [live demo](https://thomann.github.io/plotAR/plotAR-R/inst/)):
+Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? plotAR provides a simple way for data scientists to plot data, pick up a phone, get a real 3d impression - either by VR or by AR - and use the computer's keyboard to walk through the scatter plot (see [live demo](https://thomann.github.io/plotAR/plotAR-py/plotar/html/)):
 
 ![Overview](images/overview.png?raw=true "Overview")
 
@@ -128,7 +128,7 @@ plotAR(trees)
 * For the WebVR-client: [`three.js`](http://threejs.org),
   [`polyfill`](https://github.com/googlevr/webvr-polyfill), and
   [`webvr-boilerplate`](https://github.com/borismus/webvr-boilerplate)
-  (all needed parts included in this repository under `plotAR/inst/js/third-party`)
+  (all needed parts included in this repository under `plotAR-py/plotar/html/js/third-party`)
 * [`httpuv`](https://github.com/rstudio/httpuv) for the websocket-server implementation in R
 * [`tornado`](https://www.tornadoweb.org/) for the websocket-server implementation in Python
 * <https://vr.google.com/cardboard/> for the cardboard!
