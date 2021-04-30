@@ -116,20 +116,18 @@ def data2gltf(data, subdiv=16):
                 }]
             })
 
-    # board_acc_id, sampler_id = -1,-1
-    if 'label' in data:
-        indices, vertices, normals, st = create_board()
-        board_acc_id = gltf.add_buffer_data(
-            [indices, vertices, normals, st],
-            [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
-            "SCALAR VEC3 VEC3 VEC2".split(),
-        )
-        sampler_id = gltf.add('samplers', {
-                "magFilter": GLTF_MAGFILTER_LINEAR,
-                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
-                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
-                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
-            })
+    indices, vertices, normals, st = create_board()
+    board_acc_id = gltf.add_buffer_data(
+        [indices, vertices, normals, st],
+        [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+        "SCALAR VEC3 VEC3 VEC2".split(),
+    )
+    sampler_id = gltf.add('samplers', {
+            "magFilter": GLTF_MAGFILTER_LINEAR,
+            "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+            "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+            "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+        })
 
     col_mat_ids = [ gltf.add("materials", {
                 "pbrMetallicRoughness": {
