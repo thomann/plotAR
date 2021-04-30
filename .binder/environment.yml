@@ -10,7 +10,8 @@ dependencies:
   - scikit-learn
   - pandas
   - beautifulsoup4
-    - skyfield
+  - skyfield
+  - matplotlib
   # - requests
   # - tornado
   - pip:
