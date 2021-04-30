@@ -8,8 +8,10 @@ dependencies:
   - jupyterlab >=3.0
   - jupyter-server-proxy
   - scikit-learn
-  # - pandas
-  # - numpy
+  - pandas
+  - beautifulsoup4
+  - skyfield
+  - matplotlib
   # - requests
   # - tornado
   - pip:

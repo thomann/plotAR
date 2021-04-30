@@ -7,10 +7,10 @@
     def Xform "Spheres" {
         
         
-        def Xform "Nodes" {
+        def Scope "Nodes" {
             
             def Sphere "Point0" {
-                double3 xformOp:translate = (-0.9635865156380053,0.4120777301961709,0.9466008967163015)
+                double3 xformOp:translate = (-0.9635865156380028,0.9466008967162836,-0.41207773019616845)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -18,7 +18,7 @@
             }
             
             def Sphere "Point1" {
-                double3 xformOp:translate = (-0.902103289820209,0.40226311610660836,0.8167192498266467)
+                double3 xformOp:translate = (-0.9021032898202059,0.8167192498266422,-0.40226311610661014)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -26,7 +26,7 @@
             }
             
             def Sphere "Point2" {
-                double3 xformOp:translate = (-1.0,0.43985644101309096,0.9121079863662251)
+                double3 xformOp:translate = (-1.0,0.9121079863662229,-0.4398564410130892)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -34,7 +34,7 @@
             }
             
             def Sphere "Point3" {
-                double3 xformOp:translate = (-0.9476696466487728,0.4948843452132785,1.0)
+                double3 xformOp:translate = (-0.947669646648774,1.0,-0.4948843452132785)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -42,7 +42,7 @@
             }
             
             def Sphere "Point4" {
-                double3 xformOp:translate = (-0.7180949779995942,0.24922194377955798,0.7667672487794384)
+                double3 xformOp:translate = (-0.7180949779995924,0.7667672487794366,-0.24922194377955842)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -50,7 +50,7 @@
             }
             
             def Sphere "Point5" {
-                double3 xformOp:translate = (-0.5624662951951684,0.04958338319733935,0.7016585623978018)
+                double3 xformOp:translate = (-0.5624662951951669,0.7016585623978004,-0.04958338319733979)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -58,7 +58,7 @@
             }
             
             def Sphere "Point6" {
-                double3 xformOp:translate = (0.060585083719926436,1.0,0.5458228877024922)
+                double3 xformOp:translate = (0.060585083719926436,0.5458228877024915,-1.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -66,7 +66,7 @@
             }
             
             def Sphere "Point7" {
-                double3 xformOp:translate = (1.0,0.19175128113059414,-0.4922523220073881)
+                double3 xformOp:translate = (1.0,-0.4922523220073839,-0.19175128113059436)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -74,7 +74,7 @@
             }
             
             def Sphere "Point8" {
-                double3 xformOp:translate = (-0.0038900010924715067,-1.0,-1.0)
+                double3 xformOp:translate = (-0.0038900010924707296,-1.0,1.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -82,7 +82,7 @@
             }
             
             def Sphere "Point9" {
-                double3 xformOp:translate = (-0.9396307625399232,0.42286902506545965,0.9121441761329638)
+                double3 xformOp:translate = (-0.9396307625399221,0.9121441761329621,-0.42286902506545965)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
     
@@ -90,6 +90,8 @@
             }
             
         }
+        
+        
         def Scope "Materials"
         {
             
@@ -110,7 +112,7 @@
                 token outputs:surface
             }
         }
-
+        
         def Material "material_1"
         {
             token outputs:surface.connect = </Spheres/Materials/material_1/surfaceShader.outputs:surface>
@@ -128,7 +130,7 @@
                 token outputs:surface
             }
         }
-
+        
         def Material "material_2"
         {
             token outputs:surface.connect = </Spheres/Materials/material_2/surfaceShader.outputs:surface>
@@ -146,7 +148,7 @@
                 token outputs:surface
             }
         }
-
+        
         }
     }
     

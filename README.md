@@ -11,8 +11,9 @@
 | **CH**<br>Surface of Switzerland | <img src="https://thomann.github.io/plotAR/examples/CH.png" width=100> | <a rel="ar" href="https://thomann.github.io/plotAR/examples/CH.usdz"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"> CH.usdz</a><br><a href="intent://arvr.google.com/scene-viewer/1.0?file=https://thomann.github.io/plotAR/examples/CH.gltf?mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://thomann.github.io/plotAR/;end;"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Android_robot_%282014-2019%29.svg"> CH.gltf</a>   |
 
 A nicer overview can be found here in [examples/](https://thomann.github.io/plotAR/examples).
+Check <demo.ipynb> to see how these samples were made - best is to go through that Notebook on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder)
 
-This is a prototype to get your data into into Augmented Reality (AR) or and navigate using the computer keyboard.
+This is a prototype to get your data into Augmented Reality (AR) or and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.
 > Check out the recording video on <https://www.youtube.com/watch?v=O1y96EG0bTw>.
@@ -23,17 +24,35 @@ Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? p
 
 The technologies beneath this project are: a web server that handles the communication between the DataScience-session and the phone, WebSockets to quickly proxy the keyboard events, QR-codes facilitate the simple pairing of both, and an HTML-Page on the computer to grab the keyboard events. And the translation of these keyboard events into 3D terms is a nice exercise in three.js, OpenGL, and SceneKit for HTML, Android, and iOS resp.
 
-> **Warning:** All data is transmitted unencrypted and everybody can connect! Please be carefule with private data!
 
-> **Disclaimer:** This package is provided as-is and every usage is on your own ris.
+![Architecture](images/architecture.png "Architecture")
 
-## Installation
+
+> **Warning:** Be careful whether data is transmitted unencrypted and everybody can connect! Please be carefule with private data!
+
+
+## Setup
 
 Install the Python package:
 ```bash
 pip install --upgrade plotAR
 ```
-and optionally the R-package:
+This will also install PlotAR into your Jupyter Server - please restart Jupyter to be able to use it.
+
+If you use **Jupyter**: For full support you will need to connect to that server from your mobile, this means you should start it with:
+```bash
+jupyter lab --ip="*"
+```
+**WARNING** Jupyter is secured by default to have a non-guessable token to get some level of security, but still you probably do not use HTTPS, so anybody intercepting the traffic between you mobile device and your desktop can see all your data! This might be ok in your home network or in a company enterprise - be cautious! Traffic with mybinder.org actually is secured by HTTPS and the token.
+
+Otherwise you can start a PlotAR-Server on e.g. the default port 2908:
+```bash
+python -m plotar.server -p 2908
+```
+Then open up <http://localhost:2908/keyboard.html> to see whether you can connect.
+This page also will show you a guess of a URL with your desktops IP-adress so you should be able to connect to it from your mobile - *as long as both devices are in the same network!*
+
+Optionally the R-package can be installed using - but it will need access to a Python-based server:
 ```r
 devtools::install_github('thomann/plotAR',subdir='plotAR-R')
 ```
@@ -58,9 +77,11 @@ import plotar
 from sklearn import datasets
 iris = datasets.load_iris()
 plotar.plotar(iris.data, iris.target)
+plotar.controller()
 ```
 This will look something like
 ![Jupter](images/screen-jupyter.png?raw=true "Jupter Screen")
+Just scan the QR-Code with your mobile device and then tap on the the AR-Icon.
 
 In R load and plot the first three dimensions of `iris` with `iris$Species` as color:
 ```r

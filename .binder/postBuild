@@ -13,3 +13,17 @@ cp plotAR-py/plotar/etc/* .jupyter/jupyter_notebook_config.d/
 # let's try to get /lab as default path:
 echo "c.NotebookApp.default_url = '/lab'" >> .jupyter/jupyter_notebook_config.py
 echo "c.ServerApp.default_url = '/lab'" >> .jupyter/jupyter_server_config.py
+
+##### Examples data pre-load
+mkdir -p tmp
+cd tmp
+
+# for CH
+curl -LO https://data.geo.admin.ch/ch.swisstopo.digitales-hoehenmodell_25/data.zip
+unzip data.zip DHM200.asc
+
+# for planets
+## mybinder does not allow ftp downloads:
+#curl -LO ftp://ssd.jpl.nasa.gov/pub/eph/planets/bsp/de421.bsp
+
+cd ..

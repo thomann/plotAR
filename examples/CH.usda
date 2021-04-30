@@ -28,6 +28,8 @@
         
         }
         
+        
+        
         def Scope "Materials"
         {
             
@@ -48,7 +50,7 @@
                 token outputs:surface
             }
         }
-
+        
         def Material "material_1"
         {
             token outputs:surface.connect = </Spheres/Materials/material_1/surfaceShader.outputs:surface>
@@ -66,7 +68,7 @@
                 token outputs:surface
             }
         }
-
+        
         def Material "material_2"
         {
             token outputs:surface.connect = </Spheres/Materials/material_2/surfaceShader.outputs:surface>
@@ -84,7 +86,7 @@
                 token outputs:surface
             }
         }
-
+        
         }
     }
     
