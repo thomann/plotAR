@@ -13,7 +13,7 @@ with open('HISTORY.md') as history_file:
 
 requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'pyqrcode', 'click', 'usd-core', ]
 
-setup_requirements = ['pytest-runner', 'scikit-learn', 'jupyterlab', ]
+setup_requirements = ['pytest-runner', 'scikit-learn', 'jupyterlab', 'skyfield', 'beautifulsoup4', ]
 
 test_requirements = ['pytest', ]
 

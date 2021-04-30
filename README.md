@@ -11,8 +11,9 @@
 | **CH**<br>Surface of Switzerland | <img src="https://thomann.github.io/plotAR/examples/CH.png" width=100> | <a rel="ar" href="https://thomann.github.io/plotAR/examples/CH.usdz"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"> CH.usdz</a><br><a href="intent://arvr.google.com/scene-viewer/1.0?file=https://thomann.github.io/plotAR/examples/CH.gltf?mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://thomann.github.io/plotAR/;end;"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Android_robot_%282014-2019%29.svg"> CH.gltf</a>   |
 
 A nicer overview can be found here in [examples/](https://thomann.github.io/plotAR/examples).
+Check <demo.ipynb> to see how these samples were made - best is to go through that Notebook on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder)
 
-This is a prototype to get your data into into Augmented Reality (AR) or and navigate using the computer keyboard.
+This is a prototype to get your data into Augmented Reality (AR) or and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.
 > Check out the recording video on <https://www.youtube.com/watch?v=O1y96EG0bTw>.
@@ -33,7 +34,9 @@ Install the Python package:
 ```bash
 pip install --upgrade plotAR
 ```
-and optionally the R-package:
+This will also install PlotAR into your Jupyter Server - please restart Jupyter to be able to use it.
+
+Optionally the R-package can be installed using - but it will need access to a Python-based server:
 ```r
 devtools::install_github('thomann/plotAR',subdir='plotAR-R')
 ```
