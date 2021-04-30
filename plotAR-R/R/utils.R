@@ -64,7 +64,7 @@ getUrl <- function(host=NULL,port=2908,useIP=TRUE,useFullName=FALSE) {
     }
   }
   # FIXME is this needed?
-  # url <- paste0("http://",host,":",port,"/plotVR.html")
+  # url <- paste0("http://",host,":",port,"/plotAR.html")
   url <- paste0("http://",host,":",port,"/")
   return(url)
 }

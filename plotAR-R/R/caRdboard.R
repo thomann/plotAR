@@ -16,19 +16,19 @@ pkg.env$interruptIntervalMs <- 250
 
 log.info <- function(...){
   try({
-    if(getOption("plotVR.log.info", default=TRUE))
-      cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), "plotVR info:",...,fill=T)
+    if(getOption("plotAR.log.info", default=TRUE))
+      cat(format(Sys.time(), "[%Y-%m-%d %H:%M:%S]"), "plotAR info:",...,fill=T)
   })
   try({
-    filename <- getOption("plotVR.log.info.file")
+    filename <- getOption("plotAR.log.info.file")
     if(!is.null(filename))
-      cat("plotVR info:",...,fill=T,file=filename)
+      cat("plotAR info:",...,fill=T,file=filename)
   })
 }
 
 # ' @importFrom datasets iris
 defaultDataJson <- function()
-  plotVR(datasets::iris[,1:3],col=datasets::iris$Species, name="Iris", .send=FALSE, doOpenController=F)
+  plotAR(datasets::iris[,1:3],col=datasets::iris$Species, name="Iris", .send=FALSE, doOpenController=F)
 
 
 process_request <- function(req, base="~/density/vr/") {
@@ -41,7 +41,7 @@ process_request <- function(req, base="~/density/vr/") {
   path <- req$PATH_INFO
   wsUrl = paste0('ws://', ifelse(is.null(req$HTTP_HOST), req$SERVER_NAME, req$HTTP_HOST),'/ws')
   if(path=="/") path <- "/index.html"
-  if(path=="/plotVR.html") path <- "/index.html"
+  if(path=="/plotAR.html") path <- "/index.html"
   if(path == '/echo')
     return(handle_echo(wsUrl))
   if(path == "/qr.json"){
@@ -54,7 +54,7 @@ process_request <- function(req, base="~/density/vr/") {
   }else if(path == '/status.json'){
     status <- getStatus()
     return(list(status = 200L,
-                headers = list("X-Plotvr-Version" = packageVersion('plotVR'),
+                headers = list("X-PlotAR-Version" = packageVersion('plotAR'),
                                'Content-Type' = 'application/json'),
                 body = jsonlite::toJSON(status, auto_unbox=TRUE)
     ))
@@ -65,7 +65,7 @@ process_request <- function(req, base="~/density/vr/") {
                 headers = list('Content-Type' = 'application/json'),
                 body = pkg.env$vr_data_json ))
   }else{
-    real_filename <- system.file(path,package="plotVR")
+    real_filename <- system.file(path,package="plotAR")
     real_filename <- sub("../","", real_filename,fixed=T)
     log.info(" changed to ",real_filename)
 
@@ -199,7 +199,7 @@ app <- list(call=process_request, onWSOpen = processWS)
 #' @export
 startBlockingServer <- function(host="0.0.0.0", port=2908, interruptIntervalMs=ifelse(interactive(), 100, 1000)){
 
-  log.info("Welcome to the PlotVR Server")
+  log.info("Welcome to the PlotAR Server")
   server <- httpuv::startServer(host, port, app)
   pkg.env$server_handle <- server
 

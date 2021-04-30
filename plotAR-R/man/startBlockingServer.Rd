@@ -4,8 +4,11 @@
 \alias{startBlockingServer}
 \title{Start the WebServer in a blocking version.}
 \usage{
-startBlockingServer(host = "0.0.0.0", port = 2908,
-  interruptIntervalMs = ifelse(interactive(), 100, 1000))
+startBlockingServer(
+  host = "0.0.0.0",
+  port = 2908,
+  interruptIntervalMs = ifelse(interactive(), 100, 1000)
+)
 }
 \arguments{
 \item{host}{on which host to listen}

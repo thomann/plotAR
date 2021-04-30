@@ -2,7 +2,7 @@
 
 export(getUrl)
 export(openController)
-export(plotVR)
+export(plotAR)
 export(sendData)
 export(startBlockingServer)
 export(startServer)

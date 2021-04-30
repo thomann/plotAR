@@ -4,7 +4,7 @@ defaultSpeed <- 0;
 
 #' Plot data into the Cardboard VR
 #'
-#' This is the main function for usage of plotVR.
+#' This is the main function for usage of plotAR.
 #' If necessary it starts a deamonized server and posts the data on that server.
 #' If no controller is open one also will be opened.
 #' All connected devices will be informed of the new data and should reload the data.
@@ -27,9 +27,9 @@ defaultSpeed <- 0;
 #' @seealso \code{\link{open}}
 #' @examples
 #' \dontrun{
-#' plotVR(iris, col=iris$Species)
+#' plotAR(iris, col=iris$Species)
 #' }
-plotVR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
+plotAR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
            name=NULL, description=NULL, speed=0L, autoScale=T,
            digits=5, doOpenController=TRUE, .send=TRUE){
   if(is.null(name)) name <- deparse(substitute(data))
@@ -75,9 +75,9 @@ plotVR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
 
 #' Broadcast to a server via POST - hence this can run in another process or even on another host.
 #'
-#' @param data the JSON-model data to broadcast, from \link{plotVR}
+#' @param data the JSON-model data to broadcast, from \link{plotAR}
 #' @param server to which post to post the data, default also can be set
-#' using \code{options(plotVR.broadcast.server="http://example.com:2908")}.
+#' using \code{options(plotAR.broadcast.server="http://example.com:2908")}.
 #' @param ... passed to \code{httr::POST}.
 #'
 #' @return invisible the response of the server
@@ -87,13 +87,13 @@ plotVR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
 #' @examples
 #'
 #' \dontrun{
-#' options(plotVF.default.broadcast=broadcastPost)
-#' plotVR(iris)
+#' options(plotAR.default.broadcast=broadcastPost)
+#' plotAR(iris)
 #'
 #' # or directly:
-#' plotVR(iris, broadcast=broadcastPost)
+#' plotAR(iris, broadcast=broadcastPost)
 #' }
-sendData <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::getUrl()), ...){
+sendData <- function(data, server=getOption('plotAR.broadcast.server',plotAR:::getUrl()), ...){
   ret <- httr::POST(server,body=data, ...)
   invisible(ret)
 }
@@ -105,7 +105,10 @@ sendData <- function(data, server=getOption('plotVR.broadcast.server',plotVR:::g
 #' @return the process object (invisibly)
 #' @export
 startServer <- function(...){
-  .proc <- callr::r_bg(function(){options(plotVR.log.info=T); plotVR::startBlockingServer()}, ...)
+  .proc <- callr::r_bg(function(){
+    server <- reticulate::import("plotar.server")
+    server$`_start_server`()
+  }, ...)
   pkg.env$external.proc <- .proc
   invisible(.proc)
 }
