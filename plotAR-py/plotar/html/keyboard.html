@@ -294,7 +294,7 @@
           if(msg.data.length == 0)
             return;
           log("Got message: "+msg.data);
-          body = JSON.parse(msg.data)
+          var body = JSON.parse(msg.data)
           if('status' in body){
             state = body['status']
             for(key in state){
@@ -303,7 +303,9 @@
                 el.innerHTML = state[key];
             }
           }
-          //handle_char(msg.data);
+          if("key" in body){
+            handle_char(body["key"]);
+          }
           //websocket.send("thanks");
         }
         websocket.onclose = function(event){
@@ -315,6 +317,7 @@
         log(err);
       }
     }
+    var revision = 0;
     function handle_char(msg){
       if(msg == "r"){
         // we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -327,7 +330,9 @@
         }
         return;
       }else if(msg == "reload_data" || msg =="x" ){
-        refreshData();
+        m = document.getElementsByTagName("model-viewer")[0]
+        m.src = "data.gltf?revision=" + (revision++)
+      //  refreshData();
       // }else if(msg === "c"){
       //   websocket.close();
       //   return;
@@ -528,5 +533,7 @@
     }
 
     //log = console.log;
+
+    // customElements.get("model-viewer").modelCacheSize = 0
   </script>
 </html>
