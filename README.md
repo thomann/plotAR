@@ -1,4 +1,4 @@
-# plotAR - Walk Through Your Data
+# PlotAR - Walk Through Your Data
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder)
 
@@ -9,9 +9,9 @@
 | **PLZ**<br>Can you guess what it is? | <img src="https://thomann.github.io/plotAR/examples/PLZ.png" width=100> | <a rel="ar" href="https://thomann.github.io/plotAR/examples/PLZ.usdz"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"> PLZ.usdz</a><br><a href="intent://arvr.google.com/scene-viewer/1.0?file=https://thomann.github.io/plotAR/examples/PLZ.gltf?mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://thomann.github.io/plotAR/;end;"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Android_robot_%282014-2019%29.svg"> PLZ.gltf</a>   |
 | **planets**<br>Planets | <img src="https://thomann.github.io/plotAR/examples/planets.png" width=100> | <a rel="ar" href="https://thomann.github.io/plotAR/examples/planets.usdz"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"> planets.usdz</a><br><a href="intent://arvr.google.com/scene-viewer/1.0?file=https://thomann.github.io/plotAR/examples/planets.gltf?mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://thomann.github.io/plotAR/;end;"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Android_robot_%282014-2019%29.svg"> planets.gltf</a>   |
 | **CH**<br>Surface of Switzerland | <img src="https://thomann.github.io/plotAR/examples/CH.png" width=100> | <a rel="ar" href="https://thomann.github.io/plotAR/examples/CH.usdz"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"> CH.usdz</a><br><a href="intent://arvr.google.com/scene-viewer/1.0?file=https://thomann.github.io/plotAR/examples/CH.gltf?mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://thomann.github.io/plotAR/;end;"><img width="15" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Android_robot_%282014-2019%29.svg"> CH.gltf</a>   |
+Nicer overview can be found here in [examples/](https://thomann.github.io/plotAR/examples).
 
-
-This is a prototype to get your data into a Google Cardboard (VR) or into Augmented Reality (AR) and navigate using the computer keyboard.
+This is a prototype to get your data into into Augmented Reality (AR) or and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.
 > Check out the recording video on <https://www.youtube.com/watch?v=O1y96EG0bTw>.
@@ -28,15 +28,14 @@ The technologies beneath this project are: a web server that handles the communi
 
 ## Installation
 
-Install the R-package:
+Install the Python package:
+```bash
+pip install --upgrade plotAR
+```
+and optionally the R-package:
 ```r
 devtools::install_github('thomann/plotAR',subdir='plotAR-R')
 ```
-or the Python package:
-```bash
-pip install --upgrade "git+https://github.com/thomann/plotAR#egg=plotar&subdirectory=plotAR-py"
-```
-> The installation from sources currently needs symbolic links to work, which is a bit of an issue on windows (see below). If you cannot make it work, wait to obtain precompiled wheels.
 
 Also check out the native mobile apps:
 - iOS: <https://github.com/thomann/PlotAR-ios>
@@ -51,33 +50,32 @@ Here we will describe how to plot the data in RStudio or Jupyter, then view it o
 
 ### Plot your data
 
-In R load and plot the first three dimensions of `iris` with `iris$Species` as color:
-```r
-library(plotAR)
-startServer()
-plotAR(iris[,1:3],iris$Species)
-```
 In Python - or better even in Jupyter Lab - enter the following:
 
 ```python
 import plotar
-plotar.start_server_process()
 from sklearn import datasets
 iris = datasets.load_iris()
 plotar.plotar(iris.data, iris.target)
 ```
 This will look something like
-![RStudio](images/screen-rstudio.png?raw=true)
-and
-<center><img src="images/screen-jupyter.png?raw=true" width=250></center>
+![Jupter](images/screen-jupyter.png?raw=true "Jupter Screen")
+
+In R load and plot the first three dimensions of `iris` with `iris$Species` as color:
+```r
+library(plotAR)
+startServer() # starts a python server via reticulate in background
+plotAR(iris,iris$Species)
+```
+![RStudio](images/screen-rstudio.png?raw=true "Rstudio Screen")
 
 ### View in a browser or on a device
 
 Now you can open the advertised webpage - also on your mobile device using any QR-code reader:
 ```
-http://<ip-address of your machine>:2908/index.html
+http://<ip-address of your machine>:2908/keyboard.html
 ```
-This will look something like (see [live demo](https://thomann.github.io/plotAR/plotAR-R/inst/)):
+This will look something like (see [live demo](https://thomann.github.io/plotAR/plotAR/overview/)):
 
 ![VR view](images/screen-vr.png?raw=true "VR view")
 
@@ -111,20 +109,23 @@ This window also will get the keyboard focus when it opens. You now can use your
 ### 
 
 Now if you plot something new it should be reloaded automatically in your viewer:
+```python
+import numpy as np
+boston = datasets.load_boston()
+plotar.plotar(boston.data)
+```
+or
 ```r
 plotAR(trees)
 ```
 
 ## Issues
 
-* This is not very stable at the moment!
-* This repo uses symlinks which for Windows explicitely need to be activated, see <https://github.com/git-for-windows/git/wiki/Symbolic-Links>.
-* There need to be better keyboard assignments, and maybe some more interface in the keyboard focus window.
-* The default values are not well set, e.g. the starting point of the virtual observer.
 * The file `plotAR-matlab/plotAR.m` can be used in MATLAB if you have access to a running server in Python or R.
 
 ## Acknowledgements
 
+* Pixar for developing the USD-Tools and Nvidia for putting the `usd-core` PyPI.
 * For the WebVR-client: [`three.js`](http://threejs.org),
   [`polyfill`](https://github.com/googlevr/webvr-polyfill), and
   [`webvr-boilerplate`](https://github.com/borismus/webvr-boilerplate)
