@@ -12,6 +12,13 @@ dependencies:
   - beautifulsoup4
   - skyfield
   - matplotlib
+  - r-base ==4.0
+  - r-tidyverse
+  - r-httpuv
+  - r-callr
+  - r-jsonlite
+  - r-reticulate
+  - r-qrcode
   # - requests
   # - tornado
   - pip:

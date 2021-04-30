@@ -14,6 +14,14 @@ cp plotAR-py/plotar/etc/* .jupyter/jupyter_notebook_config.d/
 echo "c.NotebookApp.default_url = '/lab'" >> .jupyter/jupyter_notebook_config.py
 echo "c.ServerApp.default_url = '/lab'" >> .jupyter/jupyter_server_config.py
 
+# configure RStudio
+mkdir -p /etc/rstudio
+
+echo "rsession-ld-library-path=$CONDA_PREFIX/lib" >> /etc/rstudio/rserver.conf
+
+mkdir -p $CONDA_PREFIX/lib/R/etc/
+echo "Sys.setenv(RETICULATE_PYTHON='$CONDA_PREFIX/bin/python')" >> $CONDA_PREFIX/lib/R/etc/Rprofile.site
+
 ##### Examples data pre-load
 mkdir -p tmp
 cd tmp
