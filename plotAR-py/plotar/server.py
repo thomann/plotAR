@@ -225,6 +225,10 @@ _mappings = [
 @click.option('-d', '--data', default=None, type=click.File(), help="Data.json file to open initially")
 @click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
 def start_server(port=2908, data=None, debug=False):
+    _start_server(port=port, data=data, debug=debug)
+
+
+def _start_server(port=2908, data=None, debug=False):
     print(f"Welcome to PlotAR server on port {port}")
     global _PORT, _app, DATA
     if data:
@@ -235,6 +239,7 @@ def start_server(port=2908, data=None, debug=False):
     _app.listen(port)
     tornado.ioloop.IOLoop.instance().start()
     print("hello")
+
 
 def get_ip():
     """Get the publicly visible IP address."""
