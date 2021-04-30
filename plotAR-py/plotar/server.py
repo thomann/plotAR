@@ -222,7 +222,7 @@ _mappings = [
 @click.command()
 @click.option('-p', '--port', default=2908, help="Port to listen on")
 # @click.option('-h', '--host', default=, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
-@click.option('-d', '--data', default="", type=click.File(), help="Data.json file to open initially")
+@click.option('-d', '--data', default=None, type=click.File(), help="Data.json file to open initially")
 @click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
 def start_server(port=2908, data=None, debug=False):
     print(f"Welcome to PlotAR server on port {port}")
