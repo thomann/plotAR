@@ -24,9 +24,12 @@ Are you bored by 3D-plots that only give you a simple rotatable 2d-projection? p
 
 The technologies beneath this project are: a web server that handles the communication between the DataScience-session and the phone, WebSockets to quickly proxy the keyboard events, QR-codes facilitate the simple pairing of both, and an HTML-Page on the computer to grab the keyboard events. And the translation of these keyboard events into 3D terms is a nice exercise in three.js, OpenGL, and SceneKit for HTML, Android, and iOS resp.
 
-> **Warning:** All data is transmitted unencrypted and everybody can connect! Please be carefule with private data!
 
-> **Disclaimer:** This package is provided as-is and every usage is on your own ris.
+![Architecture](images/architecture.png "Architecture")
+
+
+> **Warning:** Be careful whether data is transmitted unencrypted and everybody can connect! Please be carefule with private data!
+
 
 ## Installation
 

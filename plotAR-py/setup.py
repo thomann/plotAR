@@ -43,7 +43,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/thomann/plotAR ',
-    version='0.8.1',
+    version='0.8.2',
     data_files=[
         ('etc/jupyter/jupyter_notebook_config.d', ['plotar/etc/plotar-server-extension.json']),
     ],
