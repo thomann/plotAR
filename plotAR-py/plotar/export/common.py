@@ -48,11 +48,23 @@ def obj2usdz(data):
     return usdz
 
 
-def text2png(text, truetype=None, fontsize=100, color=(1, 0, 1)):
+def text2png(text, truetype=None, fontsize=10, color=(1, 0, 1), dpi_factor=10,
+             font=[ "HelveticaNeue123", "HelveticaNeue", "Helvetica", "DejaVuSans", "Arial", ]):
     from PIL import Image, ImageDraw, ImageFont
     from io import BytesIO
 
-    f = ImageFont.load_default()
+    f = None
+    # we also need to search lower case on Windows
+    for fontname in font + [f.lower() for f in font]:
+        try:
+            f = ImageFont.truetype(fontname, fontsize * dpi_factor)
+            # print(f"found font {f.font.family}")
+            break
+        except:
+            pass
+    if f is None:
+        f = ImageFont.load_default()
+        dpi_factor = 1
     w, h = f.getsize(text)
 
     img = Image.new("RGBA", (w, h), (0,0,0,0))
@@ -63,7 +75,7 @@ def text2png(text, truetype=None, fontsize=100, color=(1, 0, 1)):
 
     buffer = BytesIO()
     img.save(buffer, format='png', compress_level=0)
-    return w, h, buffer.getvalue()
+    return w / dpi_factor, h / dpi_factor, buffer.getvalue()
 
 
 def create_surface(surface):
