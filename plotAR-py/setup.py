@@ -11,7 +11,7 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     history = history_file.read()
 
-requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'pyqrcode', 'click', 'usd-core', ]
+requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'pyqrcode', 'click', 'usd-core', 'Pillow', 'jinja2', ]
 
 setup_requirements = ['pytest-runner', 'scikit-learn', 'jupyterlab', 'skyfield', 'beautifulsoup4', ]
 
@@ -27,8 +27,9 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        # usd-core currently only available until Python 3.7
+        # 'Programming Language :: Python :: 3.8',
+        # 'Programming Language :: Python :: 3.9',
     ],
     description="Walk through your data",
     install_requires=requirements,
@@ -43,7 +44,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/thomann/plotAR ',
-    version='0.8.2',
+    version='0.8.3',
     data_files=[
         ('etc/jupyter/jupyter_notebook_config.d', ['plotar/etc/plotar-server-extension.json']),
     ],
