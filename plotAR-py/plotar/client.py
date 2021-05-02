@@ -85,6 +85,22 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
     if return_data:
         return body
 
+def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwargs):
+    body = plotar(*args, **kwargs, push_data=False, return_data=True)
+    data = body.get('data',[])
+    col = body.get('col', [0] * len(data))
+    group = group or col
+    df = pd.DataFrame(dict(col=col, group=group))
+    body['lines'] = [
+        dict(col=int(c), width=width, points=d.index.to_list())
+        for (c, g), d in df.groupby(['col', 'group'])
+    ]
+    if push_data:
+        plot_host = get_host(kwargs.get('host'))
+        plot_host.post(json=body)
+    if return_data:
+        return body
+
 def surfacevr(data, col=None, x=None, y=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=False, push_data=True):

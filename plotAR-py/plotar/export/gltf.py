@@ -4,7 +4,7 @@ import struct
 
 import numpy as np
 
-from .common import COLORS, COLORS_LEN, text2png, create_surface
+from .common import COLORS, COLORS_LEN, text2png, create_surface, line_segments
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
 GLTF_ARRAY_BUFFER = 34962
@@ -15,6 +15,8 @@ GLTF_WRAP_MIRRORED_REPEAT = 33648
 GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR = 9987
 GLTF_MAGFILTER_LINEAR = 9729
 
+# For more documentation look e.g. at:
+# https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/figures/gltfOverview-2.0.0b.png
 class GLTF(object):
     def __init__(self):
         self.d = {
@@ -233,6 +235,38 @@ def data2gltf(data, subdiv=16):
           # "scale": scale,
         }))
 
+    if 'lines' in data and 'data' in data:
+        for i, line in enumerate(data['lines']):
+            data_list = data.get('data', [])
+            line_width = line.get('width', 1) / 500
+            indices, vertices, normals = create_rotation(
+                [(-1, line_width), (1, line_width)], z_from_to=[-1,1], subdiv=subdiv)
+            line_acc_id = gltf.add_buffer_data(
+                [indices, vertices, normals],
+                [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+                "SCALAR VEC3 VEC3".split(),
+            )
+            mat_id = col_mat_ids[ line.get('col', 0) % COLORS_LEN ]
+            n = len(data_list)
+            mesh_id = gltf.add('meshes',
+                {
+                    "primitives": [{
+                        "attributes": {
+                            "POSITION": line_acc_id[1],
+                            "NORMAL": line_acc_id[2],
+                        },
+                        "indices": line_acc_id[0],
+                        "material": mat_id
+                    }]
+                })
+            for t,q,s in line_segments(data_list, line, n, flip_vector=True):
+                data_node['children'].append(gltf.add('nodes', {
+                    "mesh": mesh_id,
+                    "translation": t,
+                    "scale": [1,s,1],
+                    "rotation": q,
+                }))
+
     for i, text in enumerate(data.get('col_labels',[])):
         col = i % COLORS_LEN
         scale = [0.01] * 3
@@ -434,7 +468,7 @@ def create_rotation(profile, z_from_to=[0,1], subdiv=8):
         for lon in range(2*subdiv):
             lon1 = (lon + 1) % (2*subdiv)
             if b[lon] != b[lon1]:
-                indices += [ a[lon] , b[lon], b[lon1]]
+                indices += [ b[lon], a[lon], b[lon1]]
             if a[lon] != a[lon1]:
-                indices += [ b[lon1], a[lon1], a[lon] ]
+                indices += [ a[lon1], b[lon1], a[lon] ]
     return indices, vertices, normals

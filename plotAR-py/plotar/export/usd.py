@@ -3,14 +3,26 @@ import logging
 import jinja2
 import numpy as np
 
+from plotar.export.common import line_segments
+
 from .common import COLORS, COLORS_LEN, text2png, create_surface
 
 logger = logging.getLogger(__name__)
+
+def serialize(x, flip_yz=False):
+    x = np.array(x)
+    if flip_yz:
+        x = x[:,(0,2,1)]
+        x[:,2] *= -1
+    print(x.shape)
+    inlet = ",".join(f"{tuple(row)}" for row in x)
+    return f"[{inlet}]"
 
 def data2usd_ascii(data):
     spheres = ""
     texts = ""
     surface = ""
+    lines = ""
     axes = ""
     legend = ""
     assets = {}
@@ -34,9 +46,6 @@ def data2usd_ascii(data):
             }}
             """
         else:
-            w,h, img = text2png(data['label'][i])
-            w /= 100
-            h /= 100
             file = f"text_{i}.png"
             # assets[file] = img
             text_template = """
@@ -105,11 +114,6 @@ def data2usd_ascii(data):
             # color3f[] primvars:displayColor = [({color})]
     if 'surface' in data:
         indices, normals, vertices = create_surface(data['surface'])
-        def serialize(x):
-            x = np.array(x)
-            print(x.shape)
-            inlet = ",".join(f"{tuple(row)}" for row in x)
-            return f"[{inlet}]"
         vars = dict(
             vertexCounts = [3] * (indices.shape[0] // 3),
             extent = serialize([vertices.min(axis=0), vertices.max(axis=0)]),
@@ -144,6 +148,60 @@ def data2usd_ascii(data):
         surface = jinja2.Template(template).render(
             **vars, col=0,
         )
+    if 'data' in data and 'lines' in data:
+        for i, line in enumerate(data['lines']):
+            data_list = data.get('data', [])
+            n = len(data_list)
+            segments = line_segments(data_list, line, n)
+            # points = [ data_list[_][:3] for _ in line.get('points',[]) if _ < n ]
+            vars = dict(
+                i=i,
+                # n_points=len(points),
+                segments=segments,
+                col=line.get('col',0) % COLORS_LEN,
+                width=line.get('width',1)/100,
+                # points = serialize(points, flip_yz=True),
+            )
+            template = """
+            def Scope "Line_{{i}}"{
+                {% for t,q,s in segments %}
+                def Capsule "Line_{{i}}_{{loop.index}}" {
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                    double radius = {{width}}
+                    double height = {{s*2}}
+                    uniform token axis = "X"
+                    double3 xformOp:translate = {{t}}
+                    quatf xformOp:orient = {{q}}
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+                }
+                {% endfor %}
+                {# # BasisCurves is in the USD standard but seems not supporte by Apple 
+                def BasisCurves "Curve_{{i}}" (){
+                    uniform token type = "linear"
+                    int[] curveVertexCounts = [{{n_points}}]
+                    point3f[] points = {{points}}
+                    float[] widths = [{{width}}] (interpolation = "constant") 
+                    color3f[] primvars:displayColor = [(1, 0, 0)]
+                }
+                    rel material:binding = </Spheres/Materials/material_{{col}}>
+                    color3f[] primvars:displayColor = [(1, 0, 0)]
+                def BasisCurves "VaryingWidth" (){
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    float3 xformOp:translate = (6, 0, 0)
+        
+                    uniform token type = "linear"
+                    int[] curveVertexCounts = [7]
+                    point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
+                    float[] widths = [0, .5, .5, .8, .5, .5, 0] (interpolation = "varying")
+                    color3f[] primvars:displayColor = [(0, 0, 1)]
+                }
+                #}
+            }
+            """
+            lines += jinja2.Template(template).render(
+                **vars,
+            )
+
     materials = ""
     for i,col in enumerate(COLORS):
         materials += f"""
@@ -287,6 +345,9 @@ def data2usd_ascii(data):
         {% if spheres %}def Scope "Nodes" {
             {{spheres}}
         }{%endif%}
+        {% if lines %}def Scope "Lines" {
+            {{lines}}
+        }{%endif%}
         {% if legend %}def Scope "Legend" {
             {{legend}}
         }{%endif%}
@@ -303,13 +364,13 @@ def data2usd_ascii(data):
     return usda, assets
 
 
-def data2usdz(data, use_tools=True, save_usda=False):
+def data2usdz(data, use_tools=True, save_usda=False, check=True):
     usda, assets = data2usd_ascii(data)
     if save_usda:
         with open('data_tmp.usda', 'w') as f:
             f.writelines(usda)
     if use_tools:
-        result = run_usdconvert_python_package(usda, assets, inSuffix='.usda')
+        result = run_usdconvert_python_package(usda, assets, inSuffix='.usda', check_output=check)
         # n = len(usdc)
         # n_align = math.ceil(n / 64) * 64
         # logger.info(f"Padding usdc to 64 bytes align {n} --> {n_align}")
