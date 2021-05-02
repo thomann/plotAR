@@ -25,7 +25,8 @@ if False:
 @click.argument('data', type=click.Path(exists=True))
 @click.argument('out', default='', type=click.Path())
 @click.option('-f', '--format', default=None, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
-def export(data, out=None, format=None):
+@click.option('--check/--no-check', default=False, help="check produced file (currently only for usdz)")
+def export(data, out=None, format=None, check=False):
     """Convert the DATA.json to OUT.format."""
     data_path = Path(data)
     with open(data, 'r') as f:
@@ -52,7 +53,7 @@ def export(data, out=None, format=None):
                 with open(key, 'wb') as f:
                     f.write(val)
         else:
-            result = data2usdz(input, save_usda=False)
+            result = data2usdz(input, save_usda=False, check=check)
             outfile.write(result)
 
 if __name__ == '__main__':

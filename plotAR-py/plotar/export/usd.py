@@ -364,7 +364,7 @@ def data2usd_ascii(data):
     return usda, assets
 
 
-def data2usdz(data, use_tools=True, save_usda=False, check=True):
+def data2usdz(data, use_tools=True, save_usda=False, check=False):
     usda, assets = data2usd_ascii(data)
     if save_usda:
         with open('data_tmp.usda', 'w') as f:
