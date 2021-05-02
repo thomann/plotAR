@@ -65,7 +65,6 @@ class GLTF(object):
                 dim = int(tp[-1])
                 component_type = GLTF_TYPE_FLOAT
             arr = np.array(x).reshape((-1,dim))
-            print(arr.shape)
             acc_id.append(self.add("accessors", {
                 "bufferView": view_id,
                 "byteOffset": 0,

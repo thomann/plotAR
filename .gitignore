@@ -1,10 +1,11 @@
 .Rproj.user
 .Rhistory
 .RData
-data.json
 .ipynb_checkpoints
 inst/doc
 *~
 todo.md
 .vscode/
 tmp/
+venv/
+.idea/
