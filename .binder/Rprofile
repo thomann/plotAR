@@ -1,0 +1,29 @@
+local({
+  # this file is only used in the binder setting - so we assume we are on binderhub!
+  # also, we will connect to the plotAR-server already running in jupyterlab!
+
+  # use the python logic to find the internal URL, i.e. port (usually 8888) and the token!
+  plotar <- reticulate::import("plotar")
+  host <- plotar$get_host()
+  
+  # set internal url
+  options(plotAR.internal.url=host$internal_url(''))
+  options(plotAR.internal.auth=host$headers$Authorization)
+  
+  # get the external url from sys env
+  exturl <- function(path='keyboard.html'){
+    exturl <- Sys.getenv("RSTUDIO_HTTP_REFERER")
+    # should be something like:
+    # exturl <- 'https://hub.gke2.mybinder.org/user/thomann-plotar-xxxxxx/rstudio/?token=xxxxxxx'
+    exturl <- sub('/rstudio/', paste0('/plotar/keyboard.html'), exturl)
+    # message(exturl)
+    return(exturl)
+  }
+  options(plotAR.external.url=exturl)
+  viewer <- getOption("viewer")
+  if(!is.null(viewer)){
+      # we do not need the jupyter token here - this is opened from within a RStudio
+      # browser window that already is authorized!
+      viewer(exturl)
+  }
+})

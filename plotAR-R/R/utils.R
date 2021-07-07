@@ -83,13 +83,20 @@ openViewer <- function(...){
 openController <- function(host=getOption("plotAR.external.url")){
   viewer <- getOption("viewer")
   if(is.null(viewer)){
-    ## So we probably are not in RStudio
-    host <- getUrl()
     viewer <- utils::browseURL
+    ## So we probably are not in RStudio
+    if(is.null(host))
+      host <- getUrl()
   }else{
-    host <- getUrl(host='localhost', useIP=FALSE)
+    if(is.null(host))
+      host <- getUrl(host='localhost', useIP=FALSE)
   }
-  viewer(paste0(host, 'keyboard.html'))
+  if(is.function(host))
+    url <- host('keyboard.html')
+  else
+    url <- paste0(host, 'keyboard.html')
+  viewer(url)
+  invisible(url)
 }
 
 

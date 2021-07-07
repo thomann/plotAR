@@ -182,8 +182,10 @@ plotAR <- function(data, x, y, z, col, size, lines, label, type='p',
 #' # or directly:
 #' plotAR(iris, broadcast=broadcastPost)
 #' }
-sendData <- function(data, server=getOption('plotAR.internal.url',plotAR:::getUrl()), ...){
-  ret <- httr::POST(server,body=data, ...)
+sendData <- function(data,
+                     server=getOption('plotAR.internal.url',plotAR:::getUrl()),
+                     auth=getOption('plotAR.internal.auth',""), ...){
+  ret <- httr::POST(server,body=data, httr::add_headers(Authorization=auth), ...)
   invisible(ret)
 }
 

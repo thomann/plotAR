@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# echo "rsession-ld-library-path=$CONDA_PREFIX/lib" >> /etc/rstudio/rserver.conf
+
+exec "$@"
