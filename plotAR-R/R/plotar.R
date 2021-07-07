@@ -29,48 +29,137 @@ defaultSpeed <- 0;
 #' \dontrun{
 #' plotAR(iris, col=iris$Species)
 #' }
-plotAR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
-           name=NULL, description=NULL, speed=0L, autoScale=T,
+plotAR_ <- function(data, x=NULL, y=NULL, z=NULL, col=NULL, size=NULL, label=NULL,
+           name=NULL, description=NULL, axis_names=NULL, col_labels=NULL,
+           speed=0L, autoScale=TRUE,
+           type='p', lines=NULL, 
            digits=5, doOpenController=TRUE, .send=TRUE){
-  if(is.null(name)) name <- deparse(substitute(data))
+  
+  if(is.null(name)) name <- lazyeval::expr_text(data)
+  
+  ### Removing the NAs
+  I <- !apply(is.na(data),1,any)
+  data <- data[ I ,]
+  
+  n <- nrow(data)
+  
   if(is.null(speed)){
     speed <- defaultSpeed
     defaultSpeed <- as.integer(defaultSpeed==0)
   }
-  data <- data[,1:3]
+  # data <- data[,1:3]
   if(!is.null(col)){
-    col <- as.integer(col)
-    col - min(col)
-    data <- cbind(data,col=col)
+    col <- as.factor(lazyeval::f_eval(col, data))
+    if(is.null(col_labels) && is.factor(col)) col_labels <- levels(col)
+    # protocol is 0 based:
+    col <- as.integer(col) - 1
+  }
+  
+  # if(is.null(axis_names)) axis_names <- rep("",3)
+  
+  i <- 1
+  if(is.null(x)){
+    # axis_names[i] <- if(!is.null(colnames(data))) colnames(data)[i]
+    x <- data[,i]
+  }else{
+    # axis_names[i] <- lazyeval::expr_text(x)
+    x <- lazyeval::f_eval(x, data)
+  }
+  
+  i <- 2
+  if(is.null(y)){
+    # axis_names[i] <- if(!is.null(colnames(data))) colnames(data)[i]
+    y <- data[,i]
+  }else{
+    # axis_names[i] <- lazyeval::expr_text(y)
+    y <- lazyeval::f_eval(y, data)
+  }
+  
+  i <- 3
+  if(is.null(z)){
+    # axis_names[i] <- if(!is.null(colnames(data))) colnames(data)[i]
+    z <- data[,i]
+  }else{
+    # axis_names[i] <- lazyeval::expr_text(z)
+    z <- lazyeval::f_eval(z, data)
+  }
+  
+  if(!is.null(size)) {
+    size <- lazyeval::f_eval(size, data)
+    # scale the sizes between 0.5 and 1.5:
+    size <- (size-min(size))/diff(range(size)) + 0.5
+  }
+  
+  if(!is.null(label)) {
+    label <- as.character(lazyeval::f_eval(label, data))
+  }
+  
+  if(!is.null(lines)) {
+    lines <- if(lines == ~TRUE) rep(1, n) else lazyeval::f_eval(lines, data)
+    my_col <- if(is.null(col)) rep(0, n) else col
+    lines <- lapply(by(data.frame(col=my_col, line=lines, i=seq_len(n)-1), list(my_col, lines), function(x){
+      list(col=x$col[1], width=1, points=x$i)
+    }, simplify = FALSE), function(x)x)
+  }
+  
+  ### Auto Scaling
+  if(autoScale){
+    # scale between -1 and 1
+    f <- function(x) (x-min(x))/diff(range(x)) * 2 - 1
+    x <- f(x)
+    y <- f(y)
+    z <- f(z)
   }
 
-  ### Removing the NAs
-  I <- !apply(is.na(data),1,any)
-  data <- data[ I ,]
-
-  n <- nrow(data)
-
-  ### Auto Scaling
-  if(autoScale) data[,1:3] <- as.data.frame(scale(data[,1:3]))
-
-  body = list(data=as.matrix(data), speed=speed, protocolVersion='0.3.0')
+  body <- list(data=as.matrix(cbind(x,y,z)), speed=speed, protocolVersion='0.3.0')
   if(!is.null(col)) body$col <- col
   if(!is.null(size)) body$size <- size
-  if(!is.null(type)) body$type <- type
   if(!is.null(label)) body$label <- label
+  if(!is.null(type)) body$type <- type
+  if(!is.null(col_labels)) body$col_labels <- col_labels
+  if(!is.null(axis_names)) body$axis_names <- axis_names
+  if(!is.null(lines)) body$lines <- lines
 
   if(is.null(name)) name <- deparse(substitute(data))
   metadata <- list(name=name, n=n, created=Sys.time())
   if(is.null(description)) metadata$description <- description
   body$metadata <- metadata
-
+  
   # TODO auto_unbox is a problem if nrow(data)==1
   if(n==1) warning("There might be a communication problem for nrow(data)==1 - consider adding a second point.")
   data_json <- jsonlite::toJSON(body, auto_unbox=TRUE, digits=digits, pretty=TRUE)
 
   if(.send) sendData(data_json)
   if(doOpenController) openController()
-  invisible(data_json)
+  invisible(body)
+}
+
+#' plotAR
+#' @export
+plotAR <- function(data, x, y, z, col, size, lines, label, type='p',
+                   axis_names=NULL,
+                    ...){
+  if(is.null(axis_names)) {
+    if( !is.null(colnames(data)) || !all(c(missing(x),missing(y),missing(z))) ){
+      axis_names <- if(is.null(colnames(data))) rep("",3) else colnames(data)[1:3]
+      if(!missing(x)) axis_names[1] <- lazyeval::expr_text(x)
+      if(!missing(y)) axis_names[2] <- lazyeval::expr_text(y)
+      if(!missing(z)) axis_names[3] <- lazyeval::expr_text(z)
+    }
+  }
+  plotAR_(data,
+          if(missing(x)) NULL else lazyeval::f_capture(x),
+          if(missing(y)) NULL else lazyeval::f_capture(y),
+          if(missing(z)) NULL else lazyeval::f_capture(z),
+          # lazyeval::f_capture(y), lazyeval::f_capture(z),
+          col=if(missing(col)) NULL else lazyeval::f_capture(col),
+          size=if(missing(size)) NULL else lazyeval::f_capture(size),
+          label=if(missing(label)) NULL else lazyeval::f_capture(label),
+          lines=if(missing(lines)) NULL else lazyeval::f_capture(lines),
+          # col=lazyeval::f_capture(col), =lazyeval::f_capture(size), label=lazyeval::f_capture(label),
+          axis_names=axis_names,
+          ...
+          )
 }
 
 #' Broadcast to a server via POST - hence this can run in another process or even on another host.
@@ -87,13 +176,13 @@ plotAR <- function(data,col=NULL, size=NULL, type='p', lines=NULL, label=NULL,
 #' @examples
 #'
 #' \dontrun{
-#' options(plotAR.default.broadcast=broadcastPost)
+#' options(plotAR.internal.url=broadcastPost)
 #' plotAR(iris)
 #'
 #' # or directly:
 #' plotAR(iris, broadcast=broadcastPost)
 #' }
-sendData <- function(data, server=getOption('plotAR.broadcast.server',plotAR:::getUrl()), ...){
+sendData <- function(data, server=getOption('plotAR.internal.url',plotAR:::getUrl()), ...){
   ret <- httr::POST(server,body=data, ...)
   invisible(ret)
 }
@@ -122,5 +211,3 @@ startServer <- function(...){
 stopServer <- function(...){
   pkg.env$external.proc$kill()
 }
-
-

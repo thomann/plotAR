@@ -6,7 +6,7 @@
 \usage{
 sendData(
   data,
-  server = getOption("plotAR.broadcast.server", plotAR:::getUrl()),
+  server = getOption("plotAR.internal.url", plotAR:::getUrl()),
   ...
 )
 }
@@ -27,7 +27,7 @@ Broadcast to a server via POST - hence this can run in another process or even o
 \examples{
 
 \dontrun{
-options(plotAR.default.broadcast=broadcastPost)
+options(plotAR.internal.url=broadcastPost)
 plotAR(iris)
 
 # or directly:

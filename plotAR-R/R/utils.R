@@ -80,9 +80,10 @@ openViewer <- function(...){
 
 #' Open Keyboard (in the viewer pane if in RStudio).
 #' @export
-openController <- function(){
+openController <- function(host=getOption("plotAR.external.url")){
   viewer <- getOption("viewer")
   if(is.null(viewer)){
+    ## So we probably are not in RStudio
     host <- getUrl()
     viewer <- utils::browseURL
   }else{

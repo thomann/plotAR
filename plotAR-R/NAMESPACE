@@ -3,6 +3,7 @@
 export(getUrl)
 export(openController)
 export(plotAR)
+export(plotAR_)
 export(sendData)
 export(startBlockingServer)
 export(startServer)

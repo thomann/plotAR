@@ -2,14 +2,14 @@ Package: plotAR
 Type: Package
 Title: Walk Through your Data in Augmented Reality or Cardboard VR
 Version: 0.6
-Date: 2021-04-30
-Author: Philipp Thomann <pht@gmx.ch>
-Maintainer: Philipp Thomann <pht@gmx.ch>
+Date: 2021-07-05
+Authors@R:
+    person("Philipp", "Thomann", email = "pht@gmx.ch", role = c("aut", "cre"))
 Description: This is a prototype to get your data into a Google Cardboard and navigate using the computer keyboard. There is also an Android-client available.
 License: AGPL-3
 LazyData: TRUE
-Imports: httpuv, callr, jsonlite, reticulate
-Suggests: qrcode, httr, R.utils,
+Imports: httr, httpuv, callr, jsonlite, reticulate, lazyeval
+Suggests: qrcode, R.utils,
     knitr,
     rmarkdown
 VignetteBuilder: knitr

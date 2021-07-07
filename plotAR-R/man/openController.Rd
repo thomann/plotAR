@@ -4,7 +4,7 @@
 \alias{openController}
 \title{Open Keyboard (in the viewer pane if in RStudio).}
 \usage{
-openController()
+openController(host = getOption("plotAR.external.url"))
 }
 \description{
 Open Keyboard (in the viewer pane if in RStudio).
