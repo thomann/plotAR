@@ -162,6 +162,21 @@ plotAR <- function(data, x, y, z, col, size, lines, label, type='p',
           )
 }
 
+
+#' @export
+surfaceAR <- function(z, doOpenController=TRUE, .send=TRUE, digits=5){
+  # first simple implementation for surface using python implementation
+  # TODO populate the body just in R
+  plotar <- reticulate::import("plotar")
+  body <- plotar$surfacevr(z, return_data=TRUE, push_data=FALSE)
+  
+  data_json <- jsonlite::toJSON(body, auto_unbox=TRUE, digits=digits, pretty=TRUE)
+  if(.send) sendData(data_json)
+  if(doOpenController) openController()
+  invisible(body)
+}
+
+
 #' Broadcast to a server via POST - hence this can run in another process or even on another host.
 #'
 #' @param data the JSON-model data to broadcast, from \link{plotAR}

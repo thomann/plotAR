@@ -9,18 +9,13 @@ plotAR(
   x,
   y,
   z,
-  col = NULL,
-  size = NULL,
+  col,
+  size,
+  lines,
+  label,
   type = "p",
-  lines = NULL,
-  label = NULL,
-  name = NULL,
-  description = NULL,
-  speed = 0L,
-  autoScale = T,
-  digits = 5,
-  doOpenController = TRUE,
-  .send = TRUE
+  axis_names = NULL,
+  ...
 )
 }
 \description{

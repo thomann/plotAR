@@ -6,18 +6,20 @@
 \usage{
 plotAR_(
   data,
-  x,
-  y,
-  z,
+  x = NULL,
+  y = NULL,
+  z = NULL,
   col = NULL,
   size = NULL,
-  type = "p",
-  lines = NULL,
   label = NULL,
   name = NULL,
   description = NULL,
+  axis_names = NULL,
+  col_labels = NULL,
   speed = 0L,
-  autoScale = T,
+  autoScale = TRUE,
+  type = "p",
+  lines = NULL,
   digits = 5,
   doOpenController = TRUE,
   .send = TRUE
@@ -30,10 +32,6 @@ plotAR_(
 
 \item{size}{the size}
 
-\item{type}{point (p) or line (l)}
-
-\item{lines}{if you want to have lines addition to data}
-
 \item{label}{text labels of data}
 
 \item{name}{the name of this dataset - by default will be inferred from \code{data}.}
@@ -43,6 +41,10 @@ plotAR_(
 \item{speed}{the speed along which the viewer will fly through data}
 
 \item{autoScale}{standardize data before sending}
+
+\item{type}{point (p) or line (l)}
+
+\item{lines}{if you want to have lines addition to data}
 
 \item{digits}{precision of data sent}
 

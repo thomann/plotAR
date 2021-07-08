@@ -7,6 +7,7 @@
 sendData(
   data,
   server = getOption("plotAR.internal.url", plotAR:::getUrl()),
+  auth = getOption("plotAR.internal.auth", ""),
   ...
 )
 }
