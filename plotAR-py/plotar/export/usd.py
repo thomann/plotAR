@@ -46,7 +46,7 @@ def data2usd_ascii(data):
             }}
             """
         else:
-            file = f"text_{i}.png"
+            # file = f"text_{i}.png"
             # assets[file] = img
             text_template = """
             def Preliminary_Text "text_{{i}}"
@@ -108,7 +108,7 @@ def data2usd_ascii(data):
             }
             """
             texts += jinja2.Template(text_template).render(
-                i=i, x=x, y=y, z=z, w=w, h=h, file=file,
+                i=i, x=x, y=y, z=z, #file=file, w=w, h=h,
                 text=data['label'][i], col=col,
             )
             # color3f[] primvars:displayColor = [({color})]
