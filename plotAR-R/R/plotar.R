@@ -1,4 +1,8 @@
 
+#' @export
+install_plotar_py <- function(...){
+  reticulate::py_install("plotar", pip=TRUE, ...)
+}
 
 defaultSpeed <- 0;
 
