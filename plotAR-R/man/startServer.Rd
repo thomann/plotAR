@@ -4,7 +4,7 @@
 \alias{startServer}
 \title{Start Server}
 \usage{
-startServer(...)
+startServer(port = 2908L)
 }
 \arguments{
 \item{...}{passed to \code{callr::r_bg}}
