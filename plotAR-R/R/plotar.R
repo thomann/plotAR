@@ -228,3 +228,27 @@ startServer <- function(...){
 stopServer <- function(...){
   pkg.env$external.proc$kill()
 }
+
+#' @export
+connectServer <- function(url){
+  u <- httr::parse_url(url)
+  path <- strsplit(u$path,'/')[[1]]
+  if(length(path)>0 && grepl('\\.html$|\\.json$', path[length(path)])){
+    path <- path[-length(path)]
+  }
+  path <- paste(path, collapse="/")
+  u2 <- u
+  u2$path <- paste0(path, '/')
+  u2$query$token <- NULL
+  message(httr::build_url(u2))
+  "https://hub.gke2.mybinder.org/user/thomann-plotar-6sy8ghsu/plotar/keyboard.html?token=e9mbARgtR1-ieBp0vTnGuw"
+  options(plotAR.internal.url=httr::build_url(u2))
+  if(!is.null(u$query$token))
+    options(plotAR.internal.auth=paste0("token ",u$query$token))
+  u$path <- paste0(path, '/keyboard.html')
+  message(httr::build_url(u))
+  options(plotAR.external.url=function(x=""){
+    u$path <- paste0(path, '/', x)
+    httr::build_url(u)
+  })
+}
