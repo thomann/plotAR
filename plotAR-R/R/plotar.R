@@ -205,6 +205,8 @@ sendData <- function(data,
                      server=getOption('plotAR.internal.url',plotAR:::getUrl()),
                      auth=getOption('plotAR.internal.auth',""), ...){
   ret <- httr::POST(server,body=data, httr::add_headers(Authorization=auth), ...)
+  code <- ret$status_code
+  httr::stop_for_status(ret)
   invisible(ret)
 }
 
