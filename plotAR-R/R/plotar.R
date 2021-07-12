@@ -214,11 +214,46 @@ sendData <- function(data,
 #'
 #' @return the process object (invisibly)
 #' @export
-startServer <- function(...){
-  .proc <- callr::r_bg(function(){
+startServer <- function(port=2908L){
+  if(!reticulate::py_available(initialize = TRUE)){
+    stop("Please make a python reticulate available and then use: install_plotar_py()")
+  }
+  # check whether plotar is installed
+  tryCatch({
+    reticulate::import("plotar")
+  }, error=function(cond){
+    message("plotar python module could not be imported:\n", cond)
+    stop("to start a server the python version of plotar is needed.
+    Please install with: install_plotar_py()")
+  })
+  message("Starting plotAR Server...")
+  .proc <- callr::r_bg(function(port){
     server <- reticulate::import("plotar.server")
-    server$`_start_server`()
-  }, ...)
+    server$`_start_server`(port=as.integer(port))
+  }, args=list(port))
+  url <- paste0("http://localhost:",as.integer(port),"/")
+  message("Checking connection to plotAR Server...")
+  while(TRUE){
+    Sys.sleep(0.2)
+    if(.proc$get_status() != 'running'){
+      # exited
+      # throw the error:
+      .proc$get_result()
+      # should not happen but to be consistent, stop ourselves
+      stop("PlotAR Server already stopped")
+    }
+    connected <- F
+    tryCatch({
+      res <- httr::GET(paste0(url,"status.json"), httr::timeout(0.4))
+      if(res$status_code==200L) connected <- TRUE
+    }, error=function(cond){})
+    if(connected){
+      break
+    }
+  }
+  # we did get a positive connection so let's set the options
+  message("Connection to plotAR Server working")
+  connectServer(url)
   pkg.env$external.proc <- .proc
   invisible(.proc)
 }
