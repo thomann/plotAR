@@ -1,6 +1,7 @@
 local({
   # this file is only used in the binder setting - so we assume we are on binderhub!
   # also, we will connect to the plotAR-server already running in jupyterlab!
+  options(binderhub=TRUE)
 
   # use the python logic to find the internal URL, i.e. port (usually 8888) and the token!
   plotar <- reticulate::import("plotar")

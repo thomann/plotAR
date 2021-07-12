@@ -1,8 +1,9 @@
-
 library(tidyverse)
 library(plotAR)
 
-startServer()
+# do not start server if we are on mybinder.org - there it is already running and configured
+if(!getOption("binderhub", FALSE))
+  startServer()
 
 
 iris %>% plotAR(col=Species)

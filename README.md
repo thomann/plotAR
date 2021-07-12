@@ -13,6 +13,8 @@
 A nicer overview can be found here in [examples/](https://thomann.github.io/plotAR/examples).
 Check <demo.ipynb> to see how these samples were made - best is to go through that Notebook on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder)
 
+The R demo is in <demo.R> - again look at it on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder?urlpath=rstudio)
+
 This is a prototype to get your data into Augmented Reality (AR) or and navigate using the computer keyboard.
 
 > This package was presented at EuroPython 2019.
@@ -56,6 +58,15 @@ Optionally the R-package can be installed using - but it will need access to a P
 ```r
 devtools::install_github('thomann/plotAR',subdir='plotAR-R')
 ```
+For the server component:
+- If you want to start the server from your R session easiest is to install the Pyhthon package using:
+```r
+plotar::install_plotar_py()
+```
+- Or you can connect to a running plotAR-Server
+    - start the python server, e.g. one on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder?urlpath=rstudio)
+    - copy the URL using the copy button in the the keyboard view (e.g. something like `https://hub.gke2.mybinder.org/user/thomann-plotar-6sy8ghsu/plotar/keyboard.html?token=e9mbARgtR1-ieBp0vTnGuw`)
+    - in the R session issue `connectServer("https://...")`
 
 Also check out the native mobile apps:
 - iOS: <https://github.com/thomann/PlotAR-ios>
@@ -87,7 +98,7 @@ In R load and plot the first three dimensions of `iris` with `iris$Species` as c
 ```r
 library(plotAR)
 startServer() # starts a python server via reticulate in background
-plotAR(iris,iris$Species)
+plotAR(iris, col=Species)
 ```
 ![RStudio](images/screen-rstudio.png?raw=true "Rstudio Screen")
 
