@@ -365,8 +365,18 @@ def data2usd_ascii(data):
     usda = jinja2.Template(usda).render(**locals())
     return usda, assets
 
+def __test_PXR_USD_AVAILABLE():
+    try:
+        import pxr
+    except:
+        logger.info("Pixar USD Tools not available, using workarounds")
+        return False
+    return True
+__PXR_USD_AVAILABLE = __test_PXR_USD_AVAILABLE()
 
-def data2usdz(data, use_tools=True, save_usda=False, check=False):
+def data2usdz(data, use_tools=None, save_usda=False, check=False):
+    if use_tools is None:
+        use_tools = __PXR_USD_AVAILABLE
     usda, assets = data2usd_ascii(data)
     if save_usda:
         with open('data_tmp.usda', 'w') as f:
@@ -387,9 +397,30 @@ def data2usdz(data, use_tools=True, save_usda=False, check=False):
     else:
         from io import BytesIO
         import zipfile
+        import struct
+        from datetime import datetime
         f = BytesIO()
         zf = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_STORED)
-        zf.writestr('data.usda', usda)
+        internal_filename = 'data.usda'
+        zinfo = zipfile.ZipInfo(internal_filename, date_time=datetime.now().timetuple())
+        ## see https://github.com/101arrowz/fflate/issues/39
+        offset = 34 + len(internal_filename)
+        print(offset)
+
+        # // Bitwise AND with 63 is equivalent to mod 64
+        offsetMod64 = offset & 63
+        # // If the offset is 4, after we remove the assumed
+        # // 4 bytes wasted in the extra field no matter what,
+        # // we are 0 mod 64 and don't need to add the extra
+        # // field to pad this file.
+        if offsetMod64 != 4:
+            # // Adding this padding gets us to 0 mod 64
+            padLength = 64 - offsetMod64
+            padding = b"\x00" * padLength
+            ## format of the extra field see 4.3.11 in https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+            zinfo.extra = struct.pack('H', 12345) + struct.pack('H', padLength) + padding
+
+        zf.writestr(zinfo, usda)
         zf.close()
         with open("test.usdz", "wb") as tmp:
             tmp.write(f.read())
