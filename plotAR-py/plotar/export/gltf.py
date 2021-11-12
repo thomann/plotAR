@@ -30,7 +30,7 @@ class GLTF(object):
         lst.append(x)
         return id
 
-    def add_buffer_data(self, arrays, target, type):
+    def add_buffer_data(self, arrays, target, type, remove_view_target=False):
         # GLTF spec says little-endian
         buffer_format = "<"
         acc_id = []
@@ -57,6 +57,8 @@ class GLTF(object):
                     "byteLength": n,
                     "target": tg
                 })
+            if remove_view_target:
+                del self.d['bufferViews'][view_id]['target']
             byte_offset += n
             if tp == 'SCALAR':
                 dim = 1
@@ -161,6 +163,27 @@ def data2gltf(data, subdiv=16):
     axes_node = dict(children=[])  if 'axis_names' in data else {}
     axes_node_id = gltf.add('nodes', axes_node)
 
+    animation = False
+    if 'animation' in data:
+        animation = data['animation']
+        end_time_code = len(animation.get('time_labels')) - 1
+        start_time_code = 0
+        time_codes_per_second = animation.get('time_codes_per_second', 24)
+        animation_input = np.arange(end_time_code+1) / time_codes_per_second
+        animation_outputs = [
+            np.array(_).reshape((-1, )).tolist()
+            for _ in animation.get('data',[])
+        ]
+        animation_input_acc_id, *animation_output_acc_ids = gltf.add_buffer_data(
+            [animation_input.tolist()] + animation_outputs,
+            [GLTF_ARRAY_BUFFER] + [GLTF_ARRAY_BUFFER] * len(animation_outputs),
+            ["SCALAR"] + ["VEC3"] * len(animation_outputs),
+            remove_view_target=True,
+        )
+        animation_channels = []
+        animation_samplers = []
+        gltf.d["animations"] = [ dict(channels=animation_channels, samplers=animation_samplers) ]
+
     for i, row in enumerate(data.get('data',[])):
         x, y, z = row[:3]
         col = 0
@@ -204,11 +227,19 @@ def data2gltf(data, subdiv=16):
                     }]
                 })
             scale = [scale[0] * h, scale[1] * w, scale[2] ]
-        data_node['children'].append(gltf.add('nodes', {
-          "mesh" : mesh_id,
-          "translation": [x,z,-y],
-          "scale": scale,
-        }))
+        current_node_id = gltf.add('nodes', {"mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
+        data_node['children'].append(current_node_id)
+
+        if animation:
+            animation_samplers.append(dict(
+                input=animation_input_acc_id,
+                interpolation="LINEAR",
+                output=animation_output_acc_ids[i],
+            ))
+            animation_channels.append(dict(
+                target=dict(node=current_node_id, path='translation'),
+                sampler=len(animation_samplers)-1,
+            ))
 
     if 'surface' in data:
         surface = data['surface']

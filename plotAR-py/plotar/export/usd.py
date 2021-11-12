@@ -28,6 +28,14 @@ def data2usd_ascii(data):
     assets = {}
     meters_per_unit = float(data.get('meters_per_unit', 0.1))
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
+
+    animation = False
+    if 'animation' in data:
+        animation = data['animation']
+        end_time_code = len(animation.get('time_labels')) - 1
+        start_time_code = 0
+        time_codes_per_second = animation.get('time_codes_per_second', 24)
+
     for i, row in enumerate(data.get('data',[])):
         x, z, y = row[:3]
         z = -z
@@ -37,15 +45,34 @@ def data2usd_ascii(data):
         # color = colors[col]
         size = data['size'][i] if 'size' in data else 1.0
         if 'label' not in data:
-            spheres += f"""
-            def Sphere "Point{i}" {{
-                double3 xformOp:translate = ({x},{y},{z})
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_{col}>
-    
-                double radius = {0.02*size}
-            }}
-            """
+            if not animation:
+                spheres += f"""
+                def Sphere "Point{i}" {{
+                    double3 xformOp:translate = ({x},{y},{z})
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_{col}>
+        
+                    double radius = {0.02*size}
+                }}
+                """
+            else:
+                if i>=len(animation.get('data',[])):
+                    print(f"Too few data for animation: i")
+                animation_text = ",\n                        ".join(
+                    f"{_}: ({pnt[0]}, {-pnt[2]}, {pnt[1]}, )"
+                    for _,pnt in enumerate(animation.get('data',[])[i] )
+                )
+                spheres += f"""
+                def Sphere "Point{i}" {{
+                    double3 xformOp:translate.timeSamples = {{
+                        {animation_text}
+                    }}
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_{col}>
+        
+                    double radius = {0.02*size}
+                }}
+                """
         else:
             # file = f"text_{i}.png"
             # assets[file] = img
@@ -334,6 +361,12 @@ def data2usd_ascii(data):
         defaultPrim = "Spheres"
         upAxis = "Y"
         metersPerUnit = {{meters_per_unit}}
+        {% if animation -%}
+        // autoPlay = true // if this is set to true then in quick look there is no autoplay ?!?
+        endTimeCode = {{end_time_code}}
+        startTimeCode = {{start_time_code}}
+        timeCodesPerSecond = {{time_codes_per_second}}
+        {%- endif %}
     )
     def Xform "Spheres" {
         {% if texts %}def Scope "Texts"
