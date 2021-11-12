@@ -2,7 +2,12 @@ import math
 
 import numpy as np
 
-COLORS = [(1, 0, 0), (0, 0, 1), (0, 1, 0)]
+# Do; this in R:
+# library(RColorBrewer);library(dplyr)
+# (brewer.pal(9, name='Set1') %>% col2rgb /256) %>% round(3) %>% apply(2, paste, collapse=',', sep='') %>%
+#     paste0('(',., ')', collapse = ',') %>% cat
+
+COLORS = [(0.891,0.102,0.109),(0.215,0.492,0.719),(0.301,0.684,0.289),(0.594,0.305,0.637),(0.996,0.496,0),(0.996,0.996,0.199),(0.648,0.336,0.156),(0.965,0.504,0.746),(0.598,0.598,0.598)]
 COLORS_LEN = len(COLORS)
 
 
@@ -71,7 +76,7 @@ def text2png(text, truetype=None, fontsize=10, color=(1, 0, 1), dpi_factor=10,
     # get a drawing context
     d = ImageDraw.Draw(img)
     # draw text, half opacity
-    d.text((0, 0), text, font=f, fill=tuple(c*255 for c in color) + (255,) )
+    d.text((0, 0), text, font=f, fill=tuple(int(c*255) for c in color) + (255,) )
 
     buffer = BytesIO()
     img.save(buffer, format='png', compress_level=0)
