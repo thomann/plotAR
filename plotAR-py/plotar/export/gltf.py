@@ -83,6 +83,8 @@ class GLTF(object):
 
 def data2gltf(data, subdiv=16):
 
+    meters_per_unit = float(data.get('meters_per_unit', 0.1))
+
     gltf = GLTF()
     indices, vertices, normals = create_sphere(subdiv=subdiv)
     sphere_acc_id = gltf.add_buffer_data(
@@ -156,7 +158,7 @@ def data2gltf(data, subdiv=16):
     data_node_id = gltf.add('nodes', data_node)
     legend_node = dict(children=[], translation=[1,0,-1])
     legend_node_id = gltf.add('nodes', legend_node)
-    axes_node = dict(children=[])
+    axes_node = dict(children=[])  if 'axis_names' in data else {}
     axes_node_id = gltf.add('nodes', axes_node)
 
     for i, row in enumerate(data.get('data',[])):
@@ -364,8 +366,12 @@ def data2gltf(data, subdiv=16):
           "rotation": rotation,
           # "scale": scale,
         }))
+    root_node_id = gltf.add('nodes', {
+        "children": [data_node_id, legend_node_id, axes_node_id],
+        "scale": [meters_per_unit]*3,
+    })
     gltf.add("scenes", {
-          "nodes" : [data_node_id, legend_node_id, axes_node_id]
+          "nodes" : [ root_node_id, ]
         })
     return gltf.d
 

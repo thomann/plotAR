@@ -26,6 +26,7 @@ def data2usd_ascii(data):
     axes = ""
     legend = ""
     assets = {}
+    meters_per_unit = float(data.get('meters_per_unit', 0.1))
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
     for i, row in enumerate(data.get('data',[])):
         x, z, y = row[:3]
@@ -329,9 +330,10 @@ def data2usd_ascii(data):
         )
     usda = """#usda 1.0
     (
+        doc = "PlotAR v0.3.0"
         defaultPrim = "Spheres"
         upAxis = "Y"
-        metersPerUnit = 1
+        metersPerUnit = {{meters_per_unit}}
     )
     def Xform "Spheres" {
         {% if texts %}def Scope "Texts"
