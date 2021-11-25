@@ -430,9 +430,9 @@ def create_sphere(subdiv=8):
     coord2index.append([i])
     i += 1
     for lat in range(1,subdiv):
-        alpha = math.pi * (2*lat / subdiv - 0.5)
-        y = math.cos(alpha)
-        radius_lat = math.sin(alpha)
+        alpha = math.pi * (lat / (subdiv)-0.5)
+        y = math.sin(alpha)
+        radius_lat = math.cos(alpha)
         coords = []
         for lon in range(2*subdiv):
             beta = math.pi * lon / subdiv
@@ -445,7 +445,7 @@ def create_sphere(subdiv=8):
     vertices += [0,1,0] # north pole
     coord2index.append([i])
     # create triangles
-    for lat in range(subdiv):
+    for lat in range(0,subdiv):
         a = coord2index[lat]
         if len(a) == 1:
             a = a*2*subdiv
@@ -486,7 +486,7 @@ def create_rotation(profile, z_from_to=[0,1], subdiv=8):
             x = math.sin(beta) * radius_lat
             z = math.cos(beta) * radius_lat
             vertices += [x,y,z]
-            normals += [x, 0.0, z]
+            normals += [x / math.sqrt(x**2+z**2), 0.0, z / math.sqrt(x**2+z**2)]
             coords.append(i)
             i+=1
         coord2index.append(coords)
