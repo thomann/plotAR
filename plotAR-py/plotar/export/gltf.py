@@ -106,6 +106,7 @@ def data2gltf(data, subdiv=16):
         "SCALAR VEC3 VEC3".split(),
     )
     grey_mat_id = gltf.add("materials", {
+        "name" : f"grey",
         "pbrMetallicRoughness": {
             "baseColorFactor": [0.5,0.5,0.5,1.0],
             "metallicFactor": 0.1,
@@ -114,6 +115,7 @@ def data2gltf(data, subdiv=16):
         "doubleSided": True,
     })
     arrow_mesh_id = gltf.add("meshes", {
+                "name" : f"arrow",
                 "primitives": [{
                     "attributes": {
                         "POSITION": arrow_acc_id[1],
@@ -159,12 +161,18 @@ def data2gltf(data, subdiv=16):
             for mat_id in col_mat_ids
         ]
 
-    data_node = dict(children=[])
+    data_node = dict(children=[], name="Data")
     data_node_id = gltf.add('nodes', data_node)
-    legend_node = dict(children=[], translation=[1,0,-1])
+    if 'col_labels' in data:
+        legend_node = dict(children=[], name="Legend", translation=[1,0,-1])
     legend_node_id = gltf.add('nodes', legend_node)
-    axes_node = dict(children=[])  if 'axis_names' in data else {}
+    else:
+        legend_node_id = None
+    if 'axis_names' in data:
+        axes_node = dict(children=[], name="Axes")
     axes_node_id = gltf.add('nodes', axes_node)
+    else:
+        axes_node_id = None
 
     animation = False
     if 'animation' in data:
@@ -204,11 +212,18 @@ def data2gltf(data, subdiv=16):
             src_id = gltf.add("images", {
                 "uri": img_uri
             })
+            ## if we add it to the buffer (e.g. for glb) use something like
+            # bv = gltf.add("bufferView", ...)
+            # src_id = gltf.add("images", {
+            #     "bufferView" : bv,
+            #     "mimeType" : "image/png"
+            # })
             texture_id = gltf.add("textures", {
                 "sampler": sampler_id,
                 "source": src_id
             })
             mat_id = gltf.add('materials', {
+                    "name": f"Material {texture_id} for point {i}",
                     "pbrMetallicRoughness": {
                         "baseColorTexture": {"index": texture_id},
                         "metallicFactor": 0.5,
@@ -219,6 +234,7 @@ def data2gltf(data, subdiv=16):
                 })
             mesh_id = gltf.add('meshes',
                 {
+                    "name": f"Label Mesh for point {i}",
                     "primitives": [{
                         "attributes": {
                             "POSITION": board_acc_id[1],
@@ -230,7 +246,7 @@ def data2gltf(data, subdiv=16):
                     }]
                 })
             scale = [scale[0] * h, scale[1] * w, scale[2] ]
-        current_node_id = gltf.add('nodes', {"mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
+        current_node_id = gltf.add('nodes', {"name": f"Data Point {i}" , "mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
         data_node['children'].append(current_node_id)
 
         if animation:
@@ -340,12 +356,14 @@ def data2gltf(data, subdiv=16):
             })
         scale = [scale[0] * h, scale[1] * w, scale[2] ]
         legend_node['children'].append(gltf.add('nodes', {
+          "name" : f"text_{text}",
           "mesh" : mesh_id,
           "translation": [x,z,-y],
           "scale": scale,
         }))
         # the sphere
         legend_node['children'].append(gltf.add('nodes', {
+          "name" : f"sphere_{text}",
           "mesh" : col_mesh_id[col],
           "translation": [x-0.04,z+scale[1]/2,-y],
           "scale": [0.02] * 3,
@@ -397,18 +415,27 @@ def data2gltf(data, subdiv=16):
           "scale": scale,
         }))
         axes_node['children'].append(gltf.add('nodes', {
+          "name" : f"arrow_{text}",
           "mesh" : arrow_mesh_id,
           # "translation": [i,0,0],
           "rotation": rotation,
           # "scale": scale,
         }))
+    root_children = [data_node_id]
+    if legend_node_id is not None:
+        root_children.append(legend_node_id)
+    if axes_node_id is not None:
+        root_children.append(axes_node_id)
     root_node_id = gltf.add('nodes', {
-        "children": [data_node_id, legend_node_id, axes_node_id],
+        "name": f"Root_{data.get('metadata',{}).get('name','')}",
+        "children": root_children,
         "scale": [meters_per_unit]*3,
     })
     gltf.add("scenes", {
           "nodes" : [ root_node_id, ]
         })
+    for k in [ k for k,v in gltf.d.items() if isinstance(v, list) and len(v) == 0 ]:
+        del gltf.d[k]
     return gltf.d
 
 
