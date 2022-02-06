@@ -10,6 +10,8 @@ import numpy as np
 COLORS = [(0.891,0.102,0.109),(0.215,0.492,0.719),(0.301,0.684,0.289),(0.594,0.305,0.637),(0.996,0.496,0),(0.996,0.996,0.199),(0.648,0.336,0.156),(0.965,0.504,0.746),(0.598,0.598,0.598)]
 COLORS_LEN = len(COLORS)
 
+def hex2float(x):
+    return([ int(x[_:_+2], base=16)/256 for _ in range(1,7,2) ])
 
 def data2obj(data):
     result = ['# OBJ file for dataset']
@@ -92,7 +94,7 @@ def create_surface(surface):
     yvec = surface.get('y') or np.arange(-1, 1, 2 / n).tolist()
     # TODO convert the following for loops into numpy
     vertices = np.array([
-        [x, z / 20.0, y]
+        [x, z / 2.0, y]
         for y, row in zip(yvec, surface['data'])
         for x, z in zip(xvec, row)
     ])
@@ -111,6 +113,52 @@ def create_surface(surface):
     # print(normals.shape)
     return indices, normals, vertices
 
+
+def create_line(data_list, line, radius=0.01, segments=8):
+    indices, normals, vertices, a, b = [], [], [], None, None
+    n = len(data_list)
+
+    def flip_yz(x):
+        x = np.array(x)
+        x = x[..., (0, 2, 1)]
+        x[..., 2] *= -1
+        return x
+    def normalize(x):
+        _ = np.linalg.norm(x)
+        if _ == 0:
+            return x
+        return x / _
+    # print(n,len(np.linspace(0, 2*math.pi, segments)), np.linspace(0,10,segments))
+    def add_disk(x, v1, v2):
+        base = len(vertices)//3
+        for alpha in np.linspace(0, 2*math.pi, segments+1)[:-1]:
+            _ = np.cos(alpha) * v1 + np.sin(alpha) * v2
+            vertices.extend( x + radius*_ )
+            # here we assume that v1 and v2 are normalized!
+            normals.extend( normalize(_) )
+        if base > 0:
+            # we already had a previous add_disk so let's connect it
+            for i in range(segments):
+                p1 = (i + 1) % segments
+                indices.extend([
+                    base + p1, base+i-segments, base + i,
+                    base + p1, base+p1-segments, base+i-segments,
+                ])
+    # n = 5
+    for c in [flip_yz(data_list[_][:3]) for _ in line.get('points', []) if _ < n]:
+        if a is not None and b is not None:
+            ## calculate basis of plane in angle between vectors a-b and c-b
+            v1 = normalize(normalize(a-b) + normalize(c-b))
+            v2 = normalize(np.cross(a-b, c-b))
+            if len(vertices) == 0:
+                # let's quickly cheat here and use the same vectors...
+                add_disk(a, v1, v2)
+            add_disk(b, v1, v2)
+        a = b
+        b = c
+    # let's quickly cheat here and use the same vectors...
+    add_disk(c, v1, v2)
+    return indices, vertices, normals
 
 def line_segments(data_list, line, n, flip_vector=False):
     mids, quats, scales, a = [], [], [], None

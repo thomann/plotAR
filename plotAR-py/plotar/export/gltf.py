@@ -4,7 +4,8 @@ import struct
 
 import numpy as np
 
-from .common import COLORS, COLORS_LEN, text2png, create_surface, line_segments
+from .common import text2png, create_surface, line_segments, create_line
+from . import common
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
 GLTF_ARRAY_BUFFER = 34962
@@ -85,6 +86,8 @@ class GLTF(object):
 
 def data2gltf(data, subdiv=16):
 
+    COLORS = data['color_palette'] if "color_palette" in data else common.COLORS
+    COLORS_LEN = len(COLORS)
     meters_per_unit = float(data.get('meters_per_unit', 0.1))
 
     gltf = GLTF()
@@ -184,7 +187,7 @@ def data2gltf(data, subdiv=16):
         animation_samplers = []
         gltf.d["animations"] = [ dict(channels=animation_channels, samplers=animation_samplers) ]
 
-    for i, row in enumerate(data.get('data',[])):
+    for i, row in enumerate(data.get('data', []) if data.get('type') != 'l' else []):
         x, y, z = row[:3]
         col = 0
         scale = 0.01
@@ -271,15 +274,14 @@ def data2gltf(data, subdiv=16):
         for i, line in enumerate(data['lines']):
             data_list = data.get('data', [])
             line_width = line.get('width', 1) / 500
-            indices, vertices, normals = create_rotation(
-                [(-1, line_width), (1, line_width)], z_from_to=[-1,1], subdiv=subdiv)
+            indices, vertices, normals = create_line(data_list, line, radius=line_width)
             line_acc_id = gltf.add_buffer_data(
                 [indices, vertices, normals],
                 [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
                 "SCALAR VEC3 VEC3".split(),
             )
             mat_id = col_mat_ids[ line.get('col', 0) % COLORS_LEN ]
-            n = len(data_list)
+            # n = len(data_list)
             mesh_id = gltf.add('meshes',
                 {
                     "primitives": [{
@@ -291,12 +293,15 @@ def data2gltf(data, subdiv=16):
                         "material": mat_id
                     }]
                 })
-            for t,q,s in line_segments(data_list, line, n, flip_vector=True):
+            # for t,q,s in line_segments(data_list, line, n, flip_vector=True):
+            #     data_node['children'].append(gltf.add('nodes', {
+            #         "mesh": mesh_id,
+            #         "translation": t,
+            #         "scale": [1,s,1],
+            #         "rotation": q,
+            #     }))
                 data_node['children'].append(gltf.add('nodes', {
                     "mesh": mesh_id,
-                    "translation": t,
-                    "scale": [1,s,1],
-                    "rotation": q,
                 }))
 
     for i, text in enumerate(data.get('col_labels',[])):

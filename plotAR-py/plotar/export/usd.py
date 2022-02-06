@@ -5,7 +5,8 @@ import numpy as np
 
 from plotar.export.common import line_segments
 
-from .common import COLORS, COLORS_LEN, text2png, create_surface
+from .common import text2png, create_surface, create_line
+from . import common
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ def data2usd_ascii(data):
     legend = ""
     assets = {}
     meters_per_unit = float(data.get('meters_per_unit', 0.1))
+    COLORS = data['color_palette'] if "color_palette" in data else common.COLORS
+    COLORS_LEN = len(COLORS)
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
 
     animation = False
@@ -36,7 +39,7 @@ def data2usd_ascii(data):
         start_time_code = 0
         time_codes_per_second = animation.get('time_codes_per_second', 24)
 
-    for i, row in enumerate(data.get('data',[])):
+    for i, row in enumerate(data.get('data',[]) if data.get('type')!='l' else []):
         x, z, y = row[:3]
         z = -z
         col = 0
@@ -180,42 +183,31 @@ def data2usd_ascii(data):
         for i, line in enumerate(data['lines']):
             data_list = data.get('data', [])
             n = len(data_list)
-            segments = line_segments(data_list, line, n)
-            # points = [ data_list[_][:3] for _ in line.get('points',[]) if _ < n ]
+            indices, vertices, normals = create_line(data_list, line, radius=line.get('width',1)/100)
+            vertices = np.array(vertices).reshape((-1, 3))
+            normals = np.array(normals).reshape((-1, 3))
             vars = dict(
-                i=i,
-                # n_points=len(points),
-                segments=segments,
+                vertexCounts=[3] * (len(indices) // 3),
+                extent=serialize([vertices.min(axis=0), vertices.max(axis=0)]),
+                indices=indices,
+                vertices=serialize(vertices),
+                normals=serialize(normals),
                 col=line.get('col',0) % COLORS_LEN,
                 width=line.get('width',1)/100,
-                # points = serialize(points, flip_yz=True),
             )
             template = """
-            def Scope "Line_{{i}}"{
-                {% for t,q,s in segments %}
-                def Capsule "Line_{{i}}_{{loop.index}}" {
+            def Mesh "Line_{{i}}"
+            {
+                int[] faceVertexCounts = {{vertexCounts}}
+                int[] faceVertexIndices = {{indices}}
+                point3f[] points = {{vertices}}
+                uniform token subdivisionScheme = "{{ "none" if smooth else "loop" }}"
+                uniform bool doubleSided = 1
+
                     rel material:binding = </Spheres/Materials/material_{{col}}>
-                    double radius = {{width}}
-                    double height = {{s*2}}
-                    uniform token axis = "X"
-                    double3 xformOp:translate = {{t}}
-                    quatf xformOp:orient = {{q}}
-                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
                 }
-                {% endfor %}
-                {# # BasisCurves is in the USD standard but seems not supporte by Apple 
-                def BasisCurves "Curve_{{i}}" (){
-                    uniform token type = "linear"
-                    int[] curveVertexCounts = [{{n_points}}]
-                    point3f[] points = {{points}}
-                    float[] widths = [{{width}}] (interpolation = "constant") 
-                    color3f[] primvars:displayColor = [(1, 0, 0)]
-                }
-                    rel material:binding = </Spheres/Materials/material_{{col}}>
-                    color3f[] primvars:displayColor = [(1, 0, 0)]
-                def BasisCurves "VaryingWidth" (){
-                    uniform token[] xformOpOrder = ["xformOp:translate"]
-                    float3 xformOp:translate = (6, 0, 0)
+            """
+            surface = jinja2.Template(template).render(**vars)
         
                     uniform token type = "linear"
                     int[] curveVertexCounts = [7]
