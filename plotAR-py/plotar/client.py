@@ -29,7 +29,6 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
             axis_names = axis_names or xyz
         else:
             data = df.iloc[:,0:3].values
-            val = locals().get(i)
             axis_names = axis_names or df.columns[xyz].tolist()
 
     def _mk_val(df, val):
