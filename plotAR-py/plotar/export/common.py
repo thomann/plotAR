@@ -1,4 +1,8 @@
 import math
+import re
+from collections import defaultdict
+from pathlib import Path
+from io import BytesIO
 
 import numpy as np
 
@@ -58,7 +62,6 @@ def obj2usdz(data):
 def text2png(text, truetype=None, fontsize=10, color=(1, 0, 1), dpi_factor=10,
              font=[ "HelveticaNeue123", "HelveticaNeue", "Helvetica", "DejaVuSans", "Arial", ]):
     from PIL import Image, ImageDraw, ImageFont
-    from io import BytesIO
 
     f = None
     # we also need to search lower case on Windows
@@ -84,6 +87,62 @@ def text2png(text, truetype=None, fontsize=10, color=(1, 0, 1), dpi_factor=10,
     img.save(buffer, format='png', compress_level=0)
     return w / dpi_factor, h / dpi_factor, buffer.getvalue()
 
+
+class BitmapFont(object):
+    # https://www.angelcode.com/products/bmfont/doc/file_format.html
+    PAT = re.compile(r'(?:^|\s+)(?:([^"= ]+)(?:=([^" ]+|"[^="]*"))?)')
+    def loadFont(self, f):
+        font = defaultdict(list)
+        def parse(_):
+            if _[0] == _[-1] == '"':
+                return _.strip('"')
+            if ',' in _:
+                return [ int(x) for x in _.split(",") ]
+            return int(_)
+        for line in f:
+            tp, *vals = self.PAT.findall(line.strip())
+            vals = { k: parse(v) for k,v in vals }
+            font[tp[0]].append(vals)
+        return font
+    def __init__(self, fontpath) -> None:
+        self.fontpath = fontpath
+        with open(fontpath) as f:
+            self._font = self.loadFont(f)
+        self.chars = { chr(_['id']): _ for _ in self._font.get('char', []) }
+    def png(self):
+        from PIL import Image
+
+        img_uri = self.page[0]['file']
+        with open(self.fontpath.parent / img_uri, mode='rb') as img_f:
+            # img = img_f.read()
+            data = np.array(Image.open(img_f))
+        data[:,:,3] = data[:,:,3].astype('uint16') * 255 / data[:,:,3].max()
+        img = Image.fromarray(data)
+        buffer = BytesIO()
+        img.save(buffer, format='png', compress_level=0)
+        return buffer.getvalue()
+
+    @property
+    def common(self):
+        return self._font['common'][0]
+    @property
+    def page(self):
+        return self._font['page']
+    def layoutText(self, text, min_xoffset=0):
+        # https://www.angelcode.com/products/bmfont/doc/render_text.html
+        layout = []
+        left = 0
+        for ch in text:
+            if ch not in self.chars:
+                ch = ' '
+            glyph = self.chars[ch].copy()
+            glyph['left'] = left
+            if min_xoffset is not None and glyph['xoffset'] < min_xoffset:
+                glyph['xadvance'] += min_xoffset - glyph['xoffset']
+                glyph['xoffset'] = min_xoffset
+            layout.append(glyph)
+            left += glyph['xadvance']
+        return layout
 
 def create_surface(surface):
     n, m = [int(_) for _ in surface['shape']]

@@ -1,6 +1,7 @@
 import base64
 import math
 import struct
+from pathlib import Path
 
 import numpy as np
 
@@ -83,6 +84,93 @@ class GLTF(object):
         buffer_dict["byteLength"] = len(buffer)
 
         return acc_id
+
+    def load_font(self, f, board_acc_id):
+        font = common.BitmapFont(f)
+        fc = font.common
+
+        img_uri = "data:image/png;base64," + base64.b64encode(font.png()).decode("ASCII")
+        src_id = self.add("images", {
+            "uri": img_uri
+        })
+        texture_id = self.add("textures", {
+            "sampler": self.add('samplers', {
+                "magFilter": GLTF_MAGFILTER_LINEAR,
+                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+            }),
+            "source": src_id
+        })
+        self.d.update({
+            "extensionsUsed": [
+                "KHR_texture_transform"
+            ],
+            "extensionsRequired": [
+                "KHR_texture_transform"
+            ],
+        })
+        glyph_mesh_id = {}
+        for glyph in font.chars.values():
+            ch = chr(glyph['id'])
+            mat_id = self.add('materials', {
+                "alphaMode": "MASK",
+                "alphaCutoff": 0.5,
+                "doubleSided": True,
+                "pbrMetallicRoughness" : {
+                    "baseColorTexture" : {
+                            "index" : 0,
+                            "extensions": {
+                            "KHR_texture_transform": {
+                                "offset": [glyph['x'] / fc['scaleW'], glyph['y'] / fc['scaleH']],
+                                # "rotation": 0,
+                                "scale": [glyph['width'] / fc['scaleW'], glyph['height'] / fc['scaleW']]
+                            }
+                        }
+                    },
+                    "baseColorFactor": [1.0,1.0,1.0, 1.0],
+                    "metallicFactor" : 0.0,
+                    "roughnessFactor" : 0.0,
+                }
+            })
+            glyph_mesh_id[ch] = self.add('meshes',
+                {
+                    "primitives": [{
+                        "attributes": {
+                            "POSITION": board_acc_id[1],
+                            "NORMAL": board_acc_id[2],
+                            "TEXCOORD_0": board_acc_id[3],
+                        },
+                        "indices": board_acc_id[0],
+                        "material": mat_id
+                    }]
+                })
+        def drawText(text, valign=0.25):
+            layout = font.layoutText(text)
+            glyphs = []
+            for glyph in layout:
+                ch = chr(glyph['id'])
+                glyphs.append(self.add('nodes', {
+                "name" : f"glyph_{ch}",
+                "mesh" : glyph_mesh_id[ch],
+                "translation": [
+                    (glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
+                    (font.common['base'] * (1-valign) - glyph['yoffset'] - glyph['height']) / font.common['lineHeight'] ,#/ fc['scaleH'],
+                    0.0],
+                "scale": [
+                    glyph['width'] / font.common['lineHeight'],
+                    glyph['height'] / font.common['lineHeight'],
+                    1.0
+                ],
+                }))
+            return glyphs
+            return self.add('nodes', {
+                "name" : f"text_{text}",
+                "children" : glyphs,
+                # "translation": [glyph['xoffset'] / fc['scaleW'], glyph['yoffset'] / fc['scaleH'], 0.0],
+                # "scale": scale,
+                })
+        return drawText
 
 def data2gltf(data, subdiv=16):
 
@@ -173,7 +261,7 @@ def data2gltf(data, subdiv=16):
     axes_node_id = gltf.add('nodes', axes_node)
     else:
         axes_node_id = None
-
+    drawText = gltf.load_font(Path(__file__).parent / 'font/DejaVu-sdf.fnt', board_acc_id)
     animation = False
     if 'animation' in data:
         animation = data['animation']
@@ -324,42 +412,44 @@ def data2gltf(data, subdiv=16):
         col = i % COLORS_LEN
         scale = [0.01] * 3
         x, y, z = 0,0,1-i*scale[1]*10
-        h, w, img = text2png(text, color=COLORS[col])
-        img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-        src_id = gltf.add("images", {
-            "uri": img_uri
-        })
-        texture_id = gltf.add("textures", {
-            "sampler": sampler_id,
-            "source": src_id
-        })
-        mat_id = gltf.add('materials', {
-                "pbrMetallicRoughness": {
-                    "baseColorTexture": {"index": texture_id},
-                    "metallicFactor": 0.5,
-                    "roughnessFactor": 0.1,
-                },
-                "alphaMode": "BLEND",
-                "doubleSided": True,
-            })
-        mesh_id = gltf.add('meshes',
-            {
-                "primitives": [{
-                    "attributes": {
-                        "POSITION": board_acc_id[1],
-                        "NORMAL": board_acc_id[2],
-                        "TEXCOORD_0": board_acc_id[3],
-                    },
-                    "indices": board_acc_id[0],
-                    "material": mat_id
-                }]
-            })
-        scale = [scale[0] * h, scale[1] * w, scale[2] ]
+        # h, w, img = text2png(text, color=COLORS[col])
+        # img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
+        # src_id = gltf.add("images", {
+        #     "uri": img_uri
+        # })
+        # texture_id = gltf.add("textures", {
+        #     "sampler": sampler_id,
+        #     "source": src_id
+        # })
+        # mat_id = gltf.add('materials', {
+        #         "pbrMetallicRoughness": {
+        #             "baseColorTexture": {"index": texture_id},
+        #             "metallicFactor": 0.5,
+        #             "roughnessFactor": 0.1,
+        #         },
+        #         "alphaMode": "BLEND",
+        #         "doubleSided": True,
+        #     })
+        # mesh_id = gltf.add('meshes',
+        #     {
+        #         "primitives": [{
+        #             "attributes": {
+        #                 "POSITION": board_acc_id[1],
+        #                 "NORMAL": board_acc_id[2],
+        #                 "TEXCOORD_0": board_acc_id[3],
+        #             },
+        #             "indices": board_acc_id[0],
+        #             "material": mat_id
+        #         }]
+        #     })
+        # scale = [scale[0] * h, scale[1] * w, scale[2] ]
+        char_node_ids = drawText(text)
         legend_node['children'].append(gltf.add('nodes', {
           "name" : f"text_{text}",
-          "mesh" : mesh_id,
+        #   "mesh" : mesh_id,
+          "children": char_node_ids,
           "translation": [x,z,-y],
-          "scale": scale,
+          "scale": [0.08] * 3,
         }))
         # the sphere
         legend_node['children'].append(gltf.add('nodes', {
@@ -378,41 +468,44 @@ def data2gltf(data, subdiv=16):
             rotation[1 if i==0 else 3] = math.sqrt(2)/2
         else:
             rotation[1] = -1
-        h, w, img = text2png(text, color=COLORS[0])
-        img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-        src_id = gltf.add("images", {
-            "uri": img_uri
-        })
-        texture_id = gltf.add("textures", {
-            "sampler": sampler_id,
-            "source": src_id
-        })
-        mat_id = gltf.add('materials', {
-                "pbrMetallicRoughness": {
-                    "baseColorTexture": {"index": texture_id},
-                    "metallicFactor": 0.5,
-                    "roughnessFactor": 0.1,
-                },
-                "alphaMode": "BLEND",
-                "doubleSided": True,
-            })
-        mesh_id = gltf.add('meshes',
-            {
-                "primitives": [{
-                    "attributes": {
-                        "POSITION": board_acc_id[1],
-                        "NORMAL": board_acc_id[2],
-                        "TEXCOORD_0": board_acc_id[3],
-                    },
-                    "indices": board_acc_id[0],
-                    "material": mat_id
-                }]
-            })
-        scale = [scale[0] * h, scale[1] * w, scale[2] ]
+        # h, w, img = text2png(text, color=COLORS[0])
+        # img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
+        # src_id = gltf.add("images", {
+        #     "uri": img_uri
+        # })
+        # texture_id = gltf.add("textures", {
+        #     "sampler": sampler_id,
+        #     "source": src_id
+        # })
+        # mat_id = gltf.add('materials', {
+        #         "pbrMetallicRoughness": {
+        #             "baseColorTexture": {"index": texture_id},
+        #             "metallicFactor": 0.5,
+        #             "roughnessFactor": 0.1,
+        #         },
+        #         "alphaMode": "BLEND",
+        #         "doubleSided": True,
+        #     })
+        # mesh_id = gltf.add('meshes',
+        #     {
+        #         "primitives": [{
+        #             "attributes": {
+        #                 "POSITION": board_acc_id[1],
+        #                 "NORMAL": board_acc_id[2],
+        #                 "TEXCOORD_0": board_acc_id[3],
+        #             },
+        #             "indices": board_acc_id[0],
+        #             "material": mat_id
+        #         }]
+        #     })
+        # scale = [scale[0] * h, scale[1] * w, scale[2] ]
+        char_node_ids = drawText(text)
         axes_node['children'].append(gltf.add('nodes', {
-          "mesh" : mesh_id,
+          "name" : f"text_{text}",
+          "children": char_node_ids,
+        #   "mesh" : mesh_id,
           "translation": translation,
-          "scale": scale,
+          "scale": [0.08] * 3,
         }))
         axes_node['children'].append(gltf.add('nodes', {
           "name" : f"arrow_{text}",
