@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script> -->
+    <!-- <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> -->
+    <!-- <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script> -->
+    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <!-- <script src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v4.1.2/dist/aframe-extras.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/aframe-orbit-controls@1.3.0/dist/aframe-orbit-controls.min.js"></script> -->
+    <script src="https://unpkg.com/super-hands@^3.0.2/dist/super-hands.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
+    <!-- <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r134/examples/js/deprecated/Geometry.js"></script> -->
+    <script src="https://unpkg.com/aframe-physics-extras/dist/aframe-physics-extras.min.js"></script>
+    <!-- <script src="https://rawgit.com/feiss/aframe-environment-component/master/dist/aframe-environment-component.min.js"></script> -->
+    <script src="https://unpkg.com/aframe-environment-component@1.1.0/dist/aframe-environment-component.min.js"></script>
+    <!-- <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script> -->
+    <script>
+      //color randomizer
+      AFRAME.registerComponent('color-randomizer', {
+        play: function () {
+          this.el.addEventListener('drag-drop', function (evt) {
+            evt.detail.dropped.setAttribute('material', 'color',
+              '#'+(Math.random()*0xFFFFFF<<0).toString(16))
+            // color randomizer credit: http://stackoverflow.com/questions/1484506/random-color-generator-in-javascript#comment6801353_5365036
+          })
+        }
+      })
+      // turn controller's physics presence on only while button held down
+      AFRAME.registerComponent('phase-shift', {
+        init: function () {
+          var el = this.el
+          el.addEventListener('gripdown', function () {
+            el.setAttribute('collision-filter', {collisionForces: true})
+          })
+          el.addEventListener('gripup', function () {
+            el.setAttribute('collision-filter', {collisionForces: false})
+          })
+        }
+      })
+    </script>
+    <style>.asdfasdf { color: #bd94ff }</style>
+  </head>
+  <body onload="myOnLoad(event)">
+    <a-scene background="color: #ECECEC" stats
+    physics="gravity: 0"
+    >
+        <a-assets>
+            <a-asset-item id="iris" src="data.gltf"></a-asset-item>
+        </a-assets>
+        <!-- <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane> -->
+        <!-- groundColor2: #445; grid2: cross -->
+        <a-entity environment="preset: japan; groundColor: #bd94ff"></a-entity>
+        <!-- <a-entity environment="preset: osiris; lightPosition2: 0 0.02 -0.46"></a-entity> -->
+        <!-- lightPosition2:  0.46 2.65 0.97; -->
+        <!-- <a-entity environment="preset: osiris; lightPosition: 0 2.17 -0.75"></a-entity> -->
+        
+        <a-entity>
+            <a-camera id="camera"
+            ></a-camera>
+            <!-- orbit-controls="target: 0 1 -.8; minDistance: 0.5; maxDistance: 180; initialPosition: 0 1.6 0" -->
+            <!-- super-hands="grabStartButtons:" -->
+            <!-- <a-entity laser-controls="hand: left"></a-entity>
+            <a-entity laser-controls="hand: right"></a-entity> -->
+
+            <!-- <a-entity static-body="shape: sphere; sphereRadius: 0.02" sphere-collider="objects: a-box, #irisel" super-hands laser-controls="hand: left" raycaster="objects: a-box, #iris"></a-entity>
+            <a-entity static-body="shape: sphere; sphereRadius: 0.02" sphere-collider="objects: a-box, #irisel" super-hands laser-controls="hand: right" raycaster="objects: a-box, #iris"></a-entity> -->
+            <a-entity static-body="shape: sphere; sphereRadius: 0.02"
+              sphere-collider="objects: a-box, #irisel"
+              super-hands hand-controls="hand: left"
+              physics-collider phase-shift
+              collision-filter="collisionForces: false"
+              super-hands="colliderEvent: collisions;
+                          colliderEventProperty: els;
+                          colliderEndEvent: collisions;
+                          colliderEndEventProperty: clearedEls;"
+            ></a-entity>
+            <a-entity
+              hand-controls="hand: right"
+              physics-collider phase-shift
+              collision-filter="collisionForces: false"
+              static-body="shape: sphere; sphereRadius: 0.02"
+              super-hands="colliderEvent: collisions;
+                          colliderEventProperty: els;
+                          colliderEndEvent: collisions;
+                          colliderEndEventProperty: clearedEls;"
+            ></a-entity>
+        </a-entity>
+        <!-- hover & drag-drop won't have any obvious effect without some additional event handlers or components. See the examples page for more
+            static-body
+              sphere-collider="objects: a-box, #irisel, #stand"
+        -->
+        <a-entity grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+        position="0 1.1 -1.1" stretchable2>
+          <a-box color="lightgray" scale="0.5 0.5 0.5" id="stand"
+              position="0 0.85 -1.1" position2="0 -.25 0"
+              dynamic-body="shape: box"
+              collision-filter="collisionForces: false"
+              grabbable
+              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+              hoverable
+              event-set__hoveron="_event: hover-start; material.opacity: 0.7; transparent: true"
+              event-set__hoveroff="_event: hover-end; material.opacity: 1; transparent: false"
+              event-set__grabon="_event:  grab-start; material.color: green"
+              event-set__graboff="_event: grab-end; material.color: lightgray"
+            ></a-box>
+            <a-entity gltf-model="#iris" position="0 0.5 0" scale="5 5 5" id="irisel"
+              title="Iris" static-body
+              dynamic-body="shape: box"
+              collision-filter="collisionForces: false"
+              stretchable
+              grabbable
+              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+              ></a-entity>
+              <!-- animation-mixer -->
+        </a-entity>
+        <!-- <a-box hoverable grabbable stretchable draggable dropppable color="blue" position="0 1 -1" scale="0.3 0.3 0.3"></a-box> -->
+        <!-- <a-sky color="#ECECEC"></a-sky> -->
+        <!-- <a-entity cursor="rayOrigin: mouse"></a-entity> -->
+    </a-scene>
+  </body>
+  <script>
+    // let scene = document.getElementsByName
+    var playerEl = document.querySelector('#stand');
+    playerEl.addEventListener('collide', function (e) {
+      // console.log('stand has collided with body #' + e.detail.id);
+      // console.log(e.detail.body);
+
+      // e.detail.target.el;  // Original entity (playerEl).
+      // e.detail.body.el;    // Other entity, which playerEl touched.
+      // e.detail.contact;    // Stats about the collision (CANNON.ContactEquation).
+      // e.detail.contact.ni; // Normal (direction) of the collision (CANNON.Vec3).
+    });
+
+
+    var queryParams = null;
+
+    function getQueryParams(){
+      if(queryParams == null){
+        queryParams = {};
+        if(location.search.length==0){
+          return queryParams;
+        }
+        var vars = location.search.substring(1).split("&");
+        for(var i=0; i<vars.length; i++){
+          var index = vars[i].indexOf("=")
+          if(index > 0){
+            var name = vars[i].substring(0,index).split("+").join(" ");
+            var value = vars[i].substring(index+1).split("+").join(" ");
+            queryParams[decodeURIComponent(name)] = decodeURIComponent(value);
+          }
+        }
+        log(queryParams)
+      }
+      return queryParams;
+    }
+    function findServer(){
+      var ret = getQueryParams().server;
+      if(ret != null)
+        return ret;
+      // if we got here from a server, use it:
+      return new URL("index.html", location).href;
+    }
+    function findWsUrl(){
+      var ret = getQueryParams().wsUrl;
+      if(ret != null)
+        return ret;
+      ret = new URL("ws", location);
+      ret.protocol = (ret.protocol == "https:") ? "wss:" : "ws:";
+      console.log("found WsUrl: "+ret)
+      return ret;
+    }
+
+    var connected = false;
+    var wsUrl = findWsUrl();
+    var websocket = null;
+
+    function openTheWebsocket(wsUrl){
+      if(wsUrl == null)
+        return;
+      try{
+        websocket = new WebSocket(wsUrl);
+
+        websocket.onopen = function() {
+          sendMessage({'controller': true})
+          updateFocus();
+        }
+        websocket.onmessage = function(msg) {
+          if(msg.data.length == 0)
+            return;
+          log("Got message: "+msg.data);
+          var body = JSON.parse(msg.data)
+          if('status' in body){
+            state = body['status']
+            for(key in state){
+              el = document.getElementById("status_"+key)
+              if(el)
+                el.innerHTML = state[key];
+            }
+          }
+          if("key" in body){
+            handle_char(body["key"]);
+          }
+          //websocket.send("thanks");
+        }
+        websocket.onclose = function(event){
+          log('websocket closed.')
+        }
+
+        connected = true;
+      }catch(err){
+        log(err);
+      }
+    }
+    var revision = 0;
+    function handle_char(msg){
+      if(msg == "r"){
+        // we need to close the websocket, else on Chrome (Android/Linux/macOS)
+        // this somehow backfires and httpuv in the R-session crashes with segfault
+        if(websocket != null){
+          closeWebSocket();
+          location.reload(true);
+        }else{
+          location.reload(true);
+        }
+        return;
+      }else if(msg == "reload_data" || msg =="x" ){
+        m = document.getElementById("irisel")
+        m.setAttribute("gltf-model", "data.gltf?revision=" + (revision++))
+      //  refreshData();
+      // }else if(msg === "c"){
+      //   websocket.close();
+      //   return;
+      }else if(msg === "space"){
+        speed = (speed==0) ? 1 : 0;
+        log("New speed: "+speed);
+/*      }else if(msg === "f"){
+        toggleFullscreen();
+      }else if(msg === "c"){
+        if(connected){
+          device_controls.disconnect();
+        }else{
+          device_controls.connect();
+        }
+        connected = !connected;*/
+      }else{
+        var ALPHA_ROT = 0.1;
+        if(msg === "a"){
+          go(-1, 0, 0);
+        }else if(msg === "d"){
+          go(1, 0, 0);
+        }else if(msg === "s"){
+          go(0, 0, 1);
+        }else if(msg === "w"){
+          go(0, 0, -1);
+        }else if(msg === "q"){
+          go(0, 1, 0);
+        }else if(msg === "e"){
+          go(0, -1, 0);
+        }else if(msg === "Left"){
+          camera.rotateY(ALPHA_ROT);
+        }else if(msg === "Right"){
+          camera.rotateY(-ALPHA_ROT);
+        }else if(msg === "Up"){
+          camera.rotateX(ALPHA_ROT);
+        }else if(msg === "Down"){
+          camera.rotateX(-ALPHA_ROT);
+        }
+      }
+    }
+
+    function getKeyChar(key){
+      var keychar = String.fromCharCode(key).toLowerCase();
+      if(key==32){
+        keychar = "space";
+      }else if(key==37){
+        keychar = "Left";
+      }else if(key==38){
+        keychar = "Up";
+      }else if(key==39){
+        keychar = "Right";
+      }else if(key==40){
+        keychar = "Down";
+      }
+      console.log(keychar)
+      return keychar
+    }
+
+    function updateFocus(event){
+    //   log("Update Focus upon: " + event);
+    //   focusWidget = document.getElementById("focusWidget");
+    //   keyboard = document.getElementById("keyboard");
+      if(document.hasFocus()){
+        // focusWidget.innerHTML = "has focus";
+        // keyboard.className = "focused";
+        // document.getElementById("focusBox").style.display = 'none'
+        sendMessage({'focus': true});
+      }else{
+        // focusWidget.innerHTML = "has not focus";
+        // keyboard.className = "blured";
+        // document.getElementById("focusBox").style.display = 'block'
+        sendMessage({'focus': false});
+      }
+      // if(websocket==null || websocket.readyState != WebSocket.OPEN)
+      //   keyboard.className = "disconnected";
+    //   log(keyboard.className)
+    }
+
+    function sendMessage(message){
+      if(typeof(message) === 'string' || message instanceof String){
+        message = { "message": message }
+      }
+      message = JSON.stringify(message)
+      if(websocket != null && websocket.readyState == WebSocket.OPEN){
+        websocket.send(message);
+        log('sent message: ' + message);
+      }else{
+        log('no websocket - would have sent message: ' + message);
+      }
+    }
+
+    function closeWebSocket(){
+      if(websocket != null){
+        // sendMessage("byebye")
+        websocket.close();
+        websocket = null;
+      }
+    }
+
+    function myOnLoad(event){
+      openTheWebsocket(wsUrl);
+
+      updateFocus(event);
+    }
+
+    function log(msg){
+      console.log(msg)
+      // debugWidget = document.getElementById("debug");
+      // debugWidget.innerHTML += msg+"\n";
+    }
+
+  </script>
+</html>

@@ -3,6 +3,7 @@ from pathlib import Path
 import logging
 
 import click
+import ssl
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -212,7 +213,7 @@ _mappings = [
     (r"/data.obj", OBJHandler),
     (r"/ws", PlotARWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
-    # (r"/model.html(.*)", tornado.web.StaticFileHandler, {"path": html('model.html')}),
+    (r"/vr.html(.*)", tornado.web.StaticFileHandler, {"path": html('vr.html')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
     (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": html('js')}),
     (r"/textures/(.*)", tornado.web.StaticFileHandler, {"path": html('textures')})
@@ -224,19 +225,28 @@ _mappings = [
 # @click.option('-h', '--host', default=, help="format: gltf usdz usda obj. Default is to take extension of out or else gltf")
 @click.option('-d', '--data', default=None, type=click.File(), help="Data.json file to open initially")
 @click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
-def start_server(port=2908, data=None, debug=False):
-    _start_server(port=port, data=data, debug=debug)
+@click.option('--ssl-prefix', default=None, type=click.Path(), help="If specified a HTTPS server is started and this path is used with extensions .crt and .key to get certificate and private key")
+def start_server(port=2908, data=None, debug=False, ssl_prefix=None):
+    _start_server(port=port, data=data, debug=debug, ssl_prefix=ssl_prefix)
 
 
-def _start_server(port=2908, data=None, debug=False):
+def _start_server(port=2908, data=None, debug=False, ssl_prefix=None):
     print(f"Welcome to PlotAR server on port {port}")
     global _PORT, _app, DATA
     if data:
         global DATA
         DATA = json.load(data)
-    _app = tornado.web.Application(_mappings, debug=debug)
+
+    ssl_ctx = None
+    if ssl_prefix is not None:
+        ssl_prefix = Path(ssl_prefix)
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_ctx.load_cert_chain(ssl_prefix.with_suffix('.crt'), ssl_prefix.with_suffix('.key'))
+
+    _app = tornado.web.Application(_mappings, debug=debug, ssl_options=ssl_ctx)
     _PORT = port
-    _app.listen(port)
+    http_server = tornado.httpserver.HTTPServer(_app, ssl_options=ssl_ctx)
+    http_server.listen(port)
     tornado.ioloop.IOLoop.instance().start()
     print("hello")
 
