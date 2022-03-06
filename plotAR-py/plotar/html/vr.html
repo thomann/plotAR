@@ -1,46 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <!-- <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script> -->
-    <!-- <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> -->
-    <!-- <script src="https://aframe.io/releases/1.1.0/aframe.min.js"></script> -->
-    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
-    <!-- <script src="https://cdn.rawgit.com/donmccurdy/aframe-extras/v4.1.2/dist/aframe-extras.min.js"></script> -->
-    <!-- <script src="https://unpkg.com/aframe-orbit-controls@1.3.0/dist/aframe-orbit-controls.min.js"></script> -->
-    <script src="https://unpkg.com/super-hands@^3.0.2/dist/super-hands.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.js"></script>
-    <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
-    <!-- <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script> -->
-    <!-- <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r134/examples/js/deprecated/Geometry.js"></script> -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/super-hands@^3.0.3/dist/super-hands.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@59100ac/dist/aframe-physics-system.js"></script>
     <script src="https://unpkg.com/aframe-physics-extras/dist/aframe-physics-extras.min.js"></script>
-    <!-- <script src="https://rawgit.com/feiss/aframe-environment-component/master/dist/aframe-environment-component.min.js"></script> -->
-    <script src="https://unpkg.com/aframe-environment-component@1.1.0/dist/aframe-environment-component.min.js"></script>
-    <!-- <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script> -->
-    <script>
-      //color randomizer
-      AFRAME.registerComponent('color-randomizer', {
-        play: function () {
-          this.el.addEventListener('drag-drop', function (evt) {
-            evt.detail.dropped.setAttribute('material', 'color',
-              '#'+(Math.random()*0xFFFFFF<<0).toString(16))
-            // color randomizer credit: http://stackoverflow.com/questions/1484506/random-color-generator-in-javascript#comment6801353_5365036
-          })
-        }
-      })
-      // turn controller's physics presence on only while button held down
-      AFRAME.registerComponent('phase-shift', {
-        init: function () {
-          var el = this.el
-          el.addEventListener('gripdown', function () {
-            el.setAttribute('collision-filter', {collisionForces: true})
-          })
-          el.addEventListener('gripup', function () {
-            el.setAttribute('collision-filter', {collisionForces: false})
-          })
-        }
-      })
-    </script>
-    <style>.asdfasdf { color: #bd94ff }</style>
+    <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
   </head>
   <body onload="myOnLoad(event)">
     <a-scene background="color: #ECECEC" stats
@@ -48,54 +15,40 @@
     >
         <a-assets>
             <a-asset-item id="iris" src="data.gltf"></a-asset-item>
-        </a-assets>
-        <!-- <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane> -->
-        <!-- groundColor2: #445; grid2: cross -->
-        <a-entity environment="preset: japan; groundColor: #bd94ff"></a-entity>
-        <!-- <a-entity environment="preset: osiris; lightPosition2: 0 0.02 -0.46"></a-entity> -->
-        <!-- lightPosition2:  0.46 2.65 0.97; -->
-        <!-- <a-entity environment="preset: osiris; lightPosition: 0 2.17 -0.75"></a-entity> -->
-        
-        <a-entity>
-            <a-camera id="camera"
-            ></a-camera>
-            <!-- orbit-controls="target: 0 1 -.8; minDistance: 0.5; maxDistance: 180; initialPosition: 0 1.6 0" -->
-            <!-- super-hands="grabStartButtons:" -->
-            <!-- <a-entity laser-controls="hand: left"></a-entity>
-            <a-entity laser-controls="hand: right"></a-entity> -->
-
-            <!-- <a-entity static-body="shape: sphere; sphereRadius: 0.02" sphere-collider="objects: a-box, #irisel" super-hands laser-controls="hand: left" raycaster="objects: a-box, #iris"></a-entity>
-            <a-entity static-body="shape: sphere; sphereRadius: 0.02" sphere-collider="objects: a-box, #irisel" super-hands laser-controls="hand: right" raycaster="objects: a-box, #iris"></a-entity> -->
-            <a-entity static-body="shape: sphere; sphereRadius: 0.02"
-              sphere-collider="objects: a-box, #irisel"
-              super-hands hand-controls="hand: left"
-              physics-collider phase-shift
-              collision-filter="collisionForces: false"
-              super-hands="colliderEvent: collisions;
-                          colliderEventProperty: els;
-                          colliderEndEvent: collisions;
-                          colliderEndEventProperty: clearedEls;"
-            ></a-entity>
-            <a-entity
-              hand-controls="hand: right"
-              physics-collider phase-shift
+            <a-mixin id="hand-controller"
+              physics-collider="ignoreSleep: true"
               collision-filter="collisionForces: false"
               static-body="shape: sphere; sphereRadius: 0.02"
               super-hands="colliderEvent: collisions;
                           colliderEventProperty: els;
                           colliderEndEvent: collisions;
-                          colliderEndEventProperty: clearedEls;"
-            ></a-entity>
+                          colliderEndEventProperty: clearedEls;
+                          grabStartButtons2: ['gripdown', 'triggerdown', 'thumbstickdown', 'pinchstarted'];
+                          grabEndButtons2: ['gripup', 'triggerup', 'thumbstickup', 'pinchended'];"
+            ></a-mixin>
+            <a-mixin id="grabbable-component"
+              dynamic-body="shape: box; mass: 10000"
+              collision-filter="collisionForces: false"
+              sleepy
+              stretchable
+              grabbable
+              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+            ></a-mixin>
+
+        </a-assets>
+        <a-entity environment="preset: japan; groundColor: #f0e9fb" hide-on-enter-ar id="environment"></a-entity>
+        
+        <a-entity>
+            <a-camera id="camera"
+            ></a-camera>
+            <a-entity hand-controls="hand: left" mixin="hand-controller"></a-entity>
+            <a-entity hand-controls="hand: right" mixin="hand-controller" ></a-entity>
         </a-entity>
-        <!-- hover & drag-drop won't have any obvious effect without some additional event handlers or components. See the examples page for more
-            static-body
-              sphere-collider="objects: a-box, #irisel, #stand"
-        -->
-        <a-entity grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
-        position="0 1.1 -1.1" stretchable2>
-          <a-box color="lightgray" scale="0.5 0.5 0.5" id="stand"
+        <a-entity id="models_group" position="0 1.1 -1.1">
+          <!-- <a-box color="lightgray" scale="0.5 0.5 0.5" id="stand"
               position="0 0.85 -1.1" position2="0 -.25 0"
               dynamic-body="shape: box"
+              visible="false"
               collision-filter="collisionForces: false"
               grabbable
               grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
@@ -104,25 +57,18 @@
               event-set__hoveroff="_event: hover-end; material.opacity: 1; transparent: false"
               event-set__grabon="_event:  grab-start; material.color: green"
               event-set__graboff="_event: grab-end; material.color: lightgray"
-            ></a-box>
-            <a-entity gltf-model="#iris" position="0 0.5 0" scale="5 5 5" id="irisel"
-              title="Iris" static-body
-              dynamic-body="shape: box"
-              collision-filter="collisionForces: false"
-              stretchable
-              grabbable
-              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+            ></a-box> -->
+            <a-entity gltf-model="#plot_gltf" position="0 0.5 0" scale="5 5 5" id="model"
+              title="Plot"
+              mixin="grabbable-component"
               ></a-entity>
               <!-- animation-mixer -->
         </a-entity>
-        <!-- <a-box hoverable grabbable stretchable draggable dropppable color="blue" position="0 1 -1" scale="0.3 0.3 0.3"></a-box> -->
-        <!-- <a-sky color="#ECECEC"></a-sky> -->
-        <!-- <a-entity cursor="rayOrigin: mouse"></a-entity> -->
     </a-scene>
   </body>
   <script>
     // let scene = document.getElementsByName
-    var playerEl = document.querySelector('#stand');
+    var playerEl = document.querySelector('#model');
     playerEl.addEventListener('collide', function (e) {
       // console.log('stand has collided with body #' + e.detail.id);
       // console.log(e.detail.body);
@@ -226,7 +172,7 @@
         }
         return;
       }else if(msg == "reload_data" || msg =="x" ){
-        m = document.getElementById("irisel")
+        m = document.getElementById("model")
         m.setAttribute("gltf-model", "data.gltf?revision=" + (revision++))
       //  refreshData();
       // }else if(msg === "c"){
