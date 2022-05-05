@@ -173,12 +173,12 @@ def create_surface(surface):
     return indices, normals, vertices
 
 
-def create_line(data_list, line, radius=0.01, segments=8):
+def create_line(data_list, line, radius=0.001, segments=8):
     indices, normals, vertices, a, b = [], [], [], None, None
     n = len(data_list)
 
     def flip_yz(x):
-        x = np.array(x)
+        x = np.array(x, float)
         x = x[..., (0, 2, 1)]
         x[..., 2] *= -1
         return x
@@ -187,10 +187,39 @@ def create_line(data_list, line, radius=0.01, segments=8):
         if _ == 0:
             return x
         return x / _
+    X,Y,Z = np.eye(3)
+    def get_perp_base(x):
+        if all(x[1:]==0):
+            return Y,Z
+        v1 = normalize(np.cross(x,X))
+        v2 = normalize(np.cross(x,v1))
+        return v1, v2
+    def get_corner_base(x,y):
+        if all(x==0):
+            return get_perp_base(y)
+        if all(y==0):
+            return get_perp_base(x)
+        if all(x==y):
+            return get_perp_base(x)
+        if all(x==-y):
+            return get_perp_base(y)
+        ## calculate basis of plane in angle between vectors a-b and c-b
+        v1 = normalize(normalize(x) + normalize(y))
+        v2 = normalize(np.cross(x, y))
+        return v1, v2
     # print(n,len(np.linspace(0, 2*math.pi, segments)), np.linspace(0,10,segments))
     def add_disk(x, v1, v2):
         base = len(vertices)//3
-        for alpha in np.linspace(0, 2*math.pi, segments+1)[:-1]:
+        if base==0:
+            phase = 0
+            proj=(0,0)
+        else:
+            ## project previous alpha=0 point on this plane
+            _ = vertices[-segments]-x
+            proj = np.dot(_,v2),np.dot(_,v1)
+            phase = np.arctan2(*proj)
+        for alpha in np.linspace(0, 2*math.pi, segments+1)[:-1] + phase:
+            # print('', normalize(proj), 'vs\n',np.array((np.cos(alpha), np.sin(alpha))) )
             _ = np.cos(alpha) * v1 + np.sin(alpha) * v2
             vertices.extend( x + radius*_ )
             # here we assume that v1 and v2 are normalized!
@@ -205,18 +234,17 @@ def create_line(data_list, line, radius=0.01, segments=8):
                 ])
     # n = 5
     for c in [flip_yz(data_list[_][:3]) for _ in line.get('points', []) if _ < n]:
+        if b is not None and all(b == c):
+            continue
         if a is not None and b is not None:
-            ## calculate basis of plane in angle between vectors a-b and c-b
-            v1 = normalize(normalize(a-b) + normalize(c-b))
-            v2 = normalize(np.cross(a-b, c-b))
+            v1, v2 = get_corner_base(a-b,c-b)
             if len(vertices) == 0:
-                # let's quickly cheat here and use the same vectors...
-                add_disk(a, v1, v2)
+                add_disk(a, *get_perp_base(b-a))
             add_disk(b, v1, v2)
         a = b
         b = c
     # let's quickly cheat here and use the same vectors...
-    add_disk(c, v1, v2)
+    add_disk(c, *get_perp_base(c-b))
     return indices, vertices, normals
 
 def line_segments(data_list, line, n, flip_vector=False):
