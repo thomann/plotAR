@@ -23,8 +23,11 @@
                           colliderEventProperty: els;
                           colliderEndEvent: collisions;
                           colliderEndEventProperty: clearedEls;
-                          grabStartButtons2: ['gripdown', 'triggerdown', 'thumbstickdown', 'pinchstarted'];
-                          grabEndButtons2: ['gripup', 'triggerup', 'thumbstickup', 'pinchended'];"
+                          grabStartButtons: gripdown;
+                          grabEndButtons: gripup;
+                          stretchStartButtons: gripdown;
+                          stretchEndButtons: gripup;
+                          "
             ></a-mixin>
             <a-mixin id="grabbable-component"
               dynamic-body="shape: box; mass: 10000"

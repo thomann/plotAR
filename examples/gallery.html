@@ -27,10 +27,15 @@
                           colliderEventProperty: els;
                           colliderEndEvent: collisions;
                           colliderEndEventProperty: clearedEls;
-                          grabStartButtons2: ['gripdown', 'triggerdown', 'thumbstickdown', 'pinchstarted'];
-                          grabEndButtons2: ['gripup', 'triggerup', 'thumbstickup', 'pinchended'];"
-            ></a-mixin>
-            <a-mixin id="grabbable-component"
+                          grabStartButtons: gripdown;
+                          grabEndButtons: gripup;
+                          stretchStartButtons: gripdown;
+                          stretchEndButtons: gripup;
+                          "
+              ></a-mixin>
+                          <!-- grabStartButtons: ['gripdown', 'triggerdown', 'thumbstickdown', 'pinchstarted'];
+                          grabEndButtons: ['gripup', 'triggerup', 'thumbstickup', 'pinchended'];" -->
+              <a-mixin id="grabbable-component"
               dynamic-body="shape: box; mass: 10000"
               collision-filter="collisionForces: false"
               sleepy
@@ -48,14 +53,35 @@
             <a-entity hand-controls="hand: left" mixin="hand-controller"></a-entity>
             <a-entity hand-controls="hand: right" mixin="hand-controller" ></a-entity>
         </a-entity>
-        <a-entity id="models_group" position="0 0.5 -1.1">
-            <a-entity gltf-model="#iris" position="0 0.5 0" scale="5 5 5" title="Plot" mixin="grabbable-component"></a-entity>
-            <a-entity gltf-model="#CH" position="-1 0.5 0" scale=".5 .5 .5" title="Plot" mixin="grabbable-component"></a-entity>
+        <a-entity id="models_group" position="0 0.5 -0.8">
+            <a-entity gltf-model="#CH" position="-0.5 0.5 0.2" scale=".25 .25 .25" title="CH Surface" mixin="grabbable-component"></a-entity>
+            <a-entity gltf-model="#iris" position="0 0.5 0" scale="2 2 2" title="Iris Plot" mixin="grabbable-component"></a-entity>
             <!-- <a-entity gltf-model="#PLZ" position="-1 0.5 0" scale=".1 .1 .1" title="Plot" mixin="grabbable-component"></a-entity> -->
-            <a-entity gltf-model="#gapminder" position="1 0.5 0" scale="5 5 5" title="Plot" mixin="grabbable-component"></a-entity>
+            <a-entity gltf-model="#gapminder" position="0.5 0.5 0" scale="1 1 1" title="Gapminder Plot" mixin="grabbable-component"></a-entity>
             <!-- <a-entity gltf-model="#d-one-team" position="2 0.5 0" scale="5 5 5" title="Plot" mixin="grabbable-component"></a-entity> -->
               <!-- animation-mixer -->
         </a-entity>
     </a-scene>
   </body>
+  <script>
+    // let scene = document.getElementsByName
+    var playerEl = document.querySelector('#model');
+    // playerEl.addEventListener('collide', function (e) {
+    //   console.log('model has collided with body #' + e.detail.id);
+    //   console.log(e.detail.body);
+    // });
+    // playerEl.addEventListener("mousedown", function(e){
+    //   console.log("mousedown model"); console.log(e)
+    // })
+
+    // document.querySelectorAll('[hand-controls]').forEach(el => {
+    //   let events = ['gripdown','gripup','triggerdown','triggerup',];
+    //   for (let i=0; i<events.length; i++)
+    //     el.addEventListener(events[i], function(e){
+    //       console.log('hand-event',events[i], e)
+          
+    //     })
+    // })
+</script>
+
 </html>
