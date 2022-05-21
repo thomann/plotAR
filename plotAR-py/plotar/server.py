@@ -49,7 +49,7 @@ _external_base_url = None
 _base_path = '/'
 _token = None
 _IP = None
-def external_url(client_url, file='index.html'):
+def external_url(client_url, file='index.html', request: tornado.httputil.HTTPServerRequest = None):
     global _external_base_url, _IP, _token
     from urllib.parse import urlparse, urljoin
     o = urlparse(client_url)
@@ -63,7 +63,10 @@ def external_url(client_url, file='index.html'):
         if _IP is None:
             _IP = get_ip()
         port = f':{_PORT}' if _PORT is not None else ''
-        _external_base_url = f'http://{_IP}{port}{_base_path}'
+        protocol = 'http'
+        if request is not None and request.protocol == 'https':
+            protocol = 'https'
+        _external_base_url = f'{protocol}://{_IP}{port}{_base_path}'
     return _external_base_url+file+tok
 
 class QRHandler(tornado.web.RequestHandler):
@@ -73,7 +76,7 @@ class QRHandler(tornado.web.RequestHandler):
         client_url = self.get_argument('location')
         file = self.get_argument('file', 'index.html')
         print(client_url)
-        url = external_url(client_url, file=file)
+        url = external_url(client_url, file=file, request=self.request)
         result = { 'qr': pyqrcode.QRCode(url).code, 'url': url }
         return self.write(json.dumps(result)+"\n")
 
@@ -107,10 +110,18 @@ class USDHandler(tornado.web.RequestHandler):
 class GLTFHandler(tornado.web.RequestHandler):
     """Renders the GLTF format used on Android"""
     def get(self):
-        result = data2gltf(DATA)
+        result = data2gltf(DATA).format_gltf()
 
         self.write(result)
         self.set_header('Content-Type', 'model/gltf+json')
+
+class GLBHandler(tornado.web.RequestHandler):
+    """Renders the GLTF format used on Android"""
+    def get(self):
+        result = data2gltf(DATA).format_glb()
+
+        self.write(result)
+        self.set_header('Content-Type', 'model/gltf-binary')
 
 class OBJHandler(tornado.web.RequestHandler):
     """Renders the USDA format usably on iOS"""
@@ -210,6 +221,7 @@ _mappings = [
     (r"/data.usdz", USDHandler),
     (r"/data.usda", USDHandler),
     (r"/data.gltf", GLTFHandler),
+    (r"/data.glb", GLBHandler),
     (r"/data.obj", OBJHandler),
     (r"/ws", PlotARWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),

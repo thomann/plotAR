@@ -1,6 +1,7 @@
 import base64
 import math
 import struct
+import json
 from pathlib import Path
 
 import numpy as np
@@ -22,22 +23,30 @@ GLTF_MAGFILTER_LINEAR = 9729
 class GLTF(object):
     def __init__(self):
         self.d = {
-            "asset" : {"version" : "2.0"}
+            "asset": {"version" : "2.0"},
+            "scene": 0,
         }
         for i in ['scenes', 'nodes', 'meshes', 'buffers', 'bufferViews', 'accessors', 'materials', 'textures', 'samplers', 'images', ]:
             self.d[i] = []
+        self._buffer_dict = {}
+        self._buffer = b''
+        self.add('buffers', self._buffer_dict)
     def add(self, path, x):
         lst = self.d.get(path)
         id = len(lst)
         lst.append(x)
         return id
 
-    def add_buffer_data(self, arrays, target, type, remove_view_target=False):
+    def add_buffer_data(self, arrays, target, type, remove_view_target=False, use_main_buffer=True):
         # GLTF spec says little-endian
         buffer_format = "<"
         acc_id = []
-        byte_offset = 0
         buffer_dict = {}
+        if use_main_buffer:
+            byte_offset = len(self._buffer)
+            b_id = 0
+        else:
+            byte_offset = 0
         b_id = self.add('buffers', buffer_dict)
         for x, tg, tp in zip(arrays, target, type):
             if tg == GLTF_ELEMENT_ARRAY_BUFFER:
@@ -79,12 +88,49 @@ class GLTF(object):
                 "min": arr.min(0).tolist(),
             }))
         buffer = struct.pack(buffer_format, *sum(arrays, []))
+        if use_main_buffer:
+            self._buffer += buffer
+            self._buffer_dict["byteLength"] = len(self._buffer)
+        else:
         buffer_url = "data:application/octet-stream;base64," + base64.b64encode(buffer).decode("ASCII")
         buffer_dict["uri"] = buffer_url
         buffer_dict["byteLength"] = len(buffer)
 
         return acc_id
 
+    def format_gltf(self):
+        buffer_url = "data:application/octet-stream;base64," + base64.b64encode(self._buffer).decode("ASCII")
+        self._buffer_dict["uri"] = buffer_url
+        return self.d
+    def format_glb(self):
+        if "uri" in self._buffer_dict:
+            del self._buffer_dict["uri"]
+        for img in self.d.get("images",[]):
+            img_data = base64.b64decode(img['uri'][len("data:image/png;base64,"):].encode("ASCII"))
+            view_id = self.add('bufferViews', {
+                "buffer": 0,
+                "byteOffset": len(self._buffer),
+                "byteLength": len(img_data),
+            })
+            self._buffer += img_data
+            self._buffer_dict["byteLength"] = len(self._buffer)
+            del img['uri']
+            img["bufferView"] = view_id
+            img["mimeType"] = "image/png"
+
+        json_string = json.dumps(self.d).encode("ASCII")
+        # pad to 4 bytes alignment according to specification
+        json_string += b"\x20" * (-len(json_string)%4)
+        self._buffer += b"\x00" * (-len(self._buffer)%4)
+        # 0x4E4F534A = b'JSON'
+        # 0x004E4942 = b'BIN\x00'
+        chunks = \
+            struct.pack('II', len(json_string), 0x4E4F534A) + json_string + \
+            struct.pack('II', len(self._buffer), 0x004E4942) + self._buffer
+        # 0x46546C67 = b'glTF'
+        header = struct.pack('III', 0x46546C67, 2, len(chunks) + 12)
+        return header + chunks
+    
     def load_font(self, f, board_acc_id):
         font = common.BitmapFont(f)
         fc = font.common
@@ -529,7 +575,7 @@ def data2gltf(data, subdiv=16):
         })
     for k in [ k for k,v in gltf.d.items() if isinstance(v, list) and len(v) == 0 ]:
         del gltf.d[k]
-    return gltf.d
+    return gltf
 
 
 def create_board(subdiv=8):
