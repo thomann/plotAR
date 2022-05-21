@@ -227,6 +227,7 @@ def data2gltf(data, subdiv=16):
     COLORS = data['color_palette'] if "color_palette" in data else common.COLORS
     COLORS_LEN = len(COLORS)
     meters_per_unit = float(data.get('meters_per_unit', 0.1))
+    add_glow = bool(data.get('add_glow', False))
 
     gltf = GLTF()
     indices, vertices, normals = create_sphere(subdiv=subdiv)
@@ -277,27 +278,77 @@ def data2gltf(data, subdiv=16):
     #         "wrapT": GLTF_WRAP_MIRRORED_REPEAT
     #     })
 
+    material_quality = dict(opacity=1, roughness=0.1, metallic=0.5)
+    if "material_quality" in data:
+        for _ in ['opacity', 'roughness', 'metallic']:
+            if _ in data['material_quality']:
+                material_quality[_] = data['material_quality'][_]
+    
     col_mat_ids = [ gltf.add("materials", {
+                "name": f"Material for color {col}",
                 "pbrMetallicRoughness": {
                     "baseColorFactor": list(col) + [1.0],
-                    "metallicFactor": 0.5,
-                    "roughnessFactor": 0.1
-                }
+                    "metallicFactor": material_quality['metallic'],
+                    "roughnessFactor": material_quality['roughness'],
+                },
+                # let's add some wow factor by default:
+                "emissiveFactor": [_*0.3 for _ in col]
             })
             for col in COLORS
         ]
+    if material_quality.get('opacity',1)<1:
+        # gltf.d["extensionsUsed"] = ["KHR_materials_transmission"]
+        ## following prohibits import in blender 2.93
+        # gltf.d["extensionsRequired"] = ["KHR_materials_transmission"]
+
+        for _ in gltf.d['materials']:
+            # _["extensions"] = {
+            #     "KHR_materials_transmission" : {
+            #         "transmissionFactor" : 1-material_quality['opacity']
+            #     }
+            # }
+            _['alphaMode'] = "BLEND"
+            _["pbrMetallicRoughness"]["baseColorFactor"][3] = material_quality['opacity']
+
     col_mesh_id = [ gltf.add("meshes", {
-                "primitives": [{
-                    "attributes": {
-                        "POSITION": sphere_acc_id[1],
-                        "NORMAL": sphere_acc_id[2],
+            "name": f"Mesh for material {mat_id}",
+            "primitives": [{
+                "attributes": {
+                    "POSITION": sphere_acc_id[1],
+                    "NORMAL": sphere_acc_id[2],
+                },
+                "indices": sphere_acc_id[0],
+                "material": mat_id
+            }]
+        })
+        for mat_id in col_mat_ids
+    ]
+    if add_glow:
+        halo_transparency = 0.3
+        glow_col_mat_ids = [ gltf.add("materials", {
+                    "name": f"Material for glow for col {col}",
+                    "pbrMetallicRoughness": {
+                        "baseColorFactor": list(col) + [halo_transparency],
+                        "metallicFactor": 0.5,
+                        "roughnessFactor": 0.1
                     },
-                    "indices": sphere_acc_id[0],
-                    "material": mat_id
-                }]
-            })
-            for mat_id in col_mat_ids
-        ]
+                    # "emissiveFactor": list(col) + [1.0],
+                })
+                for col in COLORS
+            ]
+        glow_col_mesh_id = [ gltf.add("meshes", {
+                    "name": f"Mesh for glow for mat_id {mat_id}",
+                    "primitives": [{
+                        "attributes": {
+                            "POSITION": sphere_acc_id[1],
+                            "NORMAL": sphere_acc_id[2],
+                        },
+                        "indices": sphere_acc_id[0],
+                        "material": mat_id
+                    }]
+                })
+                for mat_id in glow_col_mat_ids
+            ]
 
     data_node = dict(children=[], name="Data")
     data_node_id = gltf.add('nodes', data_node)
@@ -392,6 +443,12 @@ def data2gltf(data, subdiv=16):
             scale = [scale[0] * h, scale[1] * w, scale[2] ]
         current_node_id = gltf.add('nodes', {"name": f"Data Point {i}" , "mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
         data_node['children'].append(current_node_id)
+        if add_glow:
+            _ = gltf.add('nodes', {"name": f"Data Point {i} glow" ,
+                "mesh": glow_col_mesh_id[col], "translation": [x, z, -y],
+                "scale": [ _*1.3 for _ in scale],
+            })
+            data_node['children'].append(_)
 
         if animation:
             animation_samplers.append(dict(
@@ -460,9 +517,9 @@ def data2gltf(data, subdiv=16):
             #         "scale": [1,s,1],
             #         "rotation": q,
             #     }))
-                data_node['children'].append(gltf.add('nodes', {
-                    "mesh": mesh_id,
-                }))
+            data_node['children'].append(gltf.add('nodes', {
+                "mesh": mesh_id,
+            }))
 
     for i, text in enumerate(data.get('col_labels',[])):
         col = i % COLORS_LEN
