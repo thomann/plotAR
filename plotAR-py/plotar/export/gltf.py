@@ -47,7 +47,7 @@ class GLTF(object):
             b_id = 0
         else:
             byte_offset = 0
-        b_id = self.add('buffers', buffer_dict)
+            b_id = self.add('buffers', buffer_dict)
         for x, tg, tp in zip(arrays, target, type):
             if tg == GLTF_ELEMENT_ARRAY_BUFFER:
                 if max(x) < 2**16:
@@ -92,12 +92,12 @@ class GLTF(object):
             self._buffer += buffer
             self._buffer_dict["byteLength"] = len(self._buffer)
         else:
-        buffer_url = "data:application/octet-stream;base64," + base64.b64encode(buffer).decode("ASCII")
-        buffer_dict["uri"] = buffer_url
-        buffer_dict["byteLength"] = len(buffer)
+            buffer_url = "data:application/octet-stream;base64," + base64.b64encode(buffer).decode("ASCII")
+            buffer_dict["uri"] = buffer_url
+            buffer_dict["byteLength"] = len(buffer)
 
         return acc_id
-
+    
     def format_gltf(self):
         buffer_url = "data:application/octet-stream;base64," + base64.b64encode(self._buffer).decode("ASCII")
         self._buffer_dict["uri"] = buffer_url
@@ -157,15 +157,18 @@ class GLTF(object):
             ],
         })
         glyph_mesh_id = {}
-        for glyph in font.chars.values():
-            ch = chr(glyph['id'])
+        def get_glyph_mesh_id(ch):
+            if ch in glyph_mesh_id:
+                return glyph_mesh_id[ch]
+            glyph = font.chars.get(ch)
             mat_id = self.add('materials', {
+                "name": f"Material for char '{ch}'",
                 "alphaMode": "MASK",
                 "alphaCutoff": 0.5,
                 "doubleSided": True,
                 "pbrMetallicRoughness" : {
                     "baseColorTexture" : {
-                            "index" : 0,
+                            "index" : texture_id,
                             "extensions": {
                             "KHR_texture_transform": {
                                 "offset": [glyph['x'] / fc['scaleW'], glyph['y'] / fc['scaleH']],
@@ -179,18 +182,19 @@ class GLTF(object):
                     "roughnessFactor" : 0.0,
                 }
             })
-            glyph_mesh_id[ch] = self.add('meshes',
-                {
-                    "primitives": [{
-                        "attributes": {
-                            "POSITION": board_acc_id[1],
-                            "NORMAL": board_acc_id[2],
-                            "TEXCOORD_0": board_acc_id[3],
-                        },
-                        "indices": board_acc_id[0],
-                        "material": mat_id
-                    }]
-                })
+            glyph_mesh_id[ch] = self.add('meshes', {
+                "name": f"Mesh for char '{ch}'",
+                "primitives": [{
+                    "attributes": {
+                        "POSITION": board_acc_id[1],
+                        "NORMAL": board_acc_id[2],
+                        "TEXCOORD_0": board_acc_id[3],
+                    },
+                    "indices": board_acc_id[0],
+                    "material": mat_id
+                }]
+            })
+            return glyph_mesh_id[ch]
         def drawText(text, valign=0.25):
             layout = font.layoutText(text)
             glyphs = []
@@ -198,7 +202,7 @@ class GLTF(object):
                 ch = chr(glyph['id'])
                 glyphs.append(self.add('nodes', {
                 "name" : f"glyph_{ch}",
-                "mesh" : glyph_mesh_id[ch],
+                "mesh" : get_glyph_mesh_id(ch),
                 "translation": [
                     (glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
                     (font.common['base'] * (1-valign) - glyph['yoffset'] - glyph['height']) / font.common['lineHeight'] ,#/ fc['scaleH'],
@@ -266,12 +270,12 @@ def data2gltf(data, subdiv=16):
         [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
         "SCALAR VEC3 VEC3 VEC2".split(),
     )
-    sampler_id = gltf.add('samplers', {
-            "magFilter": GLTF_MAGFILTER_LINEAR,
-            "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
-            "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
-            "wrapT": GLTF_WRAP_MIRRORED_REPEAT
-        })
+    # sampler_id = gltf.add('samplers', {
+    #         "magFilter": GLTF_MAGFILTER_LINEAR,
+    #         "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+    #         "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+    #         "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+    #     })
 
     col_mat_ids = [ gltf.add("materials", {
                 "pbrMetallicRoughness": {
@@ -299,12 +303,12 @@ def data2gltf(data, subdiv=16):
     data_node_id = gltf.add('nodes', data_node)
     if 'col_labels' in data:
         legend_node = dict(children=[], name="Legend", translation=[1,0,-1])
-    legend_node_id = gltf.add('nodes', legend_node)
+        legend_node_id = gltf.add('nodes', legend_node)
     else:
         legend_node_id = None
     if 'axis_names' in data:
         axes_node = dict(children=[], name="Axes")
-    axes_node_id = gltf.add('nodes', axes_node)
+        axes_node_id = gltf.add('nodes', axes_node)
     else:
         axes_node_id = None
     drawText = gltf.load_font(Path(__file__).parent / 'font/DejaVu-sdf.fnt', board_acc_id)
@@ -352,6 +356,12 @@ def data2gltf(data, subdiv=16):
             #     "bufferView" : bv,
             #     "mimeType" : "image/png"
             # })
+            sampler_id = gltf.add('samplers', {
+                "magFilter": GLTF_MAGFILTER_LINEAR,
+                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+            })
             texture_id = gltf.add("textures", {
                 "sampler": sampler_id,
                 "source": src_id
