@@ -117,6 +117,44 @@ def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwar
     if return_data:
         return PlotAR(body)
 
+def animate(data, xyz, *, animation_frame, group=None,
+        duration_seconds=30, tstart=None, time_codes_per_second=None, time_values=None,
+        auto_scale=True, push_data=True, return_data=False, **kwargs):
+    if group is None:
+        group = pd.Series(1)
+    data = pd.DataFrame(data).sort_values([group, animation_frame])
+    assert not any( data[[group,animation_frame]].duplicated() ), f'data has to be unique w.r.t. animation_frame ({animation_frame}) and group ({group})'
+    if auto_scale:
+        # have all variables scaled to [-1,1]
+        data[xyz] = scale(data[xyz].values)
+        # TODO also normalise scale
+        # if size is not None:
+        #     # scale the sizes between 0.5 and 1.5:
+        #     size = scale(size.reshape((-1, 1)))[:,0] + 1.5
+    if tstart is None:
+        # take first of group
+        data_start = data.groupby(group).first().reset_index()
+    else:
+        data_start = data.loc[data[animation_frame] == tstart]
+    body = plotar(data=data_start, xyz=xyz, **kwargs, push_data=False, return_data=True).data
+    animation_data = [
+        df[xyz].values.tolist()
+        for _, df in data.groupby(group)
+    ]
+    if time_values is None:
+        time_values = sorted(data[animation_frame].unique())
+    time_values = [ str(_) for _ in time_values ]
+    assert (duration_seconds is None) != (time_codes_per_second is None), f'exactly one of duration_seconds or time_codes_per_second have to be not None'
+    if time_codes_per_second is None:
+        time_codes_per_second = len(time_values)/duration_seconds
+    body['animation'] = dict(data=animation_data, time_labels=time_values,
+                         time_codes_per_second=time_codes_per_second)
+    
+    if push_data:
+        plot_host = get_host(kwargs.get('host'))
+        plot_host.post(json=body)
+    if return_data:
+        return PlotAR(body)
 
 def surfacevr(data, col=None, x=None, y=None,
            name=None, description=None, speed=None, auto_scale=True,
