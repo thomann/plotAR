@@ -2,6 +2,7 @@ import json
 import subprocess
 import os
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,22 @@ logger = logging.getLogger(__name__)
 
 _host = None #: PlotHost
 DEFAULT_SERVER = 'http://localhost:2908'
+
+class PlotAR(object):
+    def __init__(self, data):
+        self.data = data
+    def write(self, filename, format='json', overwrite=False):
+        p = Path(filename)
+        if isinstance(format, str):
+            format = [format]
+        for f in format:
+            if f == 'json':
+                with open(filename, 'w') as file:
+                    print(f"Writing JSON to {filename}")
+                    json.dump(self.data, file)
+            else:
+                from .export import export
+                export(self.data, filename, [f])
 
 
 def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
@@ -82,10 +99,10 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
         plot_host = get_host(host)
         plot_host.post(json=body)
     if return_data:
-        return body
+        return PlotAR(body)
 
 def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwargs):
-    body = plotar(*args, **kwargs, push_data=False, return_data=True)
+    body = plotar(*args, **kwargs, push_data=False, return_data=True).data
     data = body.get('data',[])
     col = body.get('col', [0] * len(data))
     group = group or col
@@ -98,7 +115,8 @@ def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwar
         plot_host = get_host(kwargs.get('host'))
         plot_host.post(json=body)
     if return_data:
-        return body
+        return PlotAR(body)
+
 
 def surfacevr(data, col=None, x=None, y=None,
            name=None, description=None, speed=None, auto_scale=True,
@@ -136,7 +154,7 @@ def surfacevr(data, col=None, x=None, y=None,
         plot_host = get_host(host)
         plot_host.post(json=body)
     if return_data:
-        return body
+        return PlotAR(body)
 
 
 def scale(data, axis=(0,)):
