@@ -24,6 +24,7 @@ def data2usd_ascii(data):
     texts = ""
     surface = ""
     lines = ""
+    classes = ""
     axes = ""
     legend = ""
     assets = {}
@@ -31,6 +32,7 @@ def data2usd_ascii(data):
     COLORS = data['color_palette'] if "color_palette" in data else common.COLORS
     COLORS_LEN = len(COLORS)
     colors = [ ','.join([str(i) for i in _]) for _ in COLORS ]
+    add_glow = float(data.get('add_glow', False))
 
     animation = False
     if 'animation' in data:
@@ -50,14 +52,24 @@ def data2usd_ascii(data):
         if 'label' not in data:
             if not animation:
                 spheres += f"""
-                def Sphere "Point{i}" {{
+                def "Point{i}" (
+                        inherits = </Spheres/Classes/Sphere_col_{col}>
+                        instanceable = true
+                    ) {{
                     double3 xformOp:translate = ({x},{y},{z})
-                    uniform token[] xformOpOrder = ["xformOp:translate"]
-                    rel material:binding = </Spheres/Materials/material_{col}>
-        
-                    double radius = {0.02*size}
+                    float3 xformOp:scale = ({size},{size},{size})
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
                 }}
                 """
+                if add_glow:
+                    spheres += f"""
+                    def Sphere "Point{i}_halo" {{
+                        double3 xformOp:translate = ({x},{y},{z})
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_{col}_halo>
+                        double radius = {0.02*size*1.3}
+                    }}
+                    """
             else:
                 if i>=len(animation.get('data',[])):
                     print(f"Too few data for animation: i")
@@ -276,26 +288,33 @@ def data2usd_ascii(data):
                 uniform token subdivisionScheme = "{{ "none" if smooth else "loop" }}"
                 uniform bool doubleSided = 1
 
-                    rel material:binding = </Spheres/Materials/material_{{col}}>
-                }
-            """
-            surface = jinja2.Template(template).render(**vars)
-        
-                    uniform token type = "linear"
-                    int[] curveVertexCounts = [7]
-                    point3f[] points = [(0, 0, 0), (1, 1, 0), (1, 2, 0), (0, 3, 0), (-1, 4, 0), (-1, 5, 0), (0, 6, 0)]
-                    float[] widths = [0, .5, .5, .8, .5, .5, 0] (interpolation = "varying")
-                    color3f[] primvars:displayColor = [(0, 0, 1)]
-                }
-                #}
+                rel material:binding = </Spheres/Materials/material_{{col}}>
             }
             """
-            lines += jinja2.Template(template).render(
-                **vars,
-            )
+            lines += jinja2.Template(template).render(**vars)
 
     materials = ""
+    materials += f"""
+    def Material "material_grey"
+    {{
+        token outputs:surface.connect = </Spheres/Materials/material_grey/surfaceShader.outputs:surface>
+
+        def Shader "surfaceShader"
+        {{
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1,0.1,0.1)
+            token outputs:surface
+        }}
+    }}
+    """
+
+    material_quality = dict(opacity=1, roughness=0.1, metallic=0.5)
+    if "material_quality" in data:
+        for _ in ['opacity', 'roughness', 'metallic']:
+            material_quality[_] = data['material_quality'].get(_, material_quality[_])
     for i,col in enumerate(COLORS):
+        col_string = ", ".join(str(_) for _ in col)
+        emissive_color = ", ".join(str(_*0.3) for _ in col) # if add_glow else "0, 0, 0"
         materials += f"""
         def Material "material_{i}"
         {{
@@ -304,17 +323,37 @@ def data2usd_ascii(data):
             def Shader "surfaceShader"
             {{
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = ({", ".join(str(_) for _ in col)})
-                color3f inputs:emissiveColor = (0, 0, 0)
-                float inputs:metallic = 0.5
-                normal3f inputs:normal = (1, 1, 1)
+                color3f inputs:diffuseColor = ({col_string})
+                color3f inputs:emissiveColor = ({emissive_color})
+                float inputs:metallic = {material_quality['metallic']}
+                //normal3f inputs:normal = (1, 1, 1)
                 float inputs:occlusion = 0
-                float inputs:opacity = 1
-                float inputs:roughness = 0.1
+                float inputs:opacity = {material_quality['opacity']}
+                float inputs:roughness = {material_quality['roughness']}
                 token outputs:surface
             }}
         }}
         """
+        if add_glow:
+            col_string = ", ".join(str(_) for _ in col ) # +(0.3,)
+            materials += f"""
+            def Material "material_{i}_halo"
+            {{
+                token outputs:surface.connect = </Spheres/Materials/material_{i}/surfaceShader.outputs:surface>
+    
+                def Shader "surfaceShader"
+                {{
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = ({col_string})
+                    float inputs:metallic = 0.0
+                    //normal3f inputs:normal = (1, 1, 1)
+                    float inputs:occlusion = 0
+                    float inputs:opacity = 0.8
+                    float inputs:roughness = 0.4
+                    token outputs:surface
+                }}
+            }}
+            """
 
     for i, text in enumerate(data.get('col_labels',[])):
         col = i % COLORS_LEN
@@ -353,6 +392,18 @@ def data2usd_ascii(data):
             text=text, col=col,
         )
 
+    for i, _ in enumerate(COLORS):
+        col = i % COLORS_LEN
+        classes += f"""
+            class Xform "Sphere_col_{col}" {{
+                def Sphere "TheSphere" {{
+                    rel material:binding = </Spheres/Materials/material_{col}>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }}
+            }}
+        """
     for i, text in enumerate(data.get('axis_names',[])):
         scale = [0.01] * 3
         translation = [0,0,0]
@@ -432,28 +483,46 @@ def data2usd_ascii(data):
         timeCodesPerSecond = {{time_codes_per_second}}
         {%- endif %}
     )
-    def Xform "Spheres" {
-        {% if texts %}def Scope "Texts"
+    def Xform "Spheres" (
+        {% if not animation -%}
+        // only do this when we do not have animation else in quick look the animation does not auto start ?!?
+        prepend apiSchemas = ["Preliminary_AnchoringAPI"]
+        {%- endif %}
+        kind = "component"
+    )
+    {
+        // token preliminary:anchoring:type = "plane"
+        // token preliminary:planeAnchoring:alignment = "horizontal"
+
+        double3 xformOp:translate = (0,1,0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        
+        float3[] extent = [(-1,-1,-1), (1,1,1)]
+        
+        {% if texts %}def Xform "Texts"
         {
             {{texts}}
         }{%endif%}
-        {% if surface %}def Scope "surface"
+        {% if surface %}def Xform "surface"
         {
             {{surface}}
         }{%endif%}
-        {% if spheres %}def Scope "Nodes" {
+        {% if spheres %}def Xform "Nodes" {
             {{spheres}}
         }{%endif%}
-        {% if lines %}def Scope "Lines" {
+        {% if lines %}def Xform "Lines" {
             {{lines}}
         }{%endif%}
-        {% if legend %}def Scope "Legend" {
+        {% if classes %}def Xform "Classes" {
+            {{classes}}
+        }{%endif%}
+        {% if legend %}def Xform "Legend" {
             {{legend}}
         }{%endif%}
-        {% if axes %}def Scope "Axes" {
+        {% if axes %}def Xform "Axes" {
             {{axes}}
         }{%endif%}
-        def Scope "Materials"
+        def Xform "Materials"
         {
             """ + materials + """
         }
