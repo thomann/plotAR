@@ -11,7 +11,10 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     history = history_file.read()
 
-requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'pyqrcode', 'click', 'usd-core', 'Pillow', 'jinja2', ]
+requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'click', 'Pillow', 'jinja2', ]
+
+requirements_server = ["usd-core", 'pyqrcode', ]
+requirements_all = requirements_server
 
 setup_requirements = ['pytest-runner', 'scikit-learn', 'jupyterlab', 'skyfield', 'beautifulsoup4', ]
 
@@ -27,9 +30,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        # usd-core currently only available until Python 3.7
-        # 'Programming Language :: Python :: 3.8',
-        # 'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     description="Walk through your data",
     install_requires=requirements,
@@ -40,7 +42,14 @@ setup(
     keywords='plotar',
     name='plotar',
     packages=find_packages(include=['plotar']),
+    entry_points = {
+        'console_scripts': ['plotar=plotar.main:main'],
+    },
     setup_requires=setup_requirements,
+    extras_require={
+        "server": requirements_server,
+        "all": requirements_all,
+    },
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/thomann/plotAR ',
