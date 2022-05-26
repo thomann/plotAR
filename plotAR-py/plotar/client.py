@@ -156,7 +156,7 @@ def animate(data, xyz, *, animation_frame, group=None,
     if return_data:
         return PlotAR(body)
 
-def surfacevr(data, col=None, x=None, y=None,
+def surfacevr(data, col=None, x=None, y=None, surfacecolor=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=False, push_data=True):
     global _host
@@ -183,6 +183,7 @@ def surfacevr(data, col=None, x=None, y=None,
         body['surface']['x'] = np.array(x).tolist()
     if y is not None:
         body['surface']['y'] = np.array(y).tolist()
+    if surfacecolor is not None: body['surface']['surfacecolor'] = surfacecolor
     if speed is not None: body['speed'] = speed
     metadata = { 'n': n, 'm': m, 'created': time.ctime() }
     metadata['name'] = name or f"Dataset {n}x{m}"

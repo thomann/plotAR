@@ -144,36 +144,107 @@ def data2usd_ascii(data):
             )
             # color3f[] primvars:displayColor = [({color})]
     if 'surface' in data:
-        indices, normals, vertices = create_surface(data['surface'])
+        indices, normals, vertices, st = create_surface(data['surface'])
+        surface_color = data['surface'].get('surfacecolor')
+        filename = None
+        if surface_color is not None:
+            import PIL.Image, io
+            img = PIL.Image.fromarray(np.uint8(data['surface']['surfacecolor']))
+            buffer = io.BytesIO()
+            img.save(buffer, format='png', compress_level=0)
+            img = buffer.getvalue()
+            filename = f"surface_texture.png"
+            assets[filename] = img
+
         vars = dict(
             vertexCounts = [3] * (indices.shape[0] // 3),
             extent = serialize([vertices.min(axis=0), vertices.max(axis=0)]),
             indices = indices.flatten().tolist(),
             vertices = serialize(vertices),
             normals = serialize(normals.flatten().reshape((-1,3))),
+            # for some reason it seems that the t-coordinate has to be flipped
+            st = serialize([ (_[0], 1-_[1]) for _ in st ]),
+            st_indices=", ".join(str(_) for _ in range(st.shape[0])),
+            smooth=False,
+            filename=filename,
+            no_texture=surface_color is None,
+            path_mat="../",
+            path_mat2="/Spheres/surface/Mesh_material/",
         )
         template = """
         def Mesh "Mesh"
         {
+            uniform bool doubleSided = 1
             int[] faceVertexCounts = {{vertexCounts}}
             int[] faceVertexIndices = {{indices}}
-            normal3f[] normals = {{normals}} (
+            point3f[] points = {{vertices}}
+            normal3f[] primvars:normals = {{normals}} (
                 interpolation = "vertex"
             )
-            point3f[] points = {{vertices}}
-            {#
+            {% if smooth %}
+            {% endif %}
             float3[] extent = {{extent}}
-            texCoord2f[] primvars:st = [(0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1), (0, 0), (0, 1), (1, 0), (1, 1)] (
-                interpolation = "faceVarying"
+            {% if not no_texture %}
+            texCoord2f[] primvars:st = {{st}} (
+                interpolation = "vertex"
             )
-            int[] primvars:st:indices = [0, 3, 1, 0, 2, 3, 4, 7, 5, 4, 6, 7, 8, 11, 9, 8, 10, 11, 12, 15, 13, 12, 14, 15, 16, 19, 17, 16, 18, 19, 20, 23, 21, 20, 22, 23]
-            #}
-            uniform token subdivisionScheme = "none"
-            uniform bool doubleSided = 1
+            {# int[] primvars:st:indices = [{{st_indices}}] #}
+            {% endif %}
+            uniform token subdivisionScheme = "{{ "none" if True or smooth else "loop" }}"
     
             double3 xformOp:translate = (0,0.2,0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </Spheres/Materials/material_{{col}}>
+            rel material:binding = <../Mesh_material>
+        }
+        def Material "Mesh_material"
+        {
+            {% if no_texture %}
+            token outputs:surface.connect = <surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.8,0.0,0.8)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 0.1
+                {# normal3f inputs:normal = (1, 1, 1) #}
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.9
+                token outputs:surface
+            }
+            {% else %}
+            
+            token outputs:surface.connect = <surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = <{{path_mat}}diffuseColor_opacity_texture.outputs:rgb>
+                float inputs:metallic = 0.1
+                float inputs:opacity.connect = <{{path_mat}}diffuseColor_opacity_texture.outputs:a>
+                float inputs:roughness = 0.8
+                token outputs:surface
+            }
+
+            def Shader "uvReader_st"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname = "st"
+                float2 outputs:result
+            }
+
+            def Shader "diffuseColor_opacity_texture"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @{{filename}}@
+                float2 inputs:st.connect = <{{path_mat}}uvReader_st.outputs:result>
+                token inputs:wrapS = "mirror"
+                token inputs:wrapT = "mirror"
+                float outputs:a
+                float3 outputs:rgb
+            }
+            {% endif %}
         }
         """
         surface = jinja2.Template(template).render(

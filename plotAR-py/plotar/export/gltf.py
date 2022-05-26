@@ -463,22 +463,54 @@ def data2gltf(data, subdiv=16):
 
     if 'surface' in data:
         surface = data['surface']
-        indices, normals, vertices = create_surface(surface)
+        indices, normals, vertices, uv = create_surface(surface)
         surface_acc_id = gltf.add_buffer_data(
-            [ _.flatten().tolist() for _ in [indices, vertices, normals] ],
-            [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
-            "SCALAR VEC3 VEC3".split(),
+            [ _.flatten().tolist() for _ in [indices, vertices, normals, uv] ],
+            [GLTF_ELEMENT_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER, GLTF_ARRAY_BUFFER],
+            "SCALAR VEC3 VEC3 VEC2".split(),
         )
+        surface_mat_id = grey_mat_id
+        if 'surfacecolor' in surface:
+            import PIL, io
+            img = PIL.Image.fromarray(np.uint8(surface['surfacecolor']))
+            buffer = io.BytesIO()
+            img.save(buffer, format='png', compress_level=0)
+            img_uri = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ASCII")
+            src_id = gltf.add("images", {
+                "uri": img_uri
+            })
+            sampler_id = gltf.add('samplers', {
+                "magFilter": GLTF_MAGFILTER_LINEAR,
+                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
+                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
+                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
+            })
+            texture_id = gltf.add("textures", {
+                "sampler": sampler_id,
+                "source": src_id
+            })
+            surface_mat_id = gltf.add('materials', {
+                    "name": f"Material {texture_id} for surface color",
+                    "pbrMetallicRoughness": {
+                        "baseColorTexture": {"index": texture_id},
+                        "metallicFactor": 0.1,
+                        "roughnessFactor": 0.8,
+                        "emissiveFactor": [0.3,0.3,0.3],
+                    },
+                    "alphaMode": "BLEND",
+                    "doubleSided": True,
+                })
         mesh_id = gltf.add('meshes',
             {
+                "name": f"Mesh for surface",
                 "primitives": [{
                     "attributes": {
                         "POSITION": surface_acc_id[1],
                         "NORMAL": surface_acc_id[2],
-                        # "TEXCOORD_0": surface_acc_id[3],
+                        "TEXCOORD_0": surface_acc_id[3],
                     },
                     "indices": surface_acc_id[0],
-                    "material": grey_mat_id
+                    "material": surface_mat_id
                 }]
             })
         data_node['children'].append(gltf.add('nodes', {

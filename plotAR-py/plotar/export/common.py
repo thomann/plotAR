@@ -144,7 +144,7 @@ class BitmapFont(object):
             left += glyph['xadvance']
         return layout
 
-def create_surface(surface):
+def create_surface(surface, uv=False):
     n, m = [int(_) for _ in surface['shape']]
     # print('surface:', n, m)
     arr = np.array(surface['data'])
@@ -153,7 +153,7 @@ def create_surface(surface):
     yvec = surface.get('y') or np.arange(-1, 1, 2 / n).tolist()
     # TODO convert the following for loops into numpy
     vertices = np.array([
-        [x, z / 2.0, y]
+        [x, z, y]
         for y, row in zip(yvec, surface['data'])
         for x, z in zip(xvec, row)
     ])
@@ -170,7 +170,13 @@ def create_surface(surface):
     # print(dlen.shape, dlen.max())
     normals = np.stack((dx / dlen, dz / dlen, dy / dlen), axis=-1)
     # print(normals.shape)
-    return indices, normals, vertices
+    if uv:
+        return indices, normals, vertices
+    else:
+        u = np.linspace(0,1,len(xvec))
+        v = np.linspace(0,1,len(yvec))
+        uv = np.array([ [x,y] for y in v for x in u ])
+        return indices, normals, vertices, uv
 
 
 def create_line(data_list, line, radius=0.001, segments=8):
