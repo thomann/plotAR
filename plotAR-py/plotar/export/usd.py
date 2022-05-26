@@ -265,6 +265,7 @@ def data2usd_ascii(data):
                 normals=serialize(normals),
                 col=line.get('col',0) % COLORS_LEN,
                 width=line.get('width',1)/100,
+                i=i,
             )
             template = """
             def Mesh "Line_{{i}}"
@@ -539,12 +540,10 @@ def run_usdconvert_python_package(content, assets={}, inSuffix='.usda', tmpSuffi
     with Usd.ZipFileWriter.CreateNew(c) as zfw:
         addedFile = zfw.AddFile(b, 'data.usdc')
         logger.info(f"addedFile {b} as data.usdc")
-        ## Actually this seems not to work as expected
-        ## right now:
         for key, val in assets.items():
             d = tempfile.mktemp()
-            with open(d, 'w') as f:
-                f.write(content)
+            with open(d, 'wb') as f:
+                f.write(val)
             zfw.AddFile(d, key)
 
     # r = Ar.GetResolver()
