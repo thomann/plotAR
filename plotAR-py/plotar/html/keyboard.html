@@ -110,9 +110,12 @@
       text-align: center;
     }
 
+    #keyboard {
+      position: relative;
+    }
     .modal {
       display: none; /* Hidden by default */
-      position: fixed; /* Stay in place */
+      position: absolute; /* Stay in place */
       z-index: 1; /* Sit on top */
       left: 0;
       top: 0;
@@ -151,6 +154,7 @@
           <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
           <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
         </div>
+        <div><a href="vr.html">Open in VR</a></div>
       </div>
 
       <div>
@@ -162,6 +166,7 @@
           ar-modes="scene-viewer quick-look"
           camera-controls
           auto-rotate
+          autoplay
           poster="textures/patterns/checker.png"
         ></model-viewer>
       </div>
@@ -243,6 +248,8 @@
     }
     function findWsUrl(){
       var ret = getQueryParams().wsUrl;
+      if(ret === "")
+        return null;
       if(ret != null)
         return ret;
       ret = new URL("ws", location);
@@ -253,6 +260,11 @@
     var connected = false;
     var wsUrl = findWsUrl();
     var websocket = null;
+    
+    if(wsUrl == null){
+      el = document.getElementById("keyboard");
+      el.style.display = "none";
+    }
 
     var DEFAULT_QR_DATA = [[  1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,0,1,0,1,1,1,1,1,1,1],
 [1,0,0,0,0,0,1,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1],
