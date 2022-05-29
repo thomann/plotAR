@@ -12,11 +12,22 @@ import time
 logger = logging.getLogger(__name__)
 
 _host = None #: PlotHost
+_last_plot = None
 DEFAULT_SERVER = 'http://localhost:2908'
 
 class PlotAR(object):
-    def __init__(self, data):
+    def __init__(self, data, host=None):
         self.data = data
+        self.plot_host = host
+        global _last_plot
+        _last_plot = self
+    def _repr_html_(self):
+        if self.plot_host is None:
+            self.plot_host = get_host()
+            if self.plot_host is None:
+                return f"<pre>{self.data.get('metadata')}</pre>"
+        # we set wsUrl empty to start that one "detached" so no keyboard no automatic updates from plots in other cells
+        return f"<iframe width='100%' height='250px' src='{self.plot_host.external_url('keyboard.html')}&wsUrl='>"
     def write(self, filename, format='json', overwrite=False):
         p = Path(filename)
         if isinstance(format, str):
@@ -34,7 +45,7 @@ class PlotAR(object):
 def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
            axis_names=None, col_labels=None,
            name=None, description=None, speed=None, auto_scale=True,
-           digits=5, host=None, return_data=False, push_data=True):
+           digits=5, host=None, return_data=True, push_data=True):
     # TODO assert compatibility checks
     n = data.shape[0]
     df = None
@@ -95,13 +106,14 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
     if description is not None: metadata['description'] = description
     body['metadata'] = metadata
     # data_json = json.dumps(, allow_nan=False)
+    plot_host = None
     if push_data:
         plot_host = get_host(host)
         plot_host.post(json=body)
     if return_data:
-        return PlotAR(body)
+        return PlotAR(body, host=plot_host)
 
-def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwargs):
+def linear(*args, group=None, width=1, push_data=True, return_data=True, **kwargs):
     body = plotar(*args, **kwargs, push_data=False, return_data=True).data
     data = body.get('data',[])
     col = body.get('col', [0] * len(data))
@@ -111,15 +123,16 @@ def linear(*args, group=None, width=1, push_data=True, return_data=False, **kwar
         dict(col=int(c), width=width, points=d.index.to_list())
         for (c, g), d in df.groupby(['col', 'group'])
     ]
+    plot_host = None
     if push_data:
         plot_host = get_host(kwargs.get('host'))
         plot_host.post(json=body)
     if return_data:
-        return PlotAR(body)
+        return PlotAR(body, host=plot_host)
 
 def animate(data, xyz, *, animation_frame, group=None,
         duration_seconds=30, tstart=None, time_codes_per_second=None, time_values=None,
-        auto_scale=True, push_data=True, return_data=False, **kwargs):
+        auto_scale=True, push_data=True, return_data=True, **kwargs):
     if group is None:
         group = pd.Series(1)
     data = pd.DataFrame(data).sort_values([group, animation_frame])
@@ -150,15 +163,16 @@ def animate(data, xyz, *, animation_frame, group=None,
     body['animation'] = dict(data=animation_data, time_labels=time_values,
                          time_codes_per_second=time_codes_per_second)
     
+    plot_host = None
     if push_data:
         plot_host = get_host(kwargs.get('host'))
         plot_host.post(json=body)
     if return_data:
-        return PlotAR(body)
+        return PlotAR(body, host=plot_host)
 
 def surfacevr(data, col=None, x=None, y=None, surfacecolor=None,
            name=None, description=None, speed=None, auto_scale=True,
-           digits=5, host=None, return_data=False, push_data=True):
+           digits=5, host=None, return_data=True, push_data=True):
     global _host
     _host = host
     # TODO assert compatibility checks
@@ -189,11 +203,12 @@ def surfacevr(data, col=None, x=None, y=None, surfacecolor=None,
     metadata['name'] = name or f"Dataset {n}x{m}"
     if description is not None: metadata['description'] = description
     body['metadata'] = metadata
+    plot_host = None
     if push_data:
         plot_host = get_host(host)
         plot_host.post(json=body)
     if return_data:
-        return PlotAR(body)
+        return PlotAR(body, host=plot_host)
 
 
 def scale(data, axis=(0,)):
@@ -207,7 +222,7 @@ def scale(data, axis=(0,)):
     return data
 
 
-def controller(width="100%", height="200px"):
+def controller(width="100%", height="400px"):
     url = get_host().external_url("keyboard.html")
     if is_in_jupyter():
         try:
@@ -247,9 +262,12 @@ def get_host(host=None):
             _host = PlotHost(DEFAULT_SERVER)
     return _host
 
+def set_default_host(host='https://localhost:2908', ignore_ssl_warnings=None):
+    global _host
+    _host = PlotHost(host, ignore_ssl_warnings=ignore_ssl_warnings)
 
 class PlotHost:
-    def __init__(self, url: str, external_url: str = None, params='', headers={}):
+    def __init__(self, url: str, external_url: str = None, params='', headers={}, ignore_ssl_warnings=None):
         self.url = url
         if url is None or len(url) == 0 or not isinstance(url, str):
             raise ValueError("URL must be not None and a non-empty string.")
@@ -260,13 +278,21 @@ class PlotHost:
         self._external_url = external_url
         self.params = "?"+params
         self.headers = headers
+        self.verify = True
+        if self.url.startswith("https://"):
+            # on localhost by default ignore_ssl_warnings
+            is_localhost = self.url.startswith("https://localhost:") or self.url.startswith("https://127.0.0.1:")
+            if ignore_ssl_warnings == True or (ignore_ssl_warnings is None and is_localhost):
+                import urllib3
+                urllib3.disable_warnings()
+                self.verify = False
     def internal_url(self, path):
         '''Shows the URL that is '''
         return self.url + path #+ self.params
     def external_url(self, path):
         return self._external_url + path + self.params
     def post(self, json):
-        response = requests.post(self.internal_url(""), json=json, headers=self.headers)
+        response = requests.post(self.internal_url(""), json=json, headers=self.headers, verify=self.verify)
         response.raise_for_status()
     def __repr__(self):
         return f"PlotHost({self.url})"
