@@ -173,8 +173,6 @@ def animate(data, xyz, *, animation_frame, group=None,
 def surfacevr(data, col=None, x=None, y=None, surfacecolor=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=True, push_data=True):
-    global _host
-    _host = host
     # TODO assert compatibility checks
     n,m = data.shape
     for i in [col]:
