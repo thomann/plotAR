@@ -225,10 +225,12 @@ _mappings = [
     (r"/data.obj", OBJHandler),
     (r"/ws", PlotARWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
+    (r"/model.html(.*)", tornado.web.StaticFileHandler, {"path": html('model.html')}),
     (r"/vr.html(.*)", tornado.web.StaticFileHandler, {"path": html('vr.html')}),
+    (r"/favicon.ico(.*)", tornado.web.StaticFileHandler, {"path": html('favicon.ico')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
     (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": html('js')}),
-    (r"/textures/(.*)", tornado.web.StaticFileHandler, {"path": html('textures')})
+    (r"/textures/(.*)", tornado.web.StaticFileHandler, {"path": html('textures')}),
 ]
 #_app = tornado.web.Application(_mappings)
 
@@ -239,6 +241,7 @@ _mappings = [
 @click.option('--debug/--no-debug', default=False, help="Start Server in Debug mode (autoreload)")
 @click.option('--ssl-prefix', default=None, type=click.Path(), help="If specified a HTTPS server is started and this path is used with extensions .crt and .key to get certificate and private key")
 def start_server(port=2908, data=None, debug=False, ssl_prefix=None):
+    """Start the plotar server"""
     _start_server(port=port, data=data, debug=debug, ssl_prefix=ssl_prefix)
 
 
