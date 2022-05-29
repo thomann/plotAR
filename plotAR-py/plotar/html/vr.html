@@ -14,7 +14,7 @@
     physics="gravity: 0"
     >
         <a-assets>
-            <a-asset-item id="iris" src="data.gltf"></a-asset-item>
+            <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item>
             <a-mixin id="hand-controller"
               physics-collider="ignoreSleep: true"
               collision-filter="collisionForces: false"
@@ -64,14 +64,20 @@
             <a-entity gltf-model="#plot_gltf" position="0 0.5 0" scale="5 5 5" id="model"
               title="Plot"
               mixin="grabbable-component"
+              animation-mixer=""
               ></a-entity>
-              <!-- animation-mixer -->
         </a-entity>
     </a-scene>
   </body>
   <script>
     // let scene = document.getElementsByName
     var playerEl = document.querySelector('#model');
+    playerEl.addEventListener('model-loaded', function (e) {
+      console.log('model-loaded:',e)
+    })
+    playerEl.addEventListener('model-error', function (e) {
+      console.log('model-error:',e)
+    })
     playerEl.addEventListener('collide', function (e) {
       // console.log('stand has collided with body #' + e.detail.id);
       // console.log(e.detail.body);
