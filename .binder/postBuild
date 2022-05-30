@@ -36,6 +36,9 @@ cd tmp
 curl -LO https://data.geo.admin.ch/ch.swisstopo.digitales-hoehenmodell_25/data.zip
 unzip data.zip DHM200.asc
 
+curl -LO https://data.geo.admin.ch/ch.swisstopo.images-landsat25/data.zip
+unzip data.zip LandsatMos25.tif Landsatmos25.TFW
+
 # for planets
 ## mybinder does not allow ftp downloads:
 #curl -LO ftp://ssd.jpl.nasa.gov/pub/eph/planets/bsp/de421.bsp
