@@ -1,6 +1,34 @@
 # PlotAR - Walk Through Your Data
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/thomann/plotAR/binder) -
+[Examples](https://thomann.github.io/plotAR/examples) -
+[VR-Gallery](https://thomann.github.io/plotAR/examples/gallery.html)
+
+PlotAR let's you quickly iteratively view and explore 3D plots of your data both in AR on your smartphone as well as in VR in
+your headset to get a real immersive impression so you can use the full power of the 3rd dimension.
+It can be as easy as:
+```python
+# scatter plot of iris data
+plotar.plotar(iris.data, iris.target)
+# lines plot
+plotar.linear(gapminder, xyz=['gdpPercap','year','lifeExp'],
+    col='country', size='pop')
+# surface of switzerland 
+plotar.surfacevr(switzerland, surfacecolor=sat_img, auto_scale=False)
+# animation of development of countries
+plotar.animate(gapminder, xyz=['income','children_per_woman','life_expectancy'],
+              group='country', col='sub_region', size='population',
+              animation_frame='year')
+# animation of development of countries with country name directly in plot
+plotar.animate(gapminder, xyz=['income','children_per_woman','life_expectancy'],
+              group='country', col='sub_region', size='population',
+              animation_frame='year', label='country')
+```
+[<img src="https://thomann.github.io/plotAR/images/qr-examples.png" width="100px" align="right" alt="Link to examples">](https://thomann.github.io/plotAR/examples)
+Each will show you a QR-code that you can scan with your mobile device - there you can **open the AR-session** by clicking on the
+small icon in the lower right of preview or you can use the link **Open in VR**.
+If you are curious now, just open the [Examples](https://thomann.github.io/plotAR/examples) on your smartphone or tablet or
+go to the [VR-Gallery](https://thomann.github.io/plotAR/examples/gallery.html) in your VR headset's browser.
 
 | Example | Screenshot | iOS (usdz) <br> Android (gltf)|
 | :---         |     :---:        |     :---      |
@@ -36,7 +64,7 @@ The technologies beneath this project are: a web server that handles the communi
 ## Setup
 
 Install the Python package:
-```bash
+```baship
 pip install --upgrade plotAR
 ```
 This will also install PlotAR into your Jupyter Server - please restart Jupyter to be able to use it.
@@ -49,8 +77,10 @@ jupyter lab --ip="*"
 
 Otherwise you can start a PlotAR-Server on e.g. the default port 2908:
 ```bash
-python -m plotar.server -p 2908
+plotar server -p 2908
 ```
+**NOTE** To experience your data in VR or more precise **WebXR**, the server needs to run on **HTTPS** or be localhost - the latter probably only makes sense on PC-VR devices. You can start the server with some (self-generated?) Key and Certificate using the `--ssl-prefix my_example_keys.`. Then you also need to set `ignore_ssl_warnings=True` in the python client and acknowledge in all the browsers the self-signed certificate (on newer Chrome Desktop Versions you need to type blindly `THISISUNSAFE` into the warning window to circumvent it).
+
 Then open up <http://localhost:2908/keyboard.html> to see whether you can connect.
 This page also will show you a guess of a URL with your desktops IP-adress so you should be able to connect to it from your mobile - *as long as both devices are in the same network!*
 
@@ -88,7 +118,6 @@ import plotar
 from sklearn import datasets
 iris = datasets.load_iris()
 plotar.plotar(iris.data, iris.target)
-plotar.controller()
 ```
 This will look something like
 ![Jupter](images/screen-jupyter.png?raw=true "Jupter Screen")
@@ -159,10 +188,8 @@ plotAR(trees)
 ## Acknowledgements
 
 * Pixar for developing the USD-Tools and Nvidia for putting the `usd-core` PyPI.
-* For the WebVR-client: [`three.js`](http://threejs.org),
-  [`polyfill`](https://github.com/googlevr/webvr-polyfill), and
-  [`webvr-boilerplate`](https://github.com/borismus/webvr-boilerplate)
-  (all needed parts included in this repository under `plotAR/inst/js/third-party`)
+* Google for the [Model Viewer](https://modelviewer.dev/),
+* For the WebXR-client: [`three.js`](https://threejs.org/) and [A-Frame](https://aframe.io/).
 * [`httpuv`](https://github.com/rstudio/httpuv) for the websocket-server implementation in R
 * [`tornado`](https://www.tornadoweb.org/) for the websocket-server implementation in Python
 * <https://vr.google.com/cardboard/> for the cardboard!
