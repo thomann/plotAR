@@ -44,3 +44,13 @@ unzip data.zip LandsatMos25.tif Landsatmos25.TFW
 #curl -LO ftp://ssd.jpl.nasa.gov/pub/eph/planets/bsp/de421.bsp
 
 cd ..
+
+
+mkdir -p opt
+cd opt
+# prepare easyrtc server of networked-aframe
+git clone https://github.com/networked-aframe/networked-aframe
+cd networked-aframe
+npm ci
+
+cd ..

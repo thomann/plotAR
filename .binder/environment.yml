@@ -13,6 +13,8 @@ dependencies:
   - beautifulsoup4
   - skyfield
   - matplotlib
+  # for the easyrtc server:
+  - nodejs
   # - r-base ==4.0
   # - r-tidyverse
   # - r-httpuv

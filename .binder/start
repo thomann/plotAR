@@ -2,4 +2,6 @@
 
 # echo "rsession-ld-library-path=$CONDA_PREFIX/lib" >> /etc/rstudio/rserver.conf
 
+( cd opt/networked-aframe; npm run dev 2>&1 > out.log & )
+
 exec "$@"

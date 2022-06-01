@@ -11325,8 +11325,10 @@ var Easyrtc = function() {
         }
         else if (!self.webSocket) {
             try {
-               self.webSocket = io.connect(serverPath, {
-                path: "/net/8080/socket.io"
+              var x = window.location.pathname;
+              x = x.substring(0,x.lastIndexOf('/'));
+              self.webSocket = io.connect(serverPath, {
+                path: x+"/net/8080/socket.io"
               });
               //  self.webSocket = io.connect(serverPath, connectionOptions);
 
