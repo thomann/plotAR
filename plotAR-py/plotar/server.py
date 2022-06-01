@@ -9,6 +9,22 @@ import tornado.web
 import tornado.websocket
 from tornado.log import enable_pretty_logging
 
+from jupyter_server_proxy.handlers import LocalProxyHandler
+from jupyter_server.base.handlers import AuthenticatedHandler
+class MyLocalProxyHandler(LocalProxyHandler):
+    """
+    """
+    def __init__(self, *args, **kwargs):
+        # self.settings.set("allow_remote_access", True)
+        super().__init__(*args, **kwargs)
+    def prepare(self):
+        # self.settings.set("allow_remote_access", True)
+        # self.super().prepare()
+        return super(AuthenticatedHandler, self).prepare()
+    def check_origin(self, origin=None):
+        return True
+
+
 import pyqrcode
 
 from .export import data2usd_ascii, data2usdz, data2gltf, data2obj
@@ -227,6 +243,8 @@ _mappings = [
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
     (r"/model.html(.*)", tornado.web.StaticFileHandler, {"path": html('model.html')}),
     (r"/vr.html(.*)", tornado.web.StaticFileHandler, {"path": html('vr.html')}),
+    (r"/vr-net.html(.*)", tornado.web.StaticFileHandler, {"path": html('vr-net.html')}),
+    (r"/net/(\d+)(/.*|)", MyLocalProxyHandler, { "absolute_url": False, "rewrite_response": tuple(), }),
     (r"/favicon.ico(.*)", tornado.web.StaticFileHandler, {"path": html('favicon.ico')}),
     (r"/keyboard.html(.*)", tornado.web.StaticFileHandler, {"path": html('keyboard.html')}),
     (r"/js/(.*)", tornado.web.StaticFileHandler, {"path": html('js')}),

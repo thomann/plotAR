@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="https://unpkg.com/super-hands@^3.0.3/dist/super-hands.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@59100ac/dist/aframe-physics-system.js"></script>
+    <script src="https://unpkg.com/aframe-physics-extras/dist/aframe-physics-extras.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
+
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="/js/easyrtc.js"></script>
+    <script src="https://unpkg.com/networked-aframe@^0.9.0/dist/networked-aframe.js"></script>
+    <script src="/js/PlotAREasyRtcAdapter.js"></script>
+
+    <style>
+      /* for network buttons: */
+    .actions {
+      position: absolute;
+      display: flex;
+      bottom: 3%;
+      left: 3%;
+    }
+
+    .button {
+      cursor: pointer;
+      background: #fff;
+      height: 40px;
+      width: 130px;
+      border-radius: 30px;
+      margin-right: 10px;
+    }
+
+    </style>
+  </head>
+  <body onload="myOnLoad(event)">
+    <a-scene background="color: #ECECEC" stats2
+    keyboard-shortcuts
+    physics="gravity: 0"
+    renderer="foveationLevel: 0"
+    networked-scene="
+      serverURL: /;
+      room: plotar-room;
+      debug: true;
+      adapter: plotar-easyrtcadapter;
+      audio: false;
+      video: false;
+      debug: true;
+    "
+    >
+        <a-assets>
+            <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item>
+            <a-mixin id="hand-controller"
+              physics-collider="ignoreSleep: true"
+              collision-filter="collisionForces: false"
+              static-body="shape: sphere; sphereRadius: 0.02"
+              super-hands="colliderEvent: collisions;
+                          colliderEventProperty: els;
+                          colliderEndEvent: collisions;
+                          colliderEndEventProperty: clearedEls;
+                          grabStartButtons: gripdown;
+                          grabEndButtons: gripup;
+                          stretchStartButtons: gripdown;
+                          stretchEndButtons: gripup;
+                          "
+            ></a-mixin>
+            <a-mixin id="grabbable-component"
+              dynamic-body="shape: box; mass: 10000"
+              collision-filter="collisionForces: false"
+              sleepy
+              stretchable
+              grabbable
+              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+            ></a-mixin>
+
+          <!-- Avatar -->
+          <template id="avatar-template">
+            <a-entity class="avatar">
+              <!-- <a-plane color="#FFF" width="4" height="3" position="0 .6 0" material="side: back" networked-video-source></a-plane> -->
+              <a-plane color="#FFF" width="4" height="3" position="0 .7 -0.001" material="side: double" networked-video-source="streamName: screen"></a-plane>
+            </a-entity>
+          </template>
+        </a-assets>
+        <a-entity environment="preset: japan; groundColor: #f0e9fb" hide-on-enter-ar id="environment"></a-entity>
+        
+        <a-entity>
+            <a-camera id="camera"
+              networked="template:#avatar-template;attachTemplateToLocal:false;"
+            ></a-camera>
+            <!-- <a-entity hand-tracking-controls="hand: left;" mixin="hand-controller"></a-entity>
+            <a-entity hand-tracking-controls="hand: right;" mixin="hand-controller"></a-entity> -->
+            <a-entity hand-controls="hand: left" mixin="hand-controller"></a-entity>
+            <a-entity hand-controls="hand: right" mixin="hand-controller" ></a-entity>
+        </a-entity>
+        <a-entity id="models_group" position="0 1.1 -1.1">
+          <!-- <a-box color="lightgray" scale="0.5 0.5 0.5" id="stand"
+              position="0 0.85 -1.1" position2="0 -.25 0"
+              dynamic-body="shape: box"
+              visible="false"
+              collision-filter="collisionForces: false"
+              grabbable
+              grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+              hoverable
+              event-set__hoveron="_event: hover-start; material.opacity: 0.7; transparent: true"
+              event-set__hoveroff="_event: hover-end; material.opacity: 1; transparent: false"
+              event-set__grabon="_event:  grab-start; material.color: green"
+              event-set__graboff="_event: grab-end; material.color: lightgray"
+            ></a-box> -->
+            <a-entity gltf-model="#plot_gltf" position="0 0.5 0" scale="5 5 5" id="model"
+              title="Plot"
+              mixin="grabbable-component"
+              animation-mixer
+              ></a-entity>
+              <!-- animation-mixer -->
+        </a-entity>
+    </a-scene>
+    <div class="actions">
+      <button id="camera-btn" type="button" class="button">Hide Camera</button>
+      <button id="screen-btn" type="button" class="button">Share screen</button>
+    </div>
+  </body>
+  <script>
+    // https://github.com/aframevr/aframe-inspector/blob/2ee15b46819a13eb82157594de8b9ccee8ab969e/src/lib/viewport.js#L35
+    NAF.adapters.register("plotar-easyrtcadapter", PlotAREasyRtcAdapter);
+    
+    // autoplay only works after first interaction - so just try to play and eventually it'll work
+    // another possibility
+    setInterval(function() {
+      document.querySelectorAll("[networked-video-source]").forEach((x) => {
+        var video = x.components['networked-video-source'].video;
+        if(video !== null && video.currentTime <= 0){
+          video.play()
+        }
+      })
+    }, 500);
+    easyrtc.enableDebug(true);
+
+    // let scene = document.getElementsByName
+    var playerEl = document.querySelector('#model');
+    // playerEl.addEventListener('collide', function (e) {
+    //   console.log('model has collided with body #' + e.detail.id);
+    //   console.log(e.detail.body);
+    // });
+    // playerEl.addEventListener("mousedown", function(e){
+    //   console.log("mousedown model"); console.log(e)
+    // })
+
+    // document.querySelectorAll('[hand-controls]').forEach(el => {
+    //   el.addEventListener("gripdown", function(e){console.log("gripdown"); console.log(e)})
+    // })
+
+
+    var queryParams = null;
+
+    function getQueryParams(){
+      if(queryParams == null){
+        queryParams = {};
+        if(location.search.length==0){
+          return queryParams;
+        }
+        var vars = location.search.substring(1).split("&");
+        for(var i=0; i<vars.length; i++){
+          var index = vars[i].indexOf("=")
+          if(index > 0){
+            var name = vars[i].substring(0,index).split("+").join(" ");
+            var value = vars[i].substring(index+1).split("+").join(" ");
+            queryParams[decodeURIComponent(name)] = decodeURIComponent(value);
+          }
+        }
+        log(queryParams)
+      }
+      return queryParams;
+    }
+    function findServer(){
+      var ret = getQueryParams().server;
+      if(ret != null)
+        return ret;
+      // if we got here from a server, use it:
+      return new URL("index.html", location).href;
+    }
+    function findWsUrl(){
+      var ret = getQueryParams().wsUrl;
+      if(ret != null)
+        return ret;
+      ret = new URL("ws", location);
+      ret.protocol = (ret.protocol == "https:") ? "wss:" : "ws:";
+      console.log("found WsUrl: "+ret)
+      return ret;
+    }
+
+    var connected = false;
+    var wsUrl = findWsUrl();
+    var websocket = null;
+
+    function openTheWebsocket(wsUrl){
+      if(wsUrl == null)
+        return;
+      try{
+        websocket = new WebSocket(wsUrl);
+
+        websocket.onopen = function() {
+          sendMessage({'controller': true})
+          updateFocus();
+        }
+        websocket.onmessage = function(msg) {
+          if(msg.data.length == 0)
+            return;
+          log("Got message: "+msg.data);
+          var body = JSON.parse(msg.data)
+          if('status' in body){
+            state = body['status']
+            for(key in state){
+              el = document.getElementById("status_"+key)
+              if(el)
+                el.innerHTML = state[key];
+            }
+          }
+          if("key" in body){
+            handle_char(body["key"]);
+          }
+          //websocket.send("thanks");
+        }
+        websocket.onclose = function(event){
+          log('websocket closed.')
+        }
+
+        connected = true;
+      }catch(err){
+        log(err);
+      }
+    }
+    var revision = 0;
+    function handle_char(msg){
+      if(msg == "r"){
+        // we need to close the websocket, else on Chrome (Android/Linux/macOS)
+        // this somehow backfires and httpuv in the R-session crashes with segfault
+        if(websocket != null){
+          closeWebSocket();
+          location.reload(true);
+        }else{
+          location.reload(true);
+        }
+        return;
+      }else if(msg == "reload_data" || msg =="x" ){
+        m = document.getElementById("model")
+        m.setAttribute("gltf-model", "data.gltf?revision=" + (revision++))
+      //  refreshData();
+      // }else if(msg === "c"){
+      //   websocket.close();
+      //   return;
+      }else if(msg === "space"){
+        speed = (speed==0) ? 1 : 0;
+        log("New speed: "+speed);
+/*      }else if(msg === "f"){
+        toggleFullscreen();
+      }else if(msg === "c"){
+        if(connected){
+          device_controls.disconnect();
+        }else{
+          device_controls.connect();
+        }
+        connected = !connected;*/
+      }else{
+        var ALPHA_ROT = 0.1;
+        if(msg === "a"){
+          go(-1, 0, 0);
+        }else if(msg === "d"){
+          go(1, 0, 0);
+        }else if(msg === "s"){
+          go(0, 0, 1);
+        }else if(msg === "w"){
+          go(0, 0, -1);
+        }else if(msg === "q"){
+          go(0, 1, 0);
+        }else if(msg === "e"){
+          go(0, -1, 0);
+        }else if(msg === "Left"){
+          camera.rotateY(ALPHA_ROT);
+        }else if(msg === "Right"){
+          camera.rotateY(-ALPHA_ROT);
+        }else if(msg === "Up"){
+          camera.rotateX(ALPHA_ROT);
+        }else if(msg === "Down"){
+          camera.rotateX(-ALPHA_ROT);
+        }
+      }
+    }
+
+    function getKeyChar(key){
+      var keychar = String.fromCharCode(key).toLowerCase();
+      if(key==32){
+        keychar = "space";
+      }else if(key==37){
+        keychar = "Left";
+      }else if(key==38){
+        keychar = "Up";
+      }else if(key==39){
+        keychar = "Right";
+      }else if(key==40){
+        keychar = "Down";
+      }
+      console.log(keychar)
+      return keychar
+    }
+
+    function updateFocus(event){
+    //   log("Update Focus upon: " + event);
+    //   focusWidget = document.getElementById("focusWidget");
+    //   keyboard = document.getElementById("keyboard");
+      if(document.hasFocus()){
+        // focusWidget.innerHTML = "has focus";
+        // keyboard.className = "focused";
+        // document.getElementById("focusBox").style.display = 'none'
+        sendMessage({'focus': true});
+      }else{
+        // focusWidget.innerHTML = "has not focus";
+        // keyboard.className = "blured";
+        // document.getElementById("focusBox").style.display = 'block'
+        sendMessage({'focus': false});
+      }
+      // if(websocket==null || websocket.readyState != WebSocket.OPEN)
+      //   keyboard.className = "disconnected";
+    //   log(keyboard.className)
+    }
+
+    function sendMessage(message){
+      if(typeof(message) === 'string' || message instanceof String){
+        message = { "message": message }
+      }
+      message = JSON.stringify(message)
+      if(websocket != null && websocket.readyState == WebSocket.OPEN){
+        websocket.send(message);
+        log('sent message: ' + message);
+      }else{
+        log('no websocket - would have sent message: ' + message);
+      }
+    }
+
+    function closeWebSocket(){
+      if(websocket != null){
+        // sendMessage("byebye")
+        websocket.close();
+        websocket = null;
+      }
+    }
+
+    function myOnLoad(event){
+      openTheWebsocket(wsUrl);
+
+      updateFocus(event);
+    }
+
+    function log(msg){
+      console.log(msg)
+      // debugWidget = document.getElementById("debug");
+      // debugWidget.innerHTML += msg+"\n";
+    }
+
+    // **************   Screen Cast  **************
+      // Camera status
+      let cameraEnabled = true;
+      // Camera button element
+      const cameraBtnEle = document.getElementById('camera-btn');
+
+      // Screen share status
+      let screenEnabled = false;
+      // Screen share button element
+      const screenBtnEle = document.getElementById('screen-btn');
+
+      // On mobile remove elements that are resource heavy
+      const isMobile = AFRAME.utils.device.isMobile();
+
+      if (isMobile) {
+      }
+
+      // Define custom schema for syncing avatar color, set by random-color
+      NAF.schemas.add({
+        template: '#avatar-template',
+        components: [
+          'position',
+          'rotation'
+        ]
+      });
+
+      // Called by Networked-Aframe when connected to server
+      function onConnect () {
+        console.log("onConnect", new Date());
+
+        // Handle camera button click (Off and On)
+        cameraBtnEle.addEventListener('click', function() {
+          NAF.connection.adapter.enableCamera(!cameraEnabled);
+          cameraEnabled = !cameraEnabled;
+          cameraBtnEle.textContent = cameraEnabled ? 'Hide Camera' : 'Show Camera';
+        });
+
+        // Handle screen button click (Off and On)
+        screenBtnEle.addEventListener('click', function() {
+          if (screenEnabled) {
+            NAF.connection.adapter.removeLocalMediaStream("screen");
+            screenEnabled = false;
+            screenBtnEle.textContent = 'Share screen';
+          } else {
+            navigator.mediaDevices.getDisplayMedia().then((stream) => {
+              NAF.connection.adapter.addLocalMediaStream(stream, "screen");
+              screenEnabled = true;
+              screenBtnEle.textContent = 'Stop Screen';
+            });
+          }
+        });
+      }
+
+      // const selectionBox = new THREE.BoxHelper();
+      // selectionBox.material.depthTest = false;
+      // selectionBox.material.transparent = true;
+      // selectionBox.material.color.set(0x1faaf2);
+      // selectionBox.visible = false;
+      // sceneHelpers.add(selectionBox);
+      // selectionBox.setFromObject(object).update();
+      // Events.on('objectselect', object => {
+      //   selectionBox.visible = false;
+      //   transformControls.detach();
+      //   if (object && object.el) {
+      //     if (object.el.getObject3D('mesh')) {
+      //       selectionBox.setFromObject(object).update();
+      //       selectionBox.visible = true;
+      //     }
+
+      //     transformControls.attach(object);
+      //   }
+      // });
+
+
+  </script>
+</html>
