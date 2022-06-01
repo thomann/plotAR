@@ -246,6 +246,15 @@ def get_host(host=None):
         return PlotHost(host)
     if _host is None:
         # actual detection code
+        if is_in_colab():
+            from google.colab.output import eval_js
+            ext_url = eval_js("google.colab.kernel.proxyPort(2908)")
+            _host = PlotHost('http://localhost:2908',external_url=ext_url)
+            try:
+                status = _host.status()
+            except:
+                start_server_process()
+            return _host
         jpy = my_jupyter_server()
         if jpy is not None:
             hub_prefix = os.getenv("JUPYTERHUB_SERVICE_PREFIX")
@@ -292,6 +301,12 @@ class PlotHost:
     def post(self, json):
         response = requests.post(self.internal_url(""), json=json, headers=self.headers, verify=self.verify)
         response.raise_for_status()
+    def get(self, path):
+        response = requests.get(self.internal_url(path), headers=self.headers, verify=self.verify)
+        response.raise_for_status()
+        return response.json()
+    def status(self):
+        return self.get("status.json")
     def __repr__(self):
         return f"PlotHost({self.url})"
     def _repr_html_(self):
@@ -339,7 +354,7 @@ def my_jupyter_server(verbose=False, jupyter_parent_pid=None):
                 headers={'Authorization': 'token ' + jpy['token']},
                 )
 
-def start_server_process(port: int = 2908, showServerURL=True):
+def start_server_process(port: int = 2908, showServerURL=False):
     """Start Server in another process.
 
     Parameters
@@ -356,7 +371,7 @@ def start_server_process(port: int = 2908, showServerURL=True):
     python = sys.executable
     # or os.__file__.split("lib/")[0],"bin","python") ?
     
-    proc = subprocess.Popen([python, '-m', 'plotar.server', str(port)])
+    proc = subprocess.Popen([python, '-m', 'plotar.server', '--port', str(port)])
 
     if showServerURL:
         url = _host+'/index.html'
@@ -393,3 +408,10 @@ def is_in_jupyter() -> bool:
     return False
 
 
+def is_in_colab() -> bool:
+    # https://stackoverflow.com/a/39662359/6400719
+    try:
+        from IPython import get_ipython
+        return 'google.colab' in str(get_ipython()) #if hasattr(__builtins__,'__IPYTHON__') else False
+    except:
+        return False  # Probably standard Python interpreter
