@@ -41,6 +41,18 @@ class PlotAR(object):
                 from .export import export
                 export(self.data, filename, [f])
 
+def _mk_val(df, val, n=None):
+    if val is None:
+        return None
+    elif val is not None and isinstance(val, str) and val in df.columns:
+        return df[val].values
+    elif isinstance(val, float):
+        if n is None:
+            n = df.shape[0]
+        return np.zeros((n,)) + val
+    else:
+        return np.array(val)
+
 
 def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
            axis_names=None, col_labels=None,
@@ -59,26 +71,19 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
             data = df.iloc[:,0:3].values
             axis_names = axis_names or df.columns[xyz].tolist()
 
-    def _mk_val(df, val):
-        if val is None:
-            return None
-        elif val is not None and isinstance(val, str) and val in df.columns:
-            return df[val].values
-        elif isinstance(val, float):
-            return np.zeros((n,)) + val
-        else:
-            return np.array(val)
-
-    col   = _mk_val(df, col)
-    size  = _mk_val(df, size)
-    lines = _mk_val(df, lines)
-    label = _mk_val(df, label)
+    col   = _mk_val(df, col, n)
+    size  = _mk_val(df, size, n)
+    lines = _mk_val(df, lines, n)
+    label = _mk_val(df, label, n)
 
     for i in [col, size, lines, label]:
         assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
     if auto_scale:
         # have all variables scaled to [-1,1]
-        data = scale(data)
+        if auto_scale == 1:
+            data = scale(data, axis=(0,1))
+        else:
+            data = scale(data)
         if size is not None:
             # scale the sizes between 0.5 and 1.5:
             size = scale(size.reshape((-1, 1)))[:,0] + 1.5
@@ -135,8 +140,10 @@ def animate(data, xyz, *, animation_frame, group=None,
         auto_scale=True, push_data=True, return_data=True, **kwargs):
     if group is None:
         group = pd.Series(1)
-    data = pd.DataFrame(data).sort_values([group, animation_frame])
-    assert not any( data[[group,animation_frame]].duplicated() ), f'data has to be unique w.r.t. animation_frame ({animation_frame}) and group ({group})'
+    if not isinstance(group, list):
+        group = [group]
+    data = pd.DataFrame(data).sort_values(group + [animation_frame])
+    assert not any( data[group+[animation_frame]].duplicated() ), f'data has to be unique w.r.t. animation_frame ({animation_frame}) and group ({group})'
     if auto_scale:
         # have all variables scaled to [-1,1]
         data[xyz] = scale(data[xyz].values)
@@ -154,13 +161,30 @@ def animate(data, xyz, *, animation_frame, group=None,
         df[xyz].values.tolist()
         for _, df in data.groupby(group)
     ]
-    if time_values is None:
-        time_values = sorted(data[animation_frame].unique())
-    time_values = [ str(_) for _ in time_values ]
-    assert (duration_seconds is None) != (time_codes_per_second is None), f'exactly one of duration_seconds or time_codes_per_second have to be not None'
+
+    time_values = _mk_val(data, animation_frame)
+    time_labels = None
+    try:
+        time_values = pd.to_datetime(time_values, errors='raise')
+        time_labels = [[0.0,time_values.min()], [1.0,time_values.max()]]
+        range = 1.0 if time_values.max() == time_values.min() else (time_values.max()-time_values.min())
+        time_values = (time_values - time_values.min()) / range
+    except:
+        if pd.api.types.is_numeric_dtype(time_values):
+            range = time_values.max()-time_values.min()
+            time_values = (time_values - time_values.min()) / (range if range >0 else 1)
+    time_values = pd.Series(time_values)
+    # Now we assume that time_values actually is 
+    time_labels = [ [t,str(l)] for t,l in time_labels ] if time_labels is not None else []
     if time_codes_per_second is None:
-        time_codes_per_second = len(time_values)/duration_seconds
-    body['animation'] = dict(data=animation_data, time_labels=time_values,
+        time_range = (time_values.max()-time_values.min())
+        time_codes_per_second = time_range / duration_seconds
+    time_values = [
+        time_values.loc[ind].values.tolist()
+        for _,ind in data.reset_index(drop=True).groupby(group).groups.items()
+    ]
+
+    body['animation'] = dict(data=animation_data, time_labels=time_labels, time_values=time_values,
                          time_codes_per_second=time_codes_per_second)
     
     plot_host = None
@@ -216,7 +240,7 @@ def scale(data, axis=(0,)):
         return data
     ranges = np.array(data.max(axis) - data.min(axis))
     ranges[ranges == 0] = 1
-    data = (data - data.min(axis)) / ranges * 2 - 1
+    data = (data - data.min((0,))) / ranges * 2 - 1
     return data
 
 

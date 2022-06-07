@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .common import text2png, create_surface, line_segments, create_line
+from .common import text2png, create_surface, line_segments, create_line, flip_yz
 from . import common
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
@@ -195,8 +195,12 @@ class GLTF(object):
                 }]
             })
             return glyph_mesh_id[ch]
-        def drawText(text, valign=0.25):
+        def drawText(text, valign=0.25, halign='left'):
             layout = font.layoutText(text)
+            x_offset = 0.0
+            if halign == 'center':
+                text_width = layout[-1]['left']+layout[-1]['width']
+                x_offset = - text_width / 2
             glyphs = []
             for glyph in layout:
                 ch = chr(glyph['id'])
@@ -204,7 +208,7 @@ class GLTF(object):
                 "name" : f"glyph_{ch}",
                 "mesh" : get_glyph_mesh_id(ch),
                 "translation": [
-                    (glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
+                    (x_offset+glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
                     (font.common['base'] * (1-valign) - glyph['yoffset'] - glyph['height']) / font.common['lineHeight'] ,#/ fc['scaleH'],
                     0.0],
                 "scale": [
@@ -370,14 +374,22 @@ def data2gltf(data, subdiv=16):
         start_time_code = 0
         time_codes_per_second = animation.get('time_codes_per_second', 24)
         animation_input = np.arange(end_time_code+1) / time_codes_per_second
+        animation_inputs = [ [_/time_codes_per_second for _ in t] for t in animation.get('time_values',[])]
+        max_animation_input = max(max(_) for _ in animation_inputs)
         animation_outputs = [
-            np.array(_).reshape((-1, )).tolist()
+            flip_yz(np.array(_)).reshape((-1, )).tolist()
             for _ in animation.get('data',[])
         ]
         animation_input_acc_id, *animation_output_acc_ids = gltf.add_buffer_data(
             [animation_input.tolist()] + animation_outputs,
             [GLTF_ARRAY_BUFFER] + [GLTF_ARRAY_BUFFER] * len(animation_outputs),
             ["SCALAR"] + ["VEC3"] * len(animation_outputs),
+            remove_view_target=True,
+        )
+        animation_inputs_acc_ids = gltf.add_buffer_data(
+            animation_inputs,
+            [GLTF_ARRAY_BUFFER] * len(animation_inputs),
+            ["SCALAR"] * len(animation_inputs),
             remove_view_target=True,
         )
         animation_channels = []
@@ -451,6 +463,8 @@ def data2gltf(data, subdiv=16):
             data_node['children'].append(_)
 
         if animation:
+            if len(animation_inputs_acc_ids):
+                animation_input_acc_id = animation_inputs_acc_ids[i]
             animation_samplers.append(dict(
                 input=animation_input_acc_id,
                 interpolation="LINEAR",
@@ -460,6 +474,40 @@ def data2gltf(data, subdiv=16):
                 target=dict(node=current_node_id, path='translation'),
                 sampler=len(animation_samplers)-1,
             ))
+            time_values = animation['time_values'][i]
+            a,b = min(time_values), max(time_values)
+            if a > 0 or b < max_animation_input:
+                t=[]
+                scales = []
+                if a>0:
+                    t += [0,a/time_codes_per_second]
+                    scales += [ 0,0,0 ] + scale
+                else:
+                    t += [0]
+                    scales += scale
+                if b < max_animation_input:
+                    t += [b/time_codes_per_second]
+                    scales += [ 0,0,0 ]
+                sum([
+                    scale if a >0 else [0,0,0],
+                    scale,
+                    scale if b==max_animation_input else [0,0,0],
+                ], [])
+                animation_scale_input, animation_scale_output = gltf.add_buffer_data(
+                    [t] + [scales],
+                    [GLTF_ARRAY_BUFFER,GLTF_ARRAY_BUFFER],
+                    ["SCALAR"] + ["VEC3"],
+                    remove_view_target=True,
+                )
+                animation_samplers.append(dict(
+                    input=animation_scale_input,
+                    interpolation="STEP",
+                    output=animation_scale_output,
+                ))
+                animation_channels.append(dict(
+                    target=dict(node=current_node_id, path='scale'),
+                    sampler=len(animation_samplers)-1,
+                ))
 
     if 'surface' in data:
         surface = data['surface']
@@ -659,6 +707,53 @@ def data2gltf(data, subdiv=16):
           "rotation": rotation,
           # "scale": scale,
         }))
+    if animation:
+        axes_node['children'].append(gltf.add('nodes', {
+          "name" : f"AnimationIndicatorArrow",
+          "mesh" : arrow_mesh_id,
+          "translation": [-1,-1,1],
+          "rotation": [math.sqrt(2)/2, math.sqrt(2)/2, 0, 0 ],
+          "scale": [0.3,2,0.3],
+        }))
+        current_node_id = gltf.add('nodes', {
+            "name": f"AnimationIndicatorPoint",
+            "mesh": col_mesh_id[0],
+            "translation": [-1,-1,1],
+            "scale": [0.02] * 3,
+        })
+        axes_node['children'].append(current_node_id)
+        animation_input_acc_id, animation_output_acc_id = gltf.add_buffer_data(
+            [ [0,max_animation_input], np.array([ [-1,-1,1],[1,-1,1] ]).reshape((-1, )).tolist() ],
+            [GLTF_ARRAY_BUFFER] *3 ,
+            ["SCALAR"] + ["VEC3"] * 2,
+            remove_view_target=True,
+        )
+        animation_samplers.append(dict(
+            input=animation_input_acc_id,
+            interpolation="LINEAR",
+            output=animation_output_acc_id,
+        ))
+        animation_channels.append(dict(
+            target=dict(node=current_node_id, path='translation'),
+            sampler=len(animation_samplers)-1,
+        ))
+        if 'time_labels' in animation:
+            for i,(t,label) in enumerate(animation['time_labels']):
+                x = (1-t) * -1 + t * 1
+                char_node_ids = drawText(label, halign='center')
+                axes_node['children'].append(gltf.add('nodes', {
+                    "name" : f"text_{text}",
+                    "children": char_node_ids,
+                    #   "mesh" : mesh_id,
+                    "translation": [x,-1.01,1.03],
+                    "scale": [0.05] * 3,
+                }))
+                axes_node['children'].append(gltf.add('nodes', {
+                    "name": f"Animation Indicator Tick {i}",
+                    "mesh": col_mesh_id[0],
+                    "translation": [x,-1,1],
+                    "scale": [0.01]*3,
+                }))
     root_children = [data_node_id]
     if legend_node_id is not None:
         root_children.append(legend_node_id)
