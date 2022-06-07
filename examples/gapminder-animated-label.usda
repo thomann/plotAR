@@ -5,9 +5,9 @@
         upAxis = "Y"
         metersPerUnit = 0.1
         // autoPlay = true // if this is set to true then in quick look there is no autoplay ?!?
-        endTimeCode = 218
+        endTimeCode = 1000
         startTimeCode = 0
-        timeCodesPerSecond = 7.3
+        timeCodesPerSecond = 33.333333333333336
     )
     def Xform "Spheres" (
         
@@ -869,6 +869,96 @@
                 }
             }
         
+                def Cylinder "AnimationIndicatorLine" {
+                    rel material:binding = </Spheres/Materials/material_0>
+                    double radius = 0.002
+                    double height = 2
+                    uniform token axis = "X"
+                    double3 xformOp:translate = (0,-1,1)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+                def Sphere "AnimationIndicatorPoint" {
+                    double3 xformOp:translate.timeSamples = {
+                        0: (-1,-1,1), 1000: (1,-1,1)
+                    }
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_2>
+        
+                    double radius = 0.02
+                }
+                
+                    def Preliminary_Text "AnimationIndicator_Text_0"
+                    {
+                        string content = "1800"
+                        string[] font = [ "Helvetica", "Arial" ]
+                        float pointSize = 72.0
+                        // token wrapMode = "singleLine"
+                        token wrapMode = "hardBreaks"
+                        float width = 0.4
+                        token horizontalAlignment = "center"
+                        token verticalAlignment = "top"
+                        float depth = 0.01
+
+                        double3 xformOp:translate = (-1,-1.01,1.03)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+                    }
+                    def Sphere "AnimationIndicator_Tick_0" {
+                        double3 xformOp:translate = (-1,-1,1)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+            
+                        double radius = 0.01
+                    }
+                
+                    def Preliminary_Text "AnimationIndicator_Text_1"
+                    {
+                        string content = "1909"
+                        string[] font = [ "Helvetica", "Arial" ]
+                        float pointSize = 72.0
+                        // token wrapMode = "singleLine"
+                        token wrapMode = "hardBreaks"
+                        float width = 0.4
+                        token horizontalAlignment = "center"
+                        token verticalAlignment = "top"
+                        float depth = 0.01
+
+                        double3 xformOp:translate = (0.0,-1.01,1.03)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+                    }
+                    def Sphere "AnimationIndicator_Tick_1" {
+                        double3 xformOp:translate = (0.0,-1,1)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+            
+                        double radius = 0.01
+                    }
+                
+                    def Preliminary_Text "AnimationIndicator_Text_2"
+                    {
+                        string content = "2018"
+                        string[] font = [ "Helvetica", "Arial" ]
+                        float pointSize = 72.0
+                        // token wrapMode = "singleLine"
+                        token wrapMode = "hardBreaks"
+                        float width = 0.4
+                        token horizontalAlignment = "center"
+                        token verticalAlignment = "top"
+                        float depth = 0.01
+
+                        double3 xformOp:translate = (1,-1.01,1.03)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+                    }
+                    def Sphere "AnimationIndicator_Tick_2" {
+                        double3 xformOp:translate = (1,-1,1)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+            
+                        double radius = 0.01
+                    }
+                
         }
         def Xform "Materials"
         {

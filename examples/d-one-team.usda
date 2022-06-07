@@ -1,14 +1,71 @@
 #usda 1.0
     (
+        doc = "PlotAR v0.3.0"
         defaultPrim = "Spheres"
         upAxis = "Y"
-        metersPerUnit = 1
+        metersPerUnit = 0.1
+        
     )
-    def Xform "Spheres" {
-        def Scope "Texts"
+    def Xform "Spheres" (
+        // only do this when we do not have animation else in quick look the animation does not auto start ?!?
+        prepend apiSchemas = ["Preliminary_AnchoringAPI"]
+        kind = "component"
+    )
+    {
+        // token preliminary:anchoring:type = "plane"
+        // token preliminary:planeAnchoring:alignment = "horizontal"
+
+        double3 xformOp:translate = (0,1,0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        
+        float3[] extent = [(-1,-1,-1), (1,1,1)]
+        
+        def Xform "Texts"
         {
             
             def Preliminary_Text "text_0"
+            {
+                string content = "Dr. Abhishek Saxena "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (1.0,1.0,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_1"
+            {
+                string content = "Adriani Dagre "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.4576271186440678,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_2"
+            {
+                string content = "Agata Figas "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.11864406779661008,1.0,-0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_3"
             {
                 string content = "Alexandra Studer "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -17,12 +74,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7090909090909091,0.6190476190476191,0.5555555555555556)
+                double3 xformOp:translate = (-0.728813559322034,0.5454545454545454,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_1"
+            def Preliminary_Text "text_4"
             {
                 string content = "Dr. Alex Hall "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -31,26 +88,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (1.0,-0.7142857142857143,0.11111111111111116)
+                double3 xformOp:translate = (0.8644067796610169,-0.7272727272727273,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_2"
-            {
-                string content = "Dr. Andrea Abelli "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (0.5272727272727273,0.8095238095238095,-0.5555555555555556)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
-            }
-            
-            def Preliminary_Text "text_3"
+            def Preliminary_Text "text_5"
             {
                 string content = "Dr. Andrej Vckovski "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -59,12 +102,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5272727272727273,-0.4285714285714286,1.0)
+                double3 xformOp:translate = (-0.5593220338983051,-0.4545454545454546,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_4"
+            def Preliminary_Text "text_6"
             {
                 string content = "Andrey Sluzhivoy "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -73,12 +116,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.6363636363636364,0.5238095238095237,1.0)
+                double3 xformOp:translate = (-0.6610169491525424,0.4545454545454546,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_5"
+            def Preliminary_Text "text_7"
             {
                 string content = "Dr. Andrin Flütsch "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -87,12 +130,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.2727272727272727,0.9047619047619047,-0.5555555555555556)
+                double3 xformOp:translate = (-0.3220338983050848,0.8181818181818181,-0.6000000000000001)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_6"
+            def Preliminary_Text "text_8"
+            {
+                string content = "Aris Delopoulos "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.423728813559322,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_9"
             {
                 string content = "Dr. Axel Obermeier "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -101,12 +158,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.23636363636363633,0.6190476190476191,-0.5555555555555556)
+                double3 xformOp:translate = (0.15254237288135597,0.5454545454545454,-0.6000000000000001)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_7"
+            def Preliminary_Text "text_10"
             {
                 string content = "Babek Dabaghchian "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -115,12 +172,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.34545454545454546,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (-0.38983050847457623,0.8181818181818181,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_8"
+            def Preliminary_Text "text_11"
             {
                 string content = "Bavina Schär "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -129,12 +186,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5636363636363637,0.9047619047619047,1.0)
+                double3 xformOp:translate = (-0.4576271186440678,0.8181818181818181,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_9"
+            def Preliminary_Text "text_12"
             {
                 string content = "Dr. Bernhard Vennemann "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -143,40 +200,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.19999999999999996,1.0,0.11111111111111116)
+                double3 xformOp:translate = (-0.2542372881355932,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_10"
+            def Preliminary_Text "text_13"
             {
-                string content = "Bernhard Zindel "
+                string content = "Dr. Carlos Parés-Pulido "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.2727272727272727,1.0,0.33333333333333337)
+                double3 xformOp:translate = (-0.05084745762711862,1.0,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
+                rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_11"
-            {
-                string content = "Catalin Ehrmann "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (-0.5272727272727273,0.23809523809523814,1.0)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
-            }
-            
-            def Preliminary_Text "text_12"
+            def Preliminary_Text "text_14"
             {
                 string content = "Dr. Charlotte Cabane "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -185,12 +228,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.3090909090909091,0.5238095238095237,0.11111111111111116)
+                double3 xformOp:translate = (0.22033898305084754,0.4545454545454546,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_13"
+            def Preliminary_Text "text_15"
+            {
+                string content = "Charlotte Ehrlicher "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.423728813559322,1.0,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_16"
             {
                 string content = "Christian Erni "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -199,12 +256,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.6000000000000001,0.1428571428571428,0.7777777777777778)
+                double3 xformOp:translate = (0.4915254237288136,0.09090909090909083,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_14"
+            def Preliminary_Text "text_17"
             {
                 string content = "Christian Schnider "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -213,40 +270,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-1.0,-0.1428571428571429,1.0)
+                double3 xformOp:translate = (-1.0,-0.18181818181818177,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_15"
-            {
-                string content = "Dr. Christie Walker "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (0.2727272727272727,1.0,-0.11111111111111116)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
-            }
-            
-            def Preliminary_Text "text_16"
-            {
-                string content = "Christine Bürgi "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (-0.6363636363636364,1.0,0.11111111111111116)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
-            }
-            
-            def Preliminary_Text "text_17"
+            def Preliminary_Text "text_18"
             {
                 string content = "Clément François "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -255,26 +284,68 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7454545454545455,1.0,0.11111111111111116)
+                double3 xformOp:translate = (-0.7627118644067796,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_18"
+            def Preliminary_Text "text_19"
             {
-                string content = "Dario Novello "
+                string content = "Despina Adamopoulou "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.3090909090909091,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (-0.5593220338983051,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_19"
+            def Preliminary_Text "text_20"
+            {
+                string content = "Diana Mitache "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.05084745762711873,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_21"
+            {
+                string content = "Dimitrios Sakellaris "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.0847457627118644,0.9090909090909092,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_22"
+            {
+                string content = "Dr. Domante Gerciene "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.2881355932203389,1.0,0.6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_23"
             {
                 string content = "Dominique Im Obersteg "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -283,12 +354,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.018181818181818188,1.0,1.0)
+                double3 xformOp:translate = (-0.0847457627118644,0.9090909090909092,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_20"
+            def Preliminary_Text "text_24"
+            {
+                string content = "Else Novac "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.6949152542372881,1.0,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_25"
+            {
+                string content = "Elvira Galanaki "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.2542372881355932,1.0,0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_26"
             {
                 string content = "Eszter Börzsönyi "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -297,12 +396,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7090909090909091,0.33333333333333326,1.0)
+                double3 xformOp:translate = (-0.728813559322034,0.2727272727272727,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_21"
+            def Preliminary_Text "text_27"
+            {
+                string content = "Eszter Kocsis "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.38983050847457623,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_28"
             {
                 string content = "Fabian Russmann "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -311,12 +424,54 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.19999999999999996,0.5238095238095237,-0.11111111111111116)
+                double3 xformOp:translate = (0.11864406779661008,0.4545454545454546,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_22"
+            def Preliminary_Text "text_29"
+            {
+                string content = "Fotis Ntouskas "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.3220338983050848,1.0,0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_30"
+            {
+                string content = "George Aidinis "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.35593220338983056,1.0,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_31"
+            {
+                string content = "Grigoris Papatsoris "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.016949152542372836,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_32"
             {
                 string content = "Hans Peter Gränicher "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -325,26 +480,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.38181818181818183,-0.5238095238095238,0.7777777777777778)
+                double3 xformOp:translate = (0.2881355932203389,-0.5454545454545454,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_23"
+            def Preliminary_Text "text_33"
             {
-                string content = "Igor Pesic "
+                string content = "Dr. Heiko Kromer "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.12727272727272732,0.8095238095238095,-0.11111111111111116)
+                double3 xformOp:translate = (-0.5254237288135593,0.9090909090909092,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
+                rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_24"
+            def Preliminary_Text "text_34"
             {
                 string content = "Inna Grijnevitch "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -353,12 +508,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.018181818181818077,0.8095238095238095,-0.11111111111111116)
+                double3 xformOp:translate = (-0.05084745762711862,0.7272727272727273,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_25"
+            def Preliminary_Text "text_35"
+            {
+                string content = "Ioanna Papavergou "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.5254237288135593,1.0,0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_36"
+            {
+                string content = "Ioannis Markopoulos "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.35593220338983056,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_37"
             {
                 string content = "Jacqueline Stählin "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -367,12 +550,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7090909090909091,0.6190476190476191,0.5555555555555556)
+                double3 xformOp:translate = (-0.728813559322034,0.5454545454545454,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_26"
+            def Preliminary_Text "text_38"
+            {
+                string content = "Dr. Jan Scharnetzky "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5254237288135593,0.9090909090909092,-0.3999999999999999)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_39"
+            {
+                string content = "Jenny Syrjänen "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.016949152542372836,1.0,0.6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_40"
             {
                 string content = "Joël Ineichen "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -381,12 +592,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.6363636363636364,0.04761904761904767,1.0)
+                double3 xformOp:translate = (-0.6610169491525424,0.0,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_27"
+            def Preliminary_Text "text_41"
+            {
+                string content = "Dr. Johannes Brand "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.15254237288135597,1.0,-0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_42"
             {
                 string content = "Jonas Stehli "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -395,12 +620,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.09090909090909094,0.9047619047619047,-0.5555555555555556)
+                double3 xformOp:translate = (-0.15254237288135597,0.8181818181818181,-0.6000000000000001)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_28"
+            def Preliminary_Text "text_43"
             {
                 string content = "Jonathan Heitz "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -409,26 +634,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.34545454545454546,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (-0.38983050847457623,0.8181818181818181,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_29"
+            def Preliminary_Text "text_44"
             {
-                string content = "Dr. Jürgen Schwärzler "
+                string content = "Julia Binder "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7090909090909091,0.7142857142857142,0.5555555555555556)
+                double3 xformOp:translate = (-0.4576271186440678,0.9090909090909092,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
+                rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_30"
+            def Preliminary_Text "text_45"
             {
                 string content = "Justin MacPherson "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -437,12 +662,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.4545454545454546,1.0,0.11111111111111116)
+                double3 xformOp:translate = (-0.4915254237288136,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_31"
+            def Preliminary_Text "text_46"
+            {
+                string content = "Justyna Boczon "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5254237288135593,1.0,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_47"
+            {
+                string content = "Katia Ponti "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.4576271186440677,0.9090909090909092,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_48"
             {
                 string content = "Katrin Stewart "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -451,26 +704,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.38181818181818183,0.04761904761904767,0.7777777777777778)
+                double3 xformOp:translate = (0.2881355932203389,0.0,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_32"
+            def Preliminary_Text "text_49"
             {
-                string content = "Keven Le Moing "
+                string content = "Dr. Kerem Tezcan "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.19999999999999996,1.0,-0.11111111111111116)
+                double3 xformOp:translate = (-0.4576271186440678,1.0,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
+                rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_33"
+            def Preliminary_Text "text_50"
             {
                 string content = "Dr. Klaus Fuchs "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -479,12 +732,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.2727272727272727,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (-0.3220338983050848,0.8181818181818181,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_34"
+            def Preliminary_Text "text_51"
+            {
+                string content = "Konstantinos Pittas "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.11864406779661019,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_52"
             {
                 string content = "Kostas Konstantelos "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -493,12 +760,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.054545454545454564,0.9047619047619047,-0.11111111111111116)
+                double3 xformOp:translate = (-0.11864406779661019,0.8181818181818181,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_35"
+            def Preliminary_Text "text_53"
             {
                 string content = "Liubomyr Fedyniak "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -507,12 +774,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.8545454545454545,0.9047619047619047,1.0)
+                double3 xformOp:translate = (-0.864406779661017,0.8181818181818181,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_36"
+            def Preliminary_Text "text_54"
+            {
+                string content = "Lorenz Eichhorn "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.7627118644067796,0.9090909090909092,-0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_55"
             {
                 string content = "Luca De Francesco "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -521,12 +802,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5272727272727273,0.9047619047619047,0.5555555555555556)
+                double3 xformOp:translate = (-0.5593220338983051,0.8181818181818181,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_37"
+            def Preliminary_Text "text_56"
             {
                 string content = "Dr. Lukas Altenkamp "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -535,12 +816,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.4545454545454546,0.9047619047619047,0.5555555555555556)
+                double3 xformOp:translate = (0.423728813559322,0.8181818181818181,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_38"
+            def Preliminary_Text "text_57"
+            {
+                string content = "Maciej Siciński "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.0847457627118644,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_58"
             {
                 string content = "Marc Bourqui "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -549,12 +844,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.38181818181818183,0.9047619047619047,0.5555555555555556)
+                double3 xformOp:translate = (-0.423728813559322,0.8181818181818181,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_39"
+            def Preliminary_Text "text_59"
             {
                 string content = "Dr. Marcel Zemp "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -563,12 +858,54 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.23636363636363633,0.33333333333333326,0.33333333333333337)
+                double3 xformOp:translate = (-0.288135593220339,0.2727272727272727,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_40"
+            def Preliminary_Text "text_60"
+            {
+                string content = "Dr. Maria Kliesch "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.0847457627118644,1.0,0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_61"
+            {
+                string content = "Mariangela Pollali "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5254237288135593,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_62"
+            {
+                string content = "Marianna Arvaniti "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.05084745762711862,1.0,0.4)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_63"
             {
                 string content = "Mark Pfändler "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -577,12 +914,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.49090909090909096,0.8095238095238095,0.11111111111111116)
+                double3 xformOp:translate = (-0.5254237288135593,0.7272727272727273,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_41"
+            def Preliminary_Text "text_64"
+            {
+                string content = "Massimo Höhn "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.6610169491525424,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_65"
             {
                 string content = "Matilde Andersen "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -591,12 +942,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.018181818181818077,0.9047619047619047,-0.33333333333333326)
+                double3 xformOp:translate = (-0.05084745762711862,0.8181818181818181,-0.3999999999999999)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_42"
+            def Preliminary_Text "text_66"
             {
                 string content = "Matthias Kyburz "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -605,12 +956,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5272727272727273,0.7142857142857142,0.33333333333333337)
+                double3 xformOp:translate = (-0.5593220338983051,0.6363636363636365,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_43"
+            def Preliminary_Text "text_67"
+            {
+                string content = "Meret Ringwald "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5932203389830508,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_68"
             {
                 string content = "Mia-Angelica Kivinen "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -619,12 +984,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.2727272727272727,0.9047619047619047,0.5555555555555556)
+                double3 xformOp:translate = (-0.3220338983050848,0.8181818181818181,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_44"
+            def Preliminary_Text "text_69"
             {
                 string content = "Michael Bok "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -633,26 +998,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.49090909090909096,0.9047619047619047,1.0)
+                double3 xformOp:translate = (-0.5254237288135593,0.8181818181818181,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_45"
-            {
-                string content = "Michael Frey "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (-0.054545454545454564,0.9047619047619047,-0.11111111111111116)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
-            }
-            
-            def Preliminary_Text "text_46"
+            def Preliminary_Text "text_70"
             {
                 string content = "Mike Franz "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -661,12 +1012,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5636363636363637,0.33333333333333326,1.0)
+                double3 xformOp:translate = (-0.5932203389830508,0.2727272727272727,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_47"
+            def Preliminary_Text "text_71"
             {
                 string content = "Dr. Mirella Haldimann "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -675,26 +1026,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.4545454545454546,0.8095238095238095,-0.33333333333333326)
+                double3 xformOp:translate = (0.35593220338983045,0.7272727272727273,-0.3999999999999999)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_48"
+            def Preliminary_Text "text_72"
             {
-                string content = "Moritz Gück "
+                string content = "Dr. Moritz Haag "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.6363636363636365,0.9047619047619047,-0.11111111111111116)
+                double3 xformOp:translate = (-0.4915254237288136,1.0,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
+                rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_49"
+            def Preliminary_Text "text_73"
             {
                 string content = "Dr. Nabil Belaid "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -703,12 +1054,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.018181818181818077,1.0,0.5555555555555556)
+                double3 xformOp:translate = (-0.05084745762711862,0.9090909090909092,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_50"
+            def Preliminary_Text "text_74"
             {
                 string content = "Natalia Steenbock "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -717,12 +1068,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.23636363636363633,0.9047619047619047,-0.11111111111111116)
+                double3 xformOp:translate = (0.15254237288135597,0.8181818181818181,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_51"
+            def Preliminary_Text "text_75"
             {
                 string content = "Nicola Hefti "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -731,12 +1082,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.7454545454545455,0.4285714285714286,1.0)
+                double3 xformOp:translate = (-0.7627118644067796,0.36363636363636354,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_52"
+            def Preliminary_Text "text_76"
             {
                 string content = "Nicola Reggiori "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -745,12 +1096,54 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.5272727272727273,-0.33333333333333337,0.7777777777777778)
+                double3 xformOp:translate = (-0.5593220338983051,-0.36363636363636365,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_53"
+            def Preliminary_Text "text_77"
+            {
+                string content = "Nikkitha Ramesh "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.11864406779661019,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_78"
+            {
+                string content = "Nikolaos Lekkas "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.22033898305084743,0.9090909090909092,-0.3999999999999999)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_79"
+            {
+                string content = "Nino Weingart "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.6271186440677966,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_80"
             {
                 string content = "Nithya Shetty "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -759,12 +1152,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.8545454545454545,0.7142857142857142,1.0)
+                double3 xformOp:translate = (-0.864406779661017,0.6363636363636365,0.8)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_54"
+            def Preliminary_Text "text_81"
+            {
+                string content = "Noé Fischer "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.016949152542372836,1.0,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_82"
+            {
+                string content = "Panagiotis Zafeiriadis "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.288135593220339,1.0,0.6)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_83"
             {
                 string content = "Patrick Buck "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -773,26 +1194,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.19999999999999996,-1.0,0.5555555555555556)
+                double3 xformOp:translate = (-0.2542372881355932,-1.0,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_55"
-            {
-                string content = "Peter Grönquist "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (0.5636363636363637,1.0,-0.11111111111111116)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
-            }
-            
-            def Preliminary_Text "text_56"
+            def Preliminary_Text "text_84"
             {
                 string content = "Philipp Egli "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -801,12 +1208,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.054545454545454564,1.0,0.11111111111111116)
+                double3 xformOp:translate = (-0.11864406779661019,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_57"
+            def Preliminary_Text "text_85"
             {
                 string content = "Dr. Philipp Thomann "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -815,12 +1222,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.23636363636363633,0.6190476190476191,0.33333333333333337)
+                double3 xformOp:translate = (-0.288135593220339,0.5454545454545454,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_58"
+            def Preliminary_Text "text_86"
             {
                 string content = "Dr. Philipp Vetter "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -829,12 +1236,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.6000000000000001,0.7142857142857142,0.33333333333333337)
+                double3 xformOp:translate = (0.4915254237288136,0.6363636363636365,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_59"
+            def Preliminary_Text "text_87"
+            {
+                string content = "Dr. Philipp Warmer "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5932203389830508,0.9090909090909092,-0.3999999999999999)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_88"
             {
                 string content = "Ramon Braunwarth "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -843,26 +1264,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.19999999999999996,0.9047619047619047,0.33333333333333337)
+                double3 xformOp:translate = (0.11864406779661008,0.8181818181818181,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_60"
+            def Preliminary_Text "text_89"
             {
-                string content = "Richard Hruby "
+                string content = "Robert Yousif "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.3090909090909091,-1.0,-0.11111111111111116)
+                double3 xformOp:translate = (-0.423728813559322,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_61"
+            def Preliminary_Text "text_90"
             {
                 string content = "Roman Moser "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -871,40 +1292,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.4181818181818182,1.0,0.11111111111111116)
+                double3 xformOp:translate = (0.3220338983050848,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_62"
+            def Preliminary_Text "text_91"
             {
-                string content = "Ruth Salvisberg "
+                string content = "Ruben Wolff "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.4181818181818182,0.8095238095238095,0.7777777777777778)
+                double3 xformOp:translate = (-0.22033898305084743,0.36363636363636354,1.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_63"
+            def Preliminary_Text "text_92"
             {
-                string content = "Dr. Ryuta Yoshimatsu "
+                string content = "Samuel von Baussnern "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.09090909090909083,0.7142857142857142,0.33333333333333337)
+                double3 xformOp:translate = (-0.35593220338983056,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
+                rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_64"
+            def Preliminary_Text "text_93"
             {
                 string content = "Dr. Santiago Padron "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -913,12 +1334,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.23636363636363633,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (-0.288135593220339,0.8181818181818181,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_65"
+            def Preliminary_Text "text_94"
             {
                 string content = "Sebastian Baumhauer "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -927,12 +1348,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.23636363636363633,0.5238095238095237,0.5555555555555556)
+                double3 xformOp:translate = (-0.288135593220339,0.4545454545454546,0.4)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_66"
+            def Preliminary_Text "text_95"
+            {
+                string content = "Severin Tschui "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.38983050847457623,1.0,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_96"
+            {
+                string content = "Dr. Shyam Chikatamarla "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.6271186440677967,0.9090909090909092,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_97"
             {
                 string content = "Dr. Simon Hefti "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -941,12 +1390,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.3090909090909091,-1.0,0.33333333333333337)
+                double3 xformOp:translate = (-0.35593220338983056,-1.0,0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_67"
+            def Preliminary_Text "text_98"
             {
                 string content = "Simona Doneva "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -955,12 +1404,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.3090909090909091,0.9047619047619047,0.7777777777777778)
+                double3 xformOp:translate = (0.22033898305084754,0.8181818181818181,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_68"
+            def Preliminary_Text "text_99"
+            {
+                string content = "Simone Totino "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.288135593220339,1.0,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_100"
+            {
+                string content = "Slawomir Zakrzewski "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.728813559322034,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_101"
             {
                 string content = "Spyros Cavadias "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -969,12 +1446,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.5272727272727273,0.9047619047619047,-0.11111111111111116)
+                double3 xformOp:translate = (0.423728813559322,0.8181818181818181,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_69"
+            def Preliminary_Text "text_102"
             {
                 string content = "Dr. Stamatis Stefanakos "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -983,26 +1460,40 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.19999999999999996,-1.0,0.7777777777777778)
+                double3 xformOp:translate = (-0.2542372881355932,-1.0,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_70"
+            def Preliminary_Text "text_103"
             {
-                string content = "Dr. Steffen Terhaar "
+                string content = "Stepan Gaponiuk "
                 string[] font = [ "Helvetica", "Arial" ]
                 token wrapMode = "singleLine"
                 token horizontalAlignment = "left"
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.3090909090909091,0.9047619047619047,1.0)
+                double3 xformOp:translate = (0.15254237288135597,1.0,0.6)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
+                rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_71"
+            def Preliminary_Text "text_104"
+            {
+                string content = "Stephen Quinn "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.2542372881355932,1.0,-0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_105"
             {
                 string content = "Thanos Gkinakos "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -1011,12 +1502,54 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.018181818181818077,1.0,0.11111111111111116)
+                double3 xformOp:translate = (-0.05084745762711862,0.9090909090909092,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_72"
+            def Preliminary_Text "text_106"
+            {
+                string content = "Thanos Karousos "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.6610169491525424,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_107"
+            {
+                string content = "Thomas Truninger "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.6271186440677967,0.9090909090909092,0.19999999999999996)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_108"
+            {
+                string content = "Tim Rohner "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (-0.5932203389830508,0.9090909090909092,0.8)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_0>
+            }
+            
+            def Preliminary_Text "text_109"
             {
                 string content = "Dr. Timo Welti "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -1025,12 +1558,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.09090909090909083,0.9047619047619047,-1.0)
+                double3 xformOp:translate = (0.016949152542372836,0.8181818181818181,-1.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
             }
             
-            def Preliminary_Text "text_73"
+            def Preliminary_Text "text_110"
             {
                 string content = "Timothy Sondej "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -1039,12 +1572,12 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (-0.34545454545454546,0.9047619047619047,-0.11111111111111116)
+                double3 xformOp:translate = (-0.38983050847457623,0.8181818181818181,-0.19999999999999996)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_74"
+            def Preliminary_Text "text_111"
             {
                 string content = "Tommaso Fazio "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -1053,12 +1586,26 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.2727272727272727,0.9047619047619047,0.11111111111111116)
+                double3 xformOp:translate = (0.18644067796610164,0.8181818181818181,-0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_0>
             }
             
-            def Preliminary_Text "text_75"
+            def Preliminary_Text "text_112"
+            {
+                string content = "Dr. Uwe Thümmel "
+                string[] font = [ "Helvetica", "Arial" ]
+                token wrapMode = "singleLine"
+                token horizontalAlignment = "left"
+                token verticalAlignment = "baseline"
+                float depth = 0.01
+                
+                double3 xformOp:translate = (0.22033898305084754,0.9090909090909092,-1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                rel material:binding = </Spheres/Materials/material_1>
+            }
+            
+            def Preliminary_Text "text_113"
             {
                 string content = "Dr. Vito Zanotelli "
                 string[] font = [ "Helvetica", "Arial" ]
@@ -1067,44 +1614,101 @@
                 token verticalAlignment = "baseline"
                 float depth = 0.01
                 
-                double3 xformOp:translate = (0.09090909090909083,0.9047619047619047,-0.5555555555555556)
+                double3 xformOp:translate = (0.016949152542372836,0.8181818181818181,-0.6000000000000001)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
                 rel material:binding = </Spheres/Materials/material_1>
-            }
-            
-            def Preliminary_Text "text_76"
-            {
-                string content = "Dr. Vlad Crisan "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (0.018181818181818077,0.9047619047619047,0.33333333333333337)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_1>
-            }
-            
-            def Preliminary_Text "text_77"
-            {
-                string content = "Vladimir Fomin "
-                string[] font = [ "Helvetica", "Arial" ]
-                token wrapMode = "singleLine"
-                token horizontalAlignment = "left"
-                token verticalAlignment = "baseline"
-                float depth = 0.01
-                
-                double3 xformOp:translate = (-0.3090909090909091,0.9047619047619047,0.11111111111111116)
-                uniform token[] xformOpOrder = ["xformOp:translate"]
-                rel material:binding = </Spheres/Materials/material_0>
             }
             
         }
         
         
         
-        def Scope "Axes" {
+        def Xform "Classes" {
+            
+            class Xform "Sphere_col_0" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_0>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_1" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_1>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_2" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_2>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_3" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_3>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_4" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_4>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_5" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_5>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_6" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_6>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_7" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_7>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+            class Xform "Sphere_col_8" {
+                def Sphere "TheSphere" {
+                    rel material:binding = </Spheres/Materials/material_8>
+        
+                    double radius = 0.02
+                    uniform token subdivisionScheme = "loop"
+                }
+            }
+        
+        }
+        
+        def Xform "Axes" {
             
             def Xform "Axis_0" {
                 def Preliminary_Text "Axis_Text_0"
@@ -1200,9 +1804,21 @@
             }
         
         }
-        def Scope "Materials"
+        def Xform "Materials"
         {
             
+    def Material "material_grey"
+    {
+        token outputs:surface.connect = </Spheres/Materials/material_grey/surfaceShader.outputs:surface>
+
+        def Shader "surfaceShader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.1,0.1,0.1)
+            token outputs:surface
+        }
+    }
+    
         def Material "material_0"
         {
             token outputs:surface.connect = </Spheres/Materials/material_0/surfaceShader.outputs:surface>
@@ -1210,10 +1826,10 @@
             def Shader "surfaceShader"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 0, 0)
-                color3f inputs:emissiveColor = (0, 0, 0)
+                color3f inputs:diffuseColor = (0.891, 0.102, 0.109)
+                color3f inputs:emissiveColor = (0.2673, 0.030599999999999995, 0.0327)
                 float inputs:metallic = 0.5
-                normal3f inputs:normal = (1, 1, 1)
+                //normal3f inputs:normal = (1, 1, 1)
                 float inputs:occlusion = 0
                 float inputs:opacity = 1
                 float inputs:roughness = 0.1
@@ -1228,10 +1844,10 @@
             def Shader "surfaceShader"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0, 0, 1)
-                color3f inputs:emissiveColor = (0, 0, 0)
+                color3f inputs:diffuseColor = (0.215, 0.492, 0.719)
+                color3f inputs:emissiveColor = (0.0645, 0.14759999999999998, 0.21569999999999998)
                 float inputs:metallic = 0.5
-                normal3f inputs:normal = (1, 1, 1)
+                //normal3f inputs:normal = (1, 1, 1)
                 float inputs:occlusion = 0
                 float inputs:opacity = 1
                 float inputs:roughness = 0.1
@@ -1246,10 +1862,118 @@
             def Shader "surfaceShader"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0, 1, 0)
-                color3f inputs:emissiveColor = (0, 0, 0)
+                color3f inputs:diffuseColor = (0.301, 0.684, 0.289)
+                color3f inputs:emissiveColor = (0.09029999999999999, 0.20520000000000002, 0.08669999999999999)
                 float inputs:metallic = 0.5
-                normal3f inputs:normal = (1, 1, 1)
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_3"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_3/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.594, 0.305, 0.637)
+                color3f inputs:emissiveColor = (0.1782, 0.0915, 0.1911)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_4"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_4/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.996, 0.496, 0)
+                color3f inputs:emissiveColor = (0.2988, 0.1488, 0.0)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_5"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_5/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.996, 0.996, 0.199)
+                color3f inputs:emissiveColor = (0.2988, 0.2988, 0.0597)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_6"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_6/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.648, 0.336, 0.156)
+                color3f inputs:emissiveColor = (0.1944, 0.1008, 0.0468)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_7"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_7/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.965, 0.504, 0.746)
+                color3f inputs:emissiveColor = (0.2895, 0.1512, 0.2238)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
+                float inputs:occlusion = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.1
+                token outputs:surface
+            }
+        }
+        
+        def Material "material_8"
+        {
+            token outputs:surface.connect = </Spheres/Materials/material_8/surfaceShader.outputs:surface>
+
+            def Shader "surfaceShader"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.598, 0.598, 0.598)
+                color3f inputs:emissiveColor = (0.17939999999999998, 0.17939999999999998, 0.17939999999999998)
+                float inputs:metallic = 0.5
+                //normal3f inputs:normal = (1, 1, 1)
                 float inputs:occlusion = 0
                 float inputs:opacity = 1
                 float inputs:roughness = 0.1
