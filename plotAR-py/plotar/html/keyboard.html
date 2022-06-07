@@ -149,7 +149,7 @@
           <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
           <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
         </div>
-        <div><a href="vr.html">Open in VR</a></div>
+        <div id="open-vr-div"><a href="vr.html" target="_blank">Open in VR</a></div>
       </div>
 
       <div>
@@ -541,6 +541,28 @@
       debugWidget.innerHTML += msg+"\n";
     }
 
+    function updateVrLinkDiv(){
+      let el = document.getElementById("open-vr-div");
+      el.style.display = (supportsARSession || supportsVRSession) ? 'initial' : 'none';
+    }
+    var supportsARSession = false;
+    var supportsVRSession = false;
+    updateVrLinkDiv();
+    if(navigator.xr){
+      // see https://github.com/aframevr/aframe/blob/master/src/utils/device.js
+      if (navigator.xr.isSessionSupported) {
+        // Current WebXR spec uses a boolean-returning isSessionSupported promise
+        navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
+          supportsVRSession = supported;
+          updateVrLinkDiv();
+        }).catch(function () {});
+
+        navigator.xr.isSessionSupported('immersive-ar').then(function (supported) {
+          supportsARSession = supported;
+          updateVrLinkDiv();
+        }).catch(function () {});
+      }
+    }
     //log = console.log;
 
     // customElements.get("model-viewer").modelCacheSize = 0
