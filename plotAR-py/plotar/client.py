@@ -137,6 +137,7 @@ def linear(*args, group=None, width=1, push_data=True, return_data=True, **kwarg
 
 def animate(data, xyz, *, animation_frame, group=None,
         duration_seconds=30, tstart=None, time_codes_per_second=None, time_values=None,
+        time_labels=None,
         auto_scale=True, push_data=True, return_data=True, **kwargs):
     if group is None:
         group = pd.Series(1)
@@ -163,19 +164,34 @@ def animate(data, xyz, *, animation_frame, group=None,
     ]
 
     time_values = _mk_val(data, animation_frame)
-    time_labels = None
-    try:
-        time_values = pd.to_datetime(time_values, errors='raise')
-        time_labels = [[0.0,time_values.min()], [1.0,time_values.max()]]
-        range = 1.0 if time_values.max() == time_values.min() else (time_values.max()-time_values.min())
-        time_values = (time_values - time_values.min()) / range
-    except:
-        if pd.api.types.is_numeric_dtype(time_values):
-            range = time_values.max()-time_values.min()
-            time_values = (time_values - time_values.min()) / (range if range >0 else 1)
+    if time_labels is not None:
+        time_labels = list(zip(np.linspace(0,1,len(time_labels)), time_labels))
+    if pd.api.types.is_numeric_dtype(time_values):
+        range = time_values.max()-time_values.min()
+        time_values_orig = time_values
+        time_values = (time_values - time_values.min()) / (range if range >0 else 1)
+        if time_labels is None:
+            time_values_orig
+            _ = np.sort(np.unique(time_values_orig))
+            time_labels = [0, _.min()], [0.5,np.mean(_).astype(_.dtype)], [1,_.max()]
+    else:
+        try:
+            time_values = pd.to_datetime(time_values, errors='raise')
+            if time_labels is None:
+                time_labels = [[0.0,time_values.min()], [1.0,time_values.max()]]
+            range = 1.0 if time_values.max() == time_values.min() else (time_values.max()-time_values.min())
+            time_values = (time_values - time_values.min()) / range
+        except:
+            print(f"Cannot understand animation_frame ({animation_frame}) as numeric or dates.")
+            time_values = time_values
+            x = pd.Series(time_values, dtype='category')
+            time_values = x.cat.codes.values
+            if time_labels is None:
+                time_labels = x.cat.categories.values.tolist()
     time_values = pd.Series(time_values)
     # Now we assume that time_values actually is 
-    time_labels = [ [t,str(l)] for t,l in time_labels ] if time_labels is not None else []
+    if time_labels is not None:
+        time_labels = [ [t,str(l)] for t,l in time_labels ] if time_labels is not None else []
     if time_codes_per_second is None:
         time_range = (time_values.max()-time_values.min())
         time_codes_per_second = time_range / duration_seconds
