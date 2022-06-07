@@ -3,15 +3,11 @@
   <head>
     <title>plotAR Model</title>
     <meta charset="utf-8">
-    <!-- <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> -->
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
 
     <!-- Import the model-viewer component -->
     <script type="module" src="js/third-party/model-viewer.min.js"></script>
     <!-- <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script> -->
-
 
     <style>
     html {
@@ -29,16 +25,16 @@
     </style>
   </head>
   <body>
-        <model-viewer
-          data-name="data"
-          src="data.gltf"
-          ios-src="data.usdz"
-          ar
-          ar-modes="scene-viewer quick-look"
-          camera-controls
-          auto-rotate
-          autoplay
-          poster="textures/patterns/checker.png"
-        ></model-viewer>
+    <model-viewer
+      data-name="data"
+      src="data.glb"
+      ios-src="data.usdz"
+      ar
+      ar-modes="scene-viewer quick-look"
+      camera-controls
+      auto-rotate
+      autoplay
+      poster="textures/patterns/checker.png"
+    ></model-viewer>
     </body>
 </html>
