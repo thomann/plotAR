@@ -406,54 +406,23 @@ def data2gltf(data, subdiv=16):
             scale *= data['size'][i]
         scale = [scale] * 3
         mesh_id = col_mesh_id[col]
+        current_node = {
+            "name": f"Data Point {i}",
+            "mesh": mesh_id,
+            "translation": [x, z, -y],
+            "scale": scale,
+        }
+        current_node_id = gltf.add('nodes', current_node)
         if 'label' in data:
             text = data['label'][i]
-            h, w, img = text2png(text, color=COLORS[col])
-            img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-            src_id = gltf.add("images", {
-                "uri": img_uri
-            })
-            ## if we add it to the buffer (e.g. for glb) use something like
-            # bv = gltf.add("bufferView", ...)
-            # src_id = gltf.add("images", {
-            #     "bufferView" : bv,
-            #     "mimeType" : "image/png"
-            # })
-            sampler_id = gltf.add('samplers', {
-                "magFilter": GLTF_MAGFILTER_LINEAR,
-                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
-                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
-                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
-            })
-            texture_id = gltf.add("textures", {
-                "sampler": sampler_id,
-                "source": src_id
-            })
-            mat_id = gltf.add('materials', {
-                    "name": f"Material {texture_id} for point {i}",
-                    "pbrMetallicRoughness": {
-                        "baseColorTexture": {"index": texture_id},
-                        "metallicFactor": 0.5,
-                        "roughnessFactor": 0.1,
-                    },
-                    "alphaMode": "BLEND",
-                    "doubleSided": True,
-                })
-            mesh_id = gltf.add('meshes',
-                {
-                    "name": f"Label Mesh for point {i}",
-                    "primitives": [{
-                        "attributes": {
-                            "POSITION": board_acc_id[1],
-                            "NORMAL": board_acc_id[2],
-                            "TEXCOORD_0": board_acc_id[3],
-                        },
-                        "indices": board_acc_id[0],
-                        "material": mat_id
-                    }]
-                })
-            scale = [scale[0] * h, scale[1] * w, scale[2] ]
-        current_node_id = gltf.add('nodes', {"name": f"Data Point {i}" , "mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
+            char_node_ids = drawText(text)
+
+            current_node['children'] = [gltf.add('nodes', {
+                "name" : f"text_{text}",
+                "children": char_node_ids,
+                "translation": [1.5,0,0],
+                "scale": [ _*100 for _ in scale],
+            }), ]
         data_node['children'].append(current_node_id)
         if add_glow:
             _ = gltf.add('nodes', {"name": f"Data Point {i} glow" ,
@@ -605,37 +574,6 @@ def data2gltf(data, subdiv=16):
         col = i % COLORS_LEN
         scale = [0.01] * 3
         x, y, z = 0,0,1-i*scale[1]*10
-        # h, w, img = text2png(text, color=COLORS[col])
-        # img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-        # src_id = gltf.add("images", {
-        #     "uri": img_uri
-        # })
-        # texture_id = gltf.add("textures", {
-        #     "sampler": sampler_id,
-        #     "source": src_id
-        # })
-        # mat_id = gltf.add('materials', {
-        #         "pbrMetallicRoughness": {
-        #             "baseColorTexture": {"index": texture_id},
-        #             "metallicFactor": 0.5,
-        #             "roughnessFactor": 0.1,
-        #         },
-        #         "alphaMode": "BLEND",
-        #         "doubleSided": True,
-        #     })
-        # mesh_id = gltf.add('meshes',
-        #     {
-        #         "primitives": [{
-        #             "attributes": {
-        #                 "POSITION": board_acc_id[1],
-        #                 "NORMAL": board_acc_id[2],
-        #                 "TEXCOORD_0": board_acc_id[3],
-        #             },
-        #             "indices": board_acc_id[0],
-        #             "material": mat_id
-        #         }]
-        #     })
-        # scale = [scale[0] * h, scale[1] * w, scale[2] ]
         char_node_ids = drawText(text)
         legend_node['children'].append(gltf.add('nodes', {
           "name" : f"text_{text}",
