@@ -3,6 +3,7 @@ import subprocess
 import os
 import logging
 from pathlib import Path
+from builtins import type as pytype
 
 import numpy as np
 import pandas as pd
@@ -80,7 +81,7 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
         assert i is None or i.shape == (n,), f"Parameters need to have same length: {i} has shape {i.shape} but would need {(n,)}"
     if auto_scale:
         # have all variables scaled to [-1,1]
-        if auto_scale == 1:
+        if pytype(auto_scale) == int and auto_scale == 1:
             data = scale(data, axis=(0,1))
         else:
             data = scale(data)

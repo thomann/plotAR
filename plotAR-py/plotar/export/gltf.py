@@ -421,7 +421,7 @@ def data2gltf(data, subdiv=16):
                 "name" : f"text_{text}",
                 "children": char_node_ids,
                 "translation": [1.5,0,0],
-                "scale": [ _*100 for _ in scale],
+                "scale": [ 3, 3, 3],
             }), ]
         data_node['children'].append(current_node_id)
         if add_glow:
