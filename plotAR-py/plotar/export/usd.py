@@ -3,9 +3,7 @@ import logging
 import jinja2
 import numpy as np
 
-from plotar.export.common import line_segments
-
-from .common import text2png, create_surface, create_line
+from .common import text2png, create_surface, create_line, line_segments, flip_yz
 from . import common
 
 logger = logging.getLogger(__name__)
@@ -37,9 +35,9 @@ def data2usd_ascii(data):
     animation = False
     if 'animation' in data:
         animation = data['animation']
-        end_time_code = len(animation.get('time_labels')) - 1
+        end_time_code = 1000 #len(animation.get('time_labels')) - 1
         start_time_code = 0
-        time_codes_per_second = animation.get('time_codes_per_second', 24)
+        time_codes_per_second = animation.get('time_codes_per_second', 24) * 1000
 
     for i, row in enumerate(data.get('data',[]) if data.get('type')!='l' else []):
         x, z, y = row[:3]
@@ -73,16 +71,33 @@ def data2usd_ascii(data):
             else:
                 if i>=len(animation.get('data',[])):
                     print(f"Too few data for animation: i")
+                time_values = animation.get('time_values',[])[i]
+                start_frame = min(time_values)
+                end_frame = max(time_values)
                 animation_text = ",\n                        ".join(
-                    f"{_}: ({pnt[0]}, {-pnt[2]}, {pnt[1]}, )"
-                    for _,pnt in enumerate(animation.get('data',[])[i] )
+                    f"{_*1000}: ({pnt[0]}, {pnt[2]}, {-pnt[1]}, )"
+                    for _,pnt in zip(time_values, animation.get('data',[])[i] )
                 )
+                # animation_visibility_text = f"""
+                #     token visibility.timeSamples = {{
+                #         {'0: "invisible",' if start_frame > 0 else ""}
+                #         {start_frame*1000}: "inherited", {end_frame*1000}: "{'invisible' if end_frame < 1 else 'inherited'}"
+                #     }}"""
+                animation_scale_text = f"""
+                    float3 xformOp:scale.timeSamples = {{
+                        {str(start_frame*999)+': (0,0,0),' if start_frame > 0 else ""}
+                        {start_frame*1000}: (1,1,1), {end_frame*1000}: (1,1,1),
+                        {end_frame*1001}: {'(0,0,0)' if end_frame < 1 else '(1,1,1)'}
+                    }}"""
                 spheres += f"""
                 def Sphere "Point{i}" {{
                     double3 xformOp:translate.timeSamples = {{
                         {animation_text}
                     }}
-                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    //token visibility = "inherited"
+                    // token float3 xformOp:scale.type = "UsdInterpolationTypeHeld"
+                    {animation_scale_text}
+                    uniform token[] xformOpOrder = ["xformOp:translate","xformOp:scale"]
                     rel material:binding = </Spheres/Materials/material_{col}>
         
                     double radius = {0.02*size}
@@ -470,6 +485,56 @@ def data2usd_ascii(data):
             rotation=str(rotation)[1:-1],
             text=text, col=i,
         )
+    if animation:
+        axes += f"""
+                def Cylinder "AnimationIndicatorLine" {{
+                    rel material:binding = </Spheres/Materials/material_0>
+                    double radius = 0.002
+                    double height = 2
+                    uniform token axis = "X"
+                    double3 xformOp:translate = (0,-1,1)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }}
+                def Sphere "AnimationIndicatorPoint" {{
+                    double3 xformOp:translate.timeSamples = {{
+                        0: (-1,-1,1), 1000: (1,-1,1)
+                    }}
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </Spheres/Materials/material_2>
+        
+                    double radius = 0.02
+                }}
+                """
+        if 'time_labels' in animation:
+            for i,(t,label) in enumerate(animation['time_labels']):
+                x = (1-t) * -1 + t * 1
+                from markupsafe import escape
+                axes += f"""
+                    def Preliminary_Text "AnimationIndicator_Text_{i}"
+                    {{
+                        string content = "{escape(label)}"
+                        string[] font = [ "Helvetica", "Arial" ]
+                        float pointSize = 72.0
+                        // token wrapMode = "singleLine"
+                        token wrapMode = "hardBreaks"
+                        float width = 0.4
+                        token horizontalAlignment = "center"
+                        token verticalAlignment = "top"
+                        float depth = 0.01
+
+                        double3 xformOp:translate = ({x},-1.01,1.03)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+                    }}
+                    def Sphere "AnimationIndicator_Tick_{i}" {{
+                        double3 xformOp:translate = ({x},-1,1)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                        rel material:binding = </Spheres/Materials/material_0>
+            
+                        double radius = 0.01
+                    }}
+                """
+
     usda = """#usda 1.0
     (
         doc = "PlotAR v0.3.0"

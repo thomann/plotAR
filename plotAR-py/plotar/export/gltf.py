@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .common import text2png, create_surface, line_segments, create_line
+from .common import text2png, create_surface, line_segments, create_line, flip_yz
 from . import common
 
 GLTF_ELEMENT_ARRAY_BUFFER = 34963
@@ -195,8 +195,12 @@ class GLTF(object):
                 }]
             })
             return glyph_mesh_id[ch]
-        def drawText(text, valign=0.25):
+        def drawText(text, valign=0.25, halign='left'):
             layout = font.layoutText(text)
+            x_offset = 0.0
+            if halign == 'center':
+                text_width = layout[-1]['left']+layout[-1]['width']
+                x_offset = - text_width / 2
             glyphs = []
             for glyph in layout:
                 ch = chr(glyph['id'])
@@ -204,7 +208,7 @@ class GLTF(object):
                 "name" : f"glyph_{ch}",
                 "mesh" : get_glyph_mesh_id(ch),
                 "translation": [
-                    (glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
+                    (x_offset+glyph['left'] + glyph['xoffset']) / font.common['lineHeight'] ,#/ fc['scaleW'],
                     (font.common['base'] * (1-valign) - glyph['yoffset'] - glyph['height']) / font.common['lineHeight'] ,#/ fc['scaleH'],
                     0.0],
                 "scale": [
@@ -370,14 +374,22 @@ def data2gltf(data, subdiv=16):
         start_time_code = 0
         time_codes_per_second = animation.get('time_codes_per_second', 24)
         animation_input = np.arange(end_time_code+1) / time_codes_per_second
+        animation_inputs = [ [_/time_codes_per_second for _ in t] for t in animation.get('time_values',[])]
+        max_animation_input = max(max(_) for _ in animation_inputs)
         animation_outputs = [
-            np.array(_).reshape((-1, )).tolist()
+            flip_yz(np.array(_)).reshape((-1, )).tolist()
             for _ in animation.get('data',[])
         ]
         animation_input_acc_id, *animation_output_acc_ids = gltf.add_buffer_data(
             [animation_input.tolist()] + animation_outputs,
             [GLTF_ARRAY_BUFFER] + [GLTF_ARRAY_BUFFER] * len(animation_outputs),
             ["SCALAR"] + ["VEC3"] * len(animation_outputs),
+            remove_view_target=True,
+        )
+        animation_inputs_acc_ids = gltf.add_buffer_data(
+            animation_inputs,
+            [GLTF_ARRAY_BUFFER] * len(animation_inputs),
+            ["SCALAR"] * len(animation_inputs),
             remove_view_target=True,
         )
         animation_channels = []
@@ -394,54 +406,23 @@ def data2gltf(data, subdiv=16):
             scale *= data['size'][i]
         scale = [scale] * 3
         mesh_id = col_mesh_id[col]
+        current_node = {
+            "name": f"Data Point {i}",
+            "mesh": mesh_id,
+            "translation": [x, z, -y],
+            "scale": scale,
+        }
+        current_node_id = gltf.add('nodes', current_node)
         if 'label' in data:
             text = data['label'][i]
-            h, w, img = text2png(text, color=COLORS[col])
-            img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-            src_id = gltf.add("images", {
-                "uri": img_uri
-            })
-            ## if we add it to the buffer (e.g. for glb) use something like
-            # bv = gltf.add("bufferView", ...)
-            # src_id = gltf.add("images", {
-            #     "bufferView" : bv,
-            #     "mimeType" : "image/png"
-            # })
-            sampler_id = gltf.add('samplers', {
-                "magFilter": GLTF_MAGFILTER_LINEAR,
-                "minFilter": GLTF_MINFILTER_LINEAR_MIPMAP_LINEAR,
-                "wrapS": GLTF_WRAP_MIRRORED_REPEAT,
-                "wrapT": GLTF_WRAP_MIRRORED_REPEAT
-            })
-            texture_id = gltf.add("textures", {
-                "sampler": sampler_id,
-                "source": src_id
-            })
-            mat_id = gltf.add('materials', {
-                    "name": f"Material {texture_id} for point {i}",
-                    "pbrMetallicRoughness": {
-                        "baseColorTexture": {"index": texture_id},
-                        "metallicFactor": 0.5,
-                        "roughnessFactor": 0.1,
-                    },
-                    "alphaMode": "BLEND",
-                    "doubleSided": True,
-                })
-            mesh_id = gltf.add('meshes',
-                {
-                    "name": f"Label Mesh for point {i}",
-                    "primitives": [{
-                        "attributes": {
-                            "POSITION": board_acc_id[1],
-                            "NORMAL": board_acc_id[2],
-                            "TEXCOORD_0": board_acc_id[3],
-                        },
-                        "indices": board_acc_id[0],
-                        "material": mat_id
-                    }]
-                })
-            scale = [scale[0] * h, scale[1] * w, scale[2] ]
-        current_node_id = gltf.add('nodes', {"name": f"Data Point {i}" , "mesh": mesh_id, "translation": [x, z, -y], "scale": scale, })
+            char_node_ids = drawText(text)
+
+            current_node['children'] = [gltf.add('nodes', {
+                "name" : f"text_{text}",
+                "children": char_node_ids,
+                "translation": [1.5,0,0],
+                "scale": [ 3, 3, 3],
+            }), ]
         data_node['children'].append(current_node_id)
         if add_glow:
             _ = gltf.add('nodes', {"name": f"Data Point {i} glow" ,
@@ -451,6 +432,8 @@ def data2gltf(data, subdiv=16):
             data_node['children'].append(_)
 
         if animation:
+            if len(animation_inputs_acc_ids):
+                animation_input_acc_id = animation_inputs_acc_ids[i]
             animation_samplers.append(dict(
                 input=animation_input_acc_id,
                 interpolation="LINEAR",
@@ -460,6 +443,40 @@ def data2gltf(data, subdiv=16):
                 target=dict(node=current_node_id, path='translation'),
                 sampler=len(animation_samplers)-1,
             ))
+            time_values = animation['time_values'][i]
+            a,b = min(time_values), max(time_values)
+            if a > 0 or b < max_animation_input:
+                t=[]
+                scales = []
+                if a>0:
+                    t += [0,a/time_codes_per_second]
+                    scales += [ 0,0,0 ] + scale
+                else:
+                    t += [0]
+                    scales += scale
+                if b < max_animation_input:
+                    t += [b/time_codes_per_second]
+                    scales += [ 0,0,0 ]
+                sum([
+                    scale if a >0 else [0,0,0],
+                    scale,
+                    scale if b==max_animation_input else [0,0,0],
+                ], [])
+                animation_scale_input, animation_scale_output = gltf.add_buffer_data(
+                    [t] + [scales],
+                    [GLTF_ARRAY_BUFFER,GLTF_ARRAY_BUFFER],
+                    ["SCALAR"] + ["VEC3"],
+                    remove_view_target=True,
+                )
+                animation_samplers.append(dict(
+                    input=animation_scale_input,
+                    interpolation="STEP",
+                    output=animation_scale_output,
+                ))
+                animation_channels.append(dict(
+                    target=dict(node=current_node_id, path='scale'),
+                    sampler=len(animation_samplers)-1,
+                ))
 
     if 'surface' in data:
         surface = data['surface']
@@ -557,37 +574,6 @@ def data2gltf(data, subdiv=16):
         col = i % COLORS_LEN
         scale = [0.01] * 3
         x, y, z = 0,0,1-i*scale[1]*10
-        # h, w, img = text2png(text, color=COLORS[col])
-        # img_uri = "data:image/png;base64," + base64.b64encode(img).decode("ASCII")
-        # src_id = gltf.add("images", {
-        #     "uri": img_uri
-        # })
-        # texture_id = gltf.add("textures", {
-        #     "sampler": sampler_id,
-        #     "source": src_id
-        # })
-        # mat_id = gltf.add('materials', {
-        #         "pbrMetallicRoughness": {
-        #             "baseColorTexture": {"index": texture_id},
-        #             "metallicFactor": 0.5,
-        #             "roughnessFactor": 0.1,
-        #         },
-        #         "alphaMode": "BLEND",
-        #         "doubleSided": True,
-        #     })
-        # mesh_id = gltf.add('meshes',
-        #     {
-        #         "primitives": [{
-        #             "attributes": {
-        #                 "POSITION": board_acc_id[1],
-        #                 "NORMAL": board_acc_id[2],
-        #                 "TEXCOORD_0": board_acc_id[3],
-        #             },
-        #             "indices": board_acc_id[0],
-        #             "material": mat_id
-        #         }]
-        #     })
-        # scale = [scale[0] * h, scale[1] * w, scale[2] ]
         char_node_ids = drawText(text)
         legend_node['children'].append(gltf.add('nodes', {
           "name" : f"text_{text}",
@@ -659,6 +645,53 @@ def data2gltf(data, subdiv=16):
           "rotation": rotation,
           # "scale": scale,
         }))
+    if animation:
+        axes_node['children'].append(gltf.add('nodes', {
+          "name" : f"AnimationIndicatorArrow",
+          "mesh" : arrow_mesh_id,
+          "translation": [-1,-1,1],
+          "rotation": [math.sqrt(2)/2, math.sqrt(2)/2, 0, 0 ],
+          "scale": [0.3,2,0.3],
+        }))
+        current_node_id = gltf.add('nodes', {
+            "name": f"AnimationIndicatorPoint",
+            "mesh": col_mesh_id[0],
+            "translation": [-1,-1,1],
+            "scale": [0.02] * 3,
+        })
+        axes_node['children'].append(current_node_id)
+        animation_input_acc_id, animation_output_acc_id = gltf.add_buffer_data(
+            [ [0,max_animation_input], np.array([ [-1,-1,1],[1,-1,1] ]).reshape((-1, )).tolist() ],
+            [GLTF_ARRAY_BUFFER] *3 ,
+            ["SCALAR"] + ["VEC3"] * 2,
+            remove_view_target=True,
+        )
+        animation_samplers.append(dict(
+            input=animation_input_acc_id,
+            interpolation="LINEAR",
+            output=animation_output_acc_id,
+        ))
+        animation_channels.append(dict(
+            target=dict(node=current_node_id, path='translation'),
+            sampler=len(animation_samplers)-1,
+        ))
+        if 'time_labels' in animation:
+            for i,(t,label) in enumerate(animation['time_labels']):
+                x = (1-t) * -1 + t * 1
+                char_node_ids = drawText(label, halign='center')
+                axes_node['children'].append(gltf.add('nodes', {
+                    "name" : f"text_{text}",
+                    "children": char_node_ids,
+                    #   "mesh" : mesh_id,
+                    "translation": [x,-1.01,1.03],
+                    "scale": [0.05] * 3,
+                }))
+                axes_node['children'].append(gltf.add('nodes', {
+                    "name": f"Animation Indicator Tick {i}",
+                    "mesh": col_mesh_id[0],
+                    "translation": [x,-1,1],
+                    "scale": [0.01]*3,
+                }))
     root_children = [data_node_id]
     if legend_node_id is not None:
         root_children.append(legend_node_id)
@@ -725,9 +758,9 @@ def create_sphere(subdiv=8):
         for lon in range(2*subdiv):
             lon1 = (lon + 1) % (2*subdiv)
             if b[lon] != b[lon1]:
-                indices += [ a[lon] , b[lon], b[lon1]]
+                indices += [ a[lon], b[lon1], b[lon]]
             if a[lon] != a[lon1]:
-                indices += [ b[lon1], a[lon1], a[lon] ]
+                indices += [ b[lon1], a[lon], a[lon1] ]
     # in a sphere of radius 1 the vertices are also their normals
     normals = vertices
     return indices, vertices, normals

@@ -34,6 +34,15 @@ def export(input, data_path, format_list, out=None, check=False):
                 for key, val in assets.items():
                     with open(key, 'wb') as f:
                         f.write(val)
+            elif format == 'html':
+                glb = data2gltf(input).format_glb()
+                import base64
+                buffer_url = "data:model/gltf-binary;base64," + base64.b64encode(glb).decode("ASCII")
+                with open(Path(__file__).parent.parent / 'html/model.html') as f:
+                    html = "\n".join(f.readlines())
+                html = html.replace("data.glb", buffer_url)
+                html = html.replace("js/third-party/model-viewer.min.js", "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js")
+                outfile.write(html)
             else:
                 result = data2usdz(input, save_usda=False, check=check)
                 outfile.write(result)

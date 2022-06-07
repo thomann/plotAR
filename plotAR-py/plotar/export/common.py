@@ -178,16 +178,16 @@ def create_surface(surface, uv=False):
         uv = np.array([ [x,y] for y in v for x in u ])
         return indices, normals, vertices, uv
 
+def flip_yz(x):
+    x = np.array(x, float)
+    x = x[..., (0, 2, 1)]
+    x[..., 2] *= -1
+    return x
 
 def create_line(data_list, line, radius=0.001, segments=8):
     indices, normals, vertices, a, b = [], [], [], None, None
     n = len(data_list)
 
-    def flip_yz(x):
-        x = np.array(x, float)
-        x = x[..., (0, 2, 1)]
-        x[..., 2] *= -1
-        return x
     def normalize(x):
         _ = np.linalg.norm(x)
         if _ == 0:
