@@ -22,7 +22,7 @@ if False:
 @click.command()
 @click.argument('data', type=click.Path(exists=True))
 @click.argument('out', default='', type=click.Path())
-@click.option('-f', '--format', default=None, help="format: gltf glb usdz usda obj. Can be a comma-separated list of formats. Default is to take extension of out or else gltf")
+@click.option('-f', '--format', default=None, help="format: gltf glb usdz usda html obj. Can be a comma-separated list of formats. Default is to take extension of out or else gltf")
 @click.option('--check/--no-check', default=False, help="check produced file (currently only for usdz)")
 def main(data, out=None, format=None, check=False):
     """Convert the DATA.json to OUT.format."""
@@ -39,7 +39,7 @@ def main(data, out=None, format=None, check=False):
         format = format or 'usdz,gltf'
     format_list = format.split(",")
     assert out is None or len(format_list) == 1
-    assert all(_ in 'gltf glb usdz usda obj'.split() for _ in format_list)
+    assert all(_ in 'gltf glb usdz usda html obj'.split() for _ in format_list)
     del format # will be set in for loop below
     export(input, data_path, format_list, out, check)
 
