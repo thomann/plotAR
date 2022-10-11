@@ -1,4 +1,9 @@
 
+.onLoad <- function(libname, pkgname) {
+  # use superassignment to update global reference to plotar
+  # plotar_py <<- reticulate::import("plotar", delay_load = TRUE, pip=TRUE)
+}
+
 #' @export
 install_plotar_py <- function(...){
   reticulate::py_install("plotar", pip=TRUE, ...)
@@ -210,6 +215,24 @@ sendData <- function(data,
   invisible(ret)
 }
 
+#' @export
+ar.status <- function(server=getOption('plotAR.internal.url',plotAR:::getUrl()),
+                      auth=getOption('plotAR.internal.auth',"")){
+  url <- paste0(server,'status.json')
+  ret <- httr::GET(url, httr::add_headers(Authorization=auth), httr::accept_json())
+  code <- ret$status_code
+  httr::stop_for_status(ret)
+  server_version <- ret$headers$`x-plotar-version`
+  status <- httr::content(ret, "parsed", type='application/json', encoding="UTF-8") 
+  status
+}
+
+#' @export
+ar.alive <- function(server=getOption('plotAR.internal.url',plotAR:::getUrl()),
+                      auth=getOption('plotAR.internal.auth',"")){
+  status <- ar.status()  
+}
+
 #' Start Server
 #'
 #' @param ... passed to \code{callr::r_bg}
@@ -292,4 +315,5 @@ connectServer <- function(url){
     u$path <- paste0(path, '/', x)
     httr::build_url(u)
   })
+  message(ar.status())
 }
