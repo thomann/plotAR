@@ -219,7 +219,7 @@ def data2usd_ascii(data):
             {% endif %}
             uniform token subdivisionScheme = "{{ "none" if True or smooth else "loop" }}"
     
-            double3 xformOp:translate = (0,0.2,0)
+            double3 xformOp:translate = (0,0.0,0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = <../Mesh_material>
         }
@@ -281,7 +281,7 @@ def data2usd_ascii(data):
         for i, line in enumerate(data['lines']):
             data_list = data.get('data', [])
             n = len(data_list)
-            indices, vertices, normals = create_line(data_list, line, radius=line.get('width',1)/100)
+            indices, vertices, normals = create_line(data_list, line, radius=line.get('width',1)/500)
             vertices = np.array(vertices).reshape((-1, 3))
             normals = np.array(normals).reshape((-1, 3))
             vars = dict(
