@@ -225,6 +225,9 @@ _mappings = [
     (r"/data.obj", OBJHandler),
     (r"/ws", PlotARWebSocketHandler),
     (r"/index.html(.*)", tornado.web.StaticFileHandler, {"path": html('index.html')}),
+    (r"/model", tornado.web.RedirectHandler, {"url": "/model.html"}),
+    (r"/vr", tornado.web.RedirectHandler, {"url": "/vr.html"}),
+    (r"/keyboard", tornado.web.RedirectHandler, {"url": "/keyboard.html"}),
     (r"/model.html(.*)", tornado.web.StaticFileHandler, {"path": html('model.html')}),
     (r"/vr.html(.*)", tornado.web.StaticFileHandler, {"path": html('vr.html')}),
     (r"/favicon.ico(.*)", tornado.web.StaticFileHandler, {"path": html('favicon.ico')}),
@@ -246,7 +249,7 @@ def start_server(port=2908, data=None, debug=False, ssl_prefix=None):
 
 
 def _start_server(port=2908, data=None, debug=False, ssl_prefix=None):
-    print(f"Welcome to PlotAR server on port {port}")
+    print(f"Welcome to PlotAR")
     global _PORT, _app, DATA
     if data:
         global DATA
@@ -262,7 +265,10 @@ def _start_server(port=2908, data=None, debug=False, ssl_prefix=None):
     _PORT = port
     http_server = tornado.httpserver.HTTPServer(_app, ssl_options=ssl_ctx)
     http_server.listen(port)
+    ip = get_ip()
+    print(f"Open http://{ip}:{port}/keyboard.html")
     tornado.ioloop.IOLoop.instance().start()
+
     print("hello")
 
 
