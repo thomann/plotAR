@@ -132,7 +132,7 @@ class BitmapFont(object):
         # https://www.angelcode.com/products/bmfont/doc/render_text.html
         layout = []
         left = 0
-        for ch in text:
+        for ch in str(text):
             if ch not in self.chars:
                 ch = ' '
             glyph = self.chars[ch].copy()
@@ -239,6 +239,7 @@ def create_line(data_list, line, radius=0.001, segments=8):
                     base + p1, base+p1-segments, base+i-segments,
                 ])
     # n = 5
+    c = None
     for c in [flip_yz(data_list[_][:3]) for _ in line.get('points', []) if _ < n]:
         if b is not None and all(b == c):
             continue
@@ -250,7 +251,10 @@ def create_line(data_list, line, radius=0.001, segments=8):
         a = b
         b = c
     # let's quickly cheat here and use the same vectors...
-    add_disk(c, *get_perp_base(c-b))
+    if c is not None:
+        add_disk(c, *get_perp_base(c-b))
+    else:
+        print("no line data!")
     return indices, vertices, normals
 
 def line_segments(data_list, line, n, flip_vector=False):
