@@ -14,7 +14,7 @@
     physics="gravity: 0"
     >
         <a-assets>
-            <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item>
+            <!-- <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item> -->
             <a-mixin id="hand-controller"
               physics-collider="ignoreSleep: true"
               collision-filter="collisionForces: false"
@@ -61,7 +61,8 @@
               event-set__grabon="_event:  grab-start; material.color: green"
               event-set__graboff="_event: grab-end; material.color: lightgray"
             ></a-box> -->
-            <a-entity gltf-model="#plot_gltf" position="0 0.5 0" scale="5 5 5" id="model"
+            <!-- gltf-model="data.gltf"  -->
+            <a-entity position="0 0.5 0" scale="5 5 5" id="model"
               title="Plot"
               mixin="grabbable-component"
               animation-mixer=""
@@ -121,13 +122,14 @@
       var ret = getQueryParams().wsUrl;
       if(ret != null)
         return ret;
-      ret = new URL("ws", location);
+      ret = new URL("ws", server);
       ret.protocol = (ret.protocol == "https:") ? "wss:" : "ws:";
       console.log("found WsUrl: "+ret)
       return ret;
     }
 
     var connected = false;
+    var server = findServer();
     var wsUrl = findWsUrl();
     var websocket = null;
 
@@ -169,6 +171,14 @@
       }
     }
     var revision = 0;
+    function update_model(){
+      console.log("Updating model")
+      let m = document.getElementById("model")
+      let url = new URL("data.gltf?revision=" + (revision++), server)
+      m.setAttribute("gltf-model", url.toString())
+      // let asset = document.getElementById("plot_gltf")
+      // asset.setAttribute("src", url.toString())
+    }
     function handle_char(msg){
       if(msg == "r"){
         // we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -181,8 +191,7 @@
         }
         return;
       }else if(msg == "reload_data" || msg =="x" ){
-        m = document.getElementById("model")
-        m.setAttribute("gltf-model", "data.gltf?revision=" + (revision++))
+        update_model()
       //  refreshData();
       // }else if(msg === "c"){
       //   websocket.close();
@@ -284,6 +293,7 @@
     }
 
     function myOnLoad(event){
+      update_model()
       openTheWebsocket(wsUrl);
 
       updateFocus(event);

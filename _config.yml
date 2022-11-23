@@ -1,4 +1,6 @@
 exclude:
-  - plotAR-py
+  # - plotAR-py
   - plotAR-R
   - plotAR-matlab
+include:
+  - plotAR-py/plotar/html/vr.html
