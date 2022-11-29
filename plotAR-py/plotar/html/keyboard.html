@@ -564,6 +564,7 @@
       if (navigator.xr.isSessionSupported) {
         // Current WebXR spec uses a boolean-returning isSessionSupported promise
         navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
+          console.log(`VR supported: ${supported}`)
           supportsVRSession = supported;
           updateVrLinkDiv();
         }).catch(function () {});
@@ -573,6 +574,10 @@
           updateVrLinkDiv();
         }).catch(function () {});
       }
+    }else if(navigator.userAgent.indexOf("Quest 2") >= 0){
+      supportsVRSession = true;
+      supportsARSession = true;
+      updateVrLinkDiv();
     }
     //log = console.log;
 
