@@ -547,6 +547,15 @@
       let el = document.getElementById("open-vr-div");
       el.style.display = (supportsARSession || supportsVRSession) ? 'initial' : 'none';
     }
+    (function(){
+      if(location.protocol !== "https:"){
+        // webXR needs to be served from a https site - so we will let this open from a CDN
+        let el = document.getElementById("open-vr-div");
+        let a = el.querySelectorAll("a")[0];
+        let base = new URL(".", location).toString();
+        a.href = "https://thomann.github.io/plotAR/plotAR-py/plotar/html/vr.html?server="+base
+      }
+    })()
     var supportsARSession = false;
     var supportsVRSession = false;
     updateVrLinkDiv();
