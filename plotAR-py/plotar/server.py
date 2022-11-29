@@ -15,6 +15,8 @@ from .export import data2usd_ascii, data2usdz, data2gltf, data2obj
 
 from . import __version__
 
+ALLOWED_ORIGINS = ["https://plotar.glitch.me", "https://thomann.github.io", ]
+
 handler = logging.StreamHandler() # FileHandler(log_file_filename)
 enable_pretty_logging()
 for i in ["tornado.access","tornado.application","tornado.general"]:
@@ -115,6 +117,15 @@ class GLTFHandler(tornado.web.RequestHandler):
         self.write(result)
         self.set_header('Content-Type', 'model/gltf+json')
 
+        # TODO Check whether this makes sense in general
+        # something like this is needed to host the vr.html on a https-server
+        # and connect from that one to this server
+        self.set_header('Access-Control-Allow-Origin', '*')
+    
+    def options(self):
+        self.set_status(204)
+        self.finish()
+
 class GLBHandler(tornado.web.RequestHandler):
     """Renders the GLTF format used on Android"""
     def get(self):
@@ -206,6 +217,19 @@ class PlotARWebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         CLIENTS.remove(self)
         broadcast_status()
+    
+    def check_origin(self, origin):
+        super_origin = super().check_origin(origin)
+        if super_origin or origin in ALLOWED_ORIGINS or \
+                origin.startswith("https://localhost:") or origin.startswith("http://localhost:"):
+            return True
+        print(f"Not allowed origin for {origin}")
+    def check_xsrf_cookie(self):
+        """Bypass xsrf cookie checks when token-authenticated"""
+        # TODO check whether we really are alrady authenticated - else
+        # this opens some security problems?
+        print("check_xsrf_cookie for websocket")
+        return
 
 def html(x):
     pth = Path(__file__).parent / 'html' / x
