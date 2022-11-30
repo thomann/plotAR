@@ -147,7 +147,7 @@ def defaultData():
     from .client import plotar
     data = np.random.normal(size=(100,3))
     col = np.random.randint(4, size=100)
-    return plotar(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False )
+    return plotar(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False ).data
 
 # The list of currently connected clients
 CLIENTS = []
