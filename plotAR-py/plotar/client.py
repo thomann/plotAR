@@ -123,7 +123,7 @@ def linear(*args, group=None, width=1, push_data=True, return_data=True, **kwarg
     body = plotar(*args, **kwargs, push_data=False, return_data=True).data
     data = body.get('data',[])
     col = body.get('col', [0] * len(data))
-    group = group or col
+    group = group if group is not None else col
     df = pd.DataFrame(dict(col=col, group=group))
     body['lines'] = [
         dict(col=int(c), width=width, points=d.index.to_list())

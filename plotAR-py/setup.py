@@ -13,12 +13,12 @@ with open('HISTORY.md') as history_file:
 
 requirements = [ 'pandas', 'numpy', 'requests', 'tornado', 'click', 'Pillow', 'jinja2', ]
 
-requirements_server = ["usd-core", 'pyqrcode', ]
-requirements_all = requirements_server
+requirements_server = ['pyqrcode', ]
+requirements_all = requirements_server + ["usd-core", ]
 
-setup_requirements = ['pytest-runner', 'scikit-learn', 'jupyterlab', 'skyfield', 'beautifulsoup4', ]
+setup_requirements = []
 
-test_requirements = ['pytest', ]
+test_requirements = ['pytest', 'scikit-learn', 'skyfield', 'beautifulsoup4', 'pytest-runner', 'jupyterlab', ]
 
 setup(
     author="Philipp Thomann",

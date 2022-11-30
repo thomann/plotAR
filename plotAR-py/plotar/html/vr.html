@@ -10,11 +10,11 @@
     <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
   </head>
   <body onload="myOnLoad(event)">
-    <a-scene background="color: #ECECEC" stats
+    <a-scene background="color: #ECECEC" stats2
     physics="gravity: 0"
     >
         <a-assets>
-            <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item>
+            <!-- <a-asset-item id="plot_gltf" src="data.gltf"></a-asset-item> -->
             <a-mixin id="hand-controller"
               physics-collider="ignoreSleep: true"
               collision-filter="collisionForces: false"
@@ -39,7 +39,11 @@
             ></a-mixin>
 
         </a-assets>
-        <a-entity environment="preset: japan; groundColor: #f0e9fb" hide-on-enter-ar id="environment"></a-entity>
+        <!-- show light also in AR -->
+        <a-entity class="environment" position="0 50 0" light="groundColor:#f0e9fb;intensity:0.6;color:#beaeda;type:hemisphere"></a-entity>
+        <a-entity class="environment" position="-1.33 1 0.24" light="shadowCameraLeft:-10;shadowCameraBottom:-10;shadowCameraRight:10;shadowCameraTop:10;intensity:0.6"></a-entity>
+        <!-- rest of env only show in VR -->
+        <a-entity environment="preset: japan; groundColor: #f0e9fb; lighting: none" hide-on-enter-ar id="environment"></a-entity>
         
         <a-entity>
             <a-camera id="camera"
@@ -61,7 +65,8 @@
               event-set__grabon="_event:  grab-start; material.color: green"
               event-set__graboff="_event: grab-end; material.color: lightgray"
             ></a-box> -->
-            <a-entity gltf-model="#plot_gltf" position="0 0.5 0" scale="5 5 5" id="model"
+            <!-- gltf-model="data.gltf"  -->
+            <a-entity position="0 0.5 0" scale="5 5 5" id="model"
               title="Plot"
               mixin="grabbable-component"
               animation-mixer=""
@@ -88,6 +93,27 @@
       // e.detail.contact.ni; // Normal (direction) of the collision (CANNON.Vec3).
     });
 
+    // const loggingEl = document.getElementById("logging");
+    function log(...text){
+      console.log('log', text)
+      // loggingEl.setAttribute("value", 'Logging:' + text.join(" "));
+    }
+    const envEl = document.getElementById("environment")
+    document.querySelectorAll('[hand-controls]').forEach(el => {
+      log('hc', el)
+
+      let events = ['abuttondown','xbuttondown'];
+      for (let i=0; i<events.length; i++)
+        el.addEventListener(events[i], function(e){
+          log("buttondown")
+          console.log('hand-event',events[i], e)
+          // toggle visibility if in AR
+          if (envEl.sceneEl.is('ar-mode')) {
+            envEl.object3D.visible = ! envEl.object3D.visible;
+            log("toggling visible, now "+envEl.object3D.visible);
+          }
+        })
+    })
 
     var queryParams = null;
 
@@ -121,13 +147,14 @@
       var ret = getQueryParams().wsUrl;
       if(ret != null)
         return ret;
-      ret = new URL("ws", location);
+      ret = new URL("ws", server);
       ret.protocol = (ret.protocol == "https:") ? "wss:" : "ws:";
       console.log("found WsUrl: "+ret)
       return ret;
     }
 
     var connected = false;
+    var server = findServer();
     var wsUrl = findWsUrl();
     var websocket = null;
 
@@ -169,6 +196,14 @@
       }
     }
     var revision = 0;
+    function update_model(){
+      console.log("Updating model")
+      let m = document.getElementById("model")
+      let url = new URL("data.gltf?revision=" + (revision++), server)
+      m.setAttribute("gltf-model", url.toString())
+      // let asset = document.getElementById("plot_gltf")
+      // asset.setAttribute("src", url.toString())
+    }
     function handle_char(msg){
       if(msg == "r"){
         // we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -181,8 +216,7 @@
         }
         return;
       }else if(msg == "reload_data" || msg =="x" ){
-        m = document.getElementById("model")
-        m.setAttribute("gltf-model", "data.gltf?revision=" + (revision++))
+        update_model()
       //  refreshData();
       // }else if(msg === "c"){
       //   websocket.close();
@@ -284,6 +318,7 @@
     }
 
     function myOnLoad(event){
+      update_model()
       openTheWebsocket(wsUrl);
 
       updateFocus(event);
