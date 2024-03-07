@@ -64,7 +64,7 @@ The technologies beneath this project are: a web server that handles the communi
 ## Setup
 
 Install the Python package:
-```baship
+```bash
 pip install --upgrade plotAR
 ```
 This will also install PlotAR into your Jupyter Server - please restart Jupyter to be able to use it.
@@ -79,7 +79,20 @@ Otherwise you can start a PlotAR-Server on e.g. the default port 2908:
 ```bash
 plotar server -p 2908
 ```
-**NOTE** To experience your data in VR or more precise **WebXR**, the server needs to run on **HTTPS** or be localhost - the latter probably only makes sense on PC-VR devices. You can start the server with some (self-generated?) Key and Certificate using the `--ssl-prefix my_example_keys.`. Then you also need to set `ignore_ssl_warnings=True` in the python client and acknowledge in all the browsers the self-signed certificate (on newer Chrome Desktop Versions you need to type blindly `THISISUNSAFE` into the warning window to circumvent it).
+**NOTE** To experience your data in VR or more precise **WebXR**, the server needs to run on **HTTPS** or be localhost - the latter probably only makes sense on PC-VR devices. You can start the server with some (self-generated?) Key and Certificate using the `--ssl-prefix my_plotar_keys.`. Then you also need to set `ignore_ssl_warnings=True` in the python client and acknowledge in all the browsers the self-signed certificate (on newer Chrome Desktop Versions you need to type blindly `THISISUNSAFE` into the warning window to circumvent it). To generate such a self-signed key and certificate you can use `openssl`:
+```
+# generate a key
+openssl genrsa -out my_plotar_keys.key 2048
+
+# to specify the distinguised name info interactively
+openssl req -new -x509 -key my_plotar_keys.key -out my_plotar_keys.crt -days 365
+
+# else to specify the distinguised name info on the CLI
+
+openssl req -new -x509 -key my_plotar_keys.key -out my_plotar_keys.crt -days 365 \
+    -subj "/C=CH/ST=Zurich/O=My Name/CN=127.0.0.1"
+```
+You will be asked 
 
 Then open up <http://localhost:2908/keyboard.html> to see whether you can connect.
 This page also will show you a guess of a URL with your desktops IP-adress so you should be able to connect to it from your mobile - *as long as both devices are in the same network!*
