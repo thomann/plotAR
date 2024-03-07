@@ -9,3 +9,6 @@ todo.md
 tmp/
 venv/
 .idea/
+.DS_Store
+lab/
+__pycache__
