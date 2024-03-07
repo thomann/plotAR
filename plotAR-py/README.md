@@ -28,7 +28,7 @@ The source statement has to be repeated whenever you open a new terminal.
 
 Then install this version
 ```bash
-pip install --upgrade git+https://github.com/thomann/plotar#egg=plotar&subdirectory=plotar-py
+pip install --upgrade 'git+https://github.com/thomann/plotAR#egg=plotar[server]&subdirectory=plotAR-py'
 ```
 
 If you want to use Jupyter, install it to the virtual environment:
