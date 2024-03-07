@@ -141,7 +141,7 @@ def animate(data, xyz, *, animation_frame, group=None,
         time_labels=None,
         auto_scale=True, push_data=True, return_data=True, **kwargs):
     if group is None:
-        group = pd.Series(1)
+        group = []
     if not isinstance(group, list):
         group = [group]
     data = pd.DataFrame(data).sort_values(group + [animation_frame])
