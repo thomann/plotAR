@@ -282,6 +282,8 @@ def _start_server(port=2908, data=None, debug=False, ssl_prefix=None):
     ssl_ctx = None
     if ssl_prefix is not None:
         ssl_prefix = Path(ssl_prefix)
+        if str(ssl_prefix)[-1] == "." and not ssl_prefix.with_suffix('.crt').exists() and not ssl_prefix.with_suffix('.key').exists():
+            ssl_prefix = Path(str(ssl_prefix)[:-1])
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_ctx.load_cert_chain(ssl_prefix.with_suffix('.crt'), ssl_prefix.with_suffix('.key'))
 
