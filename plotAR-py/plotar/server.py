@@ -4,6 +4,7 @@ import logging
 
 import click
 import ssl
+import uuid
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -150,7 +151,7 @@ def defaultData():
     return plotar(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False ).data
 
 # The list of currently connected clients
-CLIENTS = []
+CLIENTS = {}
 DATA = {}
 try:
     DATA = defaultData()
@@ -162,7 +163,7 @@ def broadcast(message):
     if not isinstance(message, str):
         message = json.dumps(message)
     print(f"Sending message: {message}")
-    for i,c in enumerate(CLIENTS):
+    for i,c in CLIENTS.items():
         print(f"Sending to client {i}")
         c.write_message(message)
 
@@ -172,7 +173,7 @@ def broadcast_status():
 
 def status():
     dev, contr, focus = 0, 0, 0
-    for c in CLIENTS:
+    for c in CLIENTS.values():
         dev += int(c.is_device)
         contr += int(c.is_controller)
         focus += int(c.has_focus)
@@ -189,7 +190,8 @@ class PlotARWebSocketHandler(tornado.websocket.WebSocketHandler):
         self.is_device = False
         self.is_controller = False
         self.has_focus = False
-        CLIENTS.append(self)
+        self.id = str(uuid.uuid4())
+        CLIENTS[self.id] = self
 
     def on_message(self, message):
         print(f"got message: {message}")
@@ -197,6 +199,7 @@ class PlotARWebSocketHandler(tornado.websocket.WebSocketHandler):
             body = json.loads(message)
         except:
             return self.write_message('Format error')
+        body['sender_id'] = str(self.id)
         sendStatus = False
         if 'focus' in body:
             self.has_focus = bool(body['focus'])
@@ -210,12 +213,22 @@ class PlotARWebSocketHandler(tornado.websocket.WebSocketHandler):
         if sendStatus:
             broadcast_status()
             return
+        if 'whoami' in body:
+            self.write_message(json.dumps({ 'whoami': {'id': str(self.id)}}))
+            return
+        if 'to' in body:
+            to = CLIENTS.get(body['to'])
+            if to is None:
+                logging.warning(f"Client {body['to']} not found!")
+            else:
+                to.write_message(body)
+            return
         if 'shutdown' in body and body['shutdown']:
             _app.stop()
         broadcast(body)
 
     def on_close(self):
-        CLIENTS.remove(self)
+        del CLIENTS[self.id]
         broadcast_status()
     
     def check_origin(self, origin):
