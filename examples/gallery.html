@@ -3,10 +3,10 @@
   <head>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://unpkg.com/super-hands@^3.0.4/dist/super-hands.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@59100ac/dist/aframe-physics-system.js"></script>
-    <script src="https://unpkg.com/aframe-physics-extras/dist/aframe-physics-extras.min.js"></script>
-    <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script>
+    <!-- <script src="https://unpkg.com/super-hands@^3.0.4/dist/super-hands.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@59100ac/dist/aframe-physics-system.js"></script> -->
+    <!-- <script src="https://unpkg.com/aframe-physics-extras/dist/aframe-physics-extras.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/aframe-event-set-component@^4.1.1/dist/aframe-event-set-component.min.js"></script> -->
     <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
   </head>
   <body>
@@ -37,13 +37,16 @@
               ></a-mixin>
                           <!-- grabStartButtons: ['gripdown', 'triggerdown', 'thumbstickdown', 'pinchstarted'];
                           grabEndButtons: ['gripup', 'triggerup', 'thumbstickup', 'pinchended'];" -->
-              <a-mixin id="grabbable-component"
+              <a-mixin id="grabbable-component-no"
               dynamic-body="shape: box; mass: 10000"
               collision-filter="collisionForces: false"
               sleepy
               stretchable
               grabbable
               grabbable2="startButtons: ['gripdown']; endButtons: ['gripup']"
+            ></a-mixin>
+              <a-mixin id="grabbable-component"
+              grabbable
             ></a-mixin>
 
         </a-assets>
@@ -54,15 +57,16 @@
             ></a-camera>
             <a-entity hand-controls="hand: left" mixin="hand-controller"></a-entity>
             <a-entity hand-controls="hand: right" mixin="hand-controller" ></a-entity>
+            <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+            <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
         </a-entity>
-        <a-entity id="models_group" position="0 0.5 -0.8">
-            <a-entity gltf-model="https://cdn.glitch.global/02a4d53e-017b-465d-b7c6-c00dca4ea2f9/zrh.glb" position="-0.5 0.5 0.2" scale="2.5 2.5 2.5" title="CH Surface" mixin="grabbable-component"></a-entity>
-            <a-entity gltf-model="#iris" position="0 0.5 0" scale="2 2 2" title="Iris Plot" mixin="grabbable-component"></a-entity>
-            <!-- <a-entity gltf-model="#PLZ" position="-1 0.5 0" scale=".1 .1 .1" title="Plot" mixin="grabbable-component"></a-entity> -->
-            <a-entity gltf-model="gapminder-animated-label.gltf" position="0.5 0.5 0" scale="2 2 2" title="Gapminder Plot" mixin="grabbable-component" animation-mixer></a-entity>
-            <a-entity gltf-model="lorenz.gltf" position="0.5 0.25 0.5" scale="1 1 1" title="Lorenz" mixin="grabbable-component"></a-entity>
-            <!-- <a-entity gltf-model="#d-one-team" position="2 0.5 0" scale="5 5 5" title="Plot" mixin="grabbable-component"></a-entity> -->
-              <!-- animation-mixer -->
+        <a-entity gltf-model="https://cdn.glitch.global/02a4d53e-017b-465d-b7c6-c00dca4ea2f9/zrh.glb" position="-0.5 1.0 -0.6" scale="2.5 2.5 2.5" title="CH Surface" mixin="grabbable-component"></a-entity>
+        <a-entity gltf-model="#iris" position="0 1 -1" scale="2 2 2" title="Iris Plot" mixin="grabbable-component"></a-entity>
+        <!-- <a-entity gltf-model="#PLZ" position="-1 0.5 0" scale=".1 .1 .1" title="Plot" mixin="grabbable-component"></a-entity> -->
+        <a-entity gltf-model="gapminder-animated-label.gltf" position="0.5 1.0 -0.8" scale="2 2 2" title="Gapminder Plot" mixin="grabbable-component" animation-mixer></a-entity>
+        <a-entity gltf-model="lorenz.gltf" position="0.5 0.75 -0.3" scale="1 1 1" title="Lorenz" mixin="grabbable-component"></a-entity>
+        <!-- <a-entity gltf-model="#d-one-team" position="2 0.5 0" scale="5 5 5" title="Plot" mixin="grabbable-component"></a-entity> -->
+        <!-- animation-mixer -->
         </a-entity>
     </a-scene>
   </body>
