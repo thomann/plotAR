@@ -141,6 +141,104 @@
              this somehow backfires and httpuv in the R-session crashes with segfault -->
   <body onload="myOnLoad(event)" onkeydown="keyEvent(event)" onkeyup="keyUp(event)" onclose="closeWebSocket()" onblur="updateFocus(event)" onfocus="updateFocus(event)">
     
+    <script>
+
+      const servers = {
+        iceServers: [
+          {
+            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+          },
+        ],
+        iceCandidatePoolSize: 10,
+      };
+      const peer_connections = new Map();
+      async function start_webrtc_watcher(sender_id){
+        const pc = new RTCPeerConnection(servers);
+        peer_connections[sender_id] = pc;
+
+        if( window.stream != null) {
+            localVideo = document.getElementById('localVideo');
+            localVideo.srcObject.getTracks().forEach(track => {
+              console.log(`adding track to peer connection ${sender_id}`, track);
+              peer_connections[sender_id].addTrack(track, localVideo.srcObject)
+            });
+          }
+
+
+        pc.onicecandidate = (event) => {
+          if(!event.candidate){return}
+          sendMessage({ webrtc: { offerCandidate: event.candidate }, to: sender_id } );
+        };
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+        const offer = {
+          sdp: offerDescription.sdp,
+          type: offerDescription.type,
+        };
+        sendMessage({ webrtc: { offer: offer }, to: sender_id } );
+        
+      }
+
+      function handle_webrtc_message(msg, sender_id){
+        console.log('handle_webrtc_message');
+        if('watcher' in msg){
+          start_webrtc_watcher(sender_id);
+        }
+        if('answer' in msg){
+          peer_connections[sender_id].setRemoteDescription(new RTCSessionDescription(msg.answer));
+        }
+        if('answerCandidate' in msg){
+          peer_connections[sender_id].addIceCandidate(new RTCIceCandidate(msg.answerCandidate));
+        }
+        if('watcher_stop' in msg){
+          peer_connections[sender_id].close();
+          delete peer_connections[sender_id];
+        }
+      }
+
+      function screenshare_start(){
+        localVideo = document.getElementById('localVideo');
+        screen_share_button = document.getElementById('screenshare-button');
+        console.log('screenshare_start');
+        navigator.mediaDevices.getDisplayMedia({video: true})
+        .then(stream => {
+          window.stream = stream;
+          localVideo.srcObject = stream;
+          const videoTrack = stream.getVideoTracks()[0];
+          screen_share_button.innerHTML = "Stop sharing";
+          screen_share_button.onclick = screenshare_stop;
+          stream.getVideoTracks()[0].addEventListener('ended', () => {
+            console.log('The user has ended sharing the screen');
+            screenshare_stop();
+          });
+
+          // const sender = pc.addTrack(videoTrack, stream);
+          console.log('peer_connections in screenshare_start', peer_connections);
+          peer_connections.forEach((pc, sender_id) => {
+            console.log(`adding track to peer connection ${sender_id}`, videoTrack);
+            pc.addTrack(videoTrack, stream)
+          });
+
+          // webrtc_start();
+          sendMessage({ webrtc: { start: true } } );
+        })
+        .catch(err => {
+          console.error('Error: ' + err);
+        });
+      }
+
+      function screenshare_stop(){
+        localVideo = document.getElementById('localVideo');
+        window.stream = null;
+        screen_share_button = document.getElementById('screenshare-button');
+        console.log('screenshare_stop');
+        localVideo.srcObject.getTracks().forEach(track => track.stop());
+        screen_share_button.innerHTML = "Start sharing";
+        screen_share_button.onclick = screenshare_start;
+        sendMessage({ webrtc: { stop: true } } );
+      }
+    </script>
+
     <div class="container">
       <div id='hostLink'>
         <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
@@ -150,6 +248,10 @@
           <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
         </div>
         <div id="open-vr-div"><a href="vr.html" target="_blank">Open in VR</a></div>
+        <div id="screenshare-div">
+          <button id="screenshare-button" onclick="screenshare_start()">Share Screen</button>
+          <video id="localVideo" autoplay playsinline muted style="width:40%;"></video>
+        </div>
       </div>
 
       <div>
@@ -317,7 +419,9 @@
           if("key" in body){
             handle_char(body["key"]);
           }
-          //websocket.send("thanks");
+          if("webrtc" in body){
+            handle_webrtc_message(body["webrtc"], body.sender_id);
+          }
         }
         websocket.onclose = function(event){
           log('websocket closed.')

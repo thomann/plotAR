@@ -73,7 +73,12 @@
           mixin="grabbable-component"
           animation-mixer=""
           ></a-entity>
+        
+      <a-entity id="screen-group" position="0 1.5 -1" grabbable>
+        <a-video src="#screen_video" width=".8" height=".6" position="0 0 0" id="screen"></a-video>
+      </a-entity>
     </a-scene>
+    <video id="screen_video"></video>
   </body>
   <script>
     // let scene = document.getElementsByName
@@ -168,6 +173,7 @@
         websocket.onopen = function() {
           sendMessage({'controller': true})
           updateFocus();
+          sendMessage({'webrtc': {'watcher': true}})
         }
         websocket.onmessage = function(msg) {
           if(msg.data.length == 0)
@@ -184,6 +190,9 @@
           }
           if("key" in body){
             handle_char(body["key"]);
+          }
+          if("webrtc" in body){
+            handle_webrtc_message(body["webrtc"], body["sender_id"]);
           }
           //websocket.send("thanks");
         }
@@ -331,5 +340,84 @@
       // debugWidget.innerHTML += msg+"\n";
     }
 
+    const servers = {
+      iceServers: [
+        {
+          urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+        },
+      ],
+      iceCandidatePoolSize: 10,
+    };
+
+    const peer_connections = new Map();
+    async function webrtc_start(pc){
+      console.log('webrtc_start');
+      const remoteVideo = document.getElementById('screen_video');
+      remoteStream = new MediaStream();
+
+      // Pull tracks from remote stream, add to video stream
+      pc.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => {
+          console.log('adding track: ', track);
+          remoteStream.addTrack(track);
+          let {width, height, frameRate} = track.getSettings();
+          console.log(`Aspect of track: ${width}x${height}x${frameRate}`, track.getSettings());
+        });
+      };
+
+      remoteVideo.srcObject = remoteStream;
+    }
+
+    async function handle_webrtc_message(msg, sender_id){
+      console.log('handle_webrtc_message');
+      if('start' in msg){
+        sendMessage({'webrtc': {'watcher': true}})
+      }
+      if('offer' in msg){
+        const pc = new RTCPeerConnection(servers)
+        peer_connections[sender_id] = pc
+        const offerDescription = new RTCSessionDescription(msg.offer);
+        pc.setRemoteDescription(offerDescription);
+        
+        pc.onicecandidate = (event) => {
+          if(!event.candidate){return}
+          console.log("got ice answer candidates")
+          sendMessage({ webrtc: { answerCandidate: event.candidate }, to: sender_id } ); // .toJSON();
+        };
+
+        webrtc_start(pc);
+
+        const answerDescription = await pc.createAnswer();
+        await pc.setLocalDescription(answerDescription);
+
+        const answer = {
+          type: answerDescription.type,
+          sdp: answerDescription.sdp,
+        };
+
+        sendMessage({ webrtc: { answer: answer } });
+      }
+      if('offerCandidate' in msg){
+        const candidate = new RTCIceCandidate(msg.offerCandidate);
+        peer_connections[sender_id].addIceCandidate(candidate);
+      }
+    }
+
+    setInterval(function() {
+      document.querySelectorAll("video").forEach((video) => {
+        if(video !== null && video.currentTime <= 0){
+          // x.setAttribute('visible', true);
+          video.play().catch(function(error) {
+            // probably because there was no interaction yet...
+          });
+        }
+      })
+    }, 500);
+
+    window.onunload = window.onbeforeunload = () => {
+      sendMessage({'webrtc': {'watcher_stop': true}})
+      websocket.close();
+      peer_connections.forEach((pc, sender_id) => pc.close());
+    };
   </script>
 </html>
