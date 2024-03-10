@@ -57,8 +57,8 @@
             ></a-camera>
             <a-entity hand-controls="hand: left" mixin="hand-controller"></a-entity>
             <a-entity hand-controls="hand: right" mixin="hand-controller" ></a-entity>
-            <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
-            <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+            <a-entity id="leftHand" hand-tracking-grab-controls="hand: left; hoverEnabled: true;"></a-entity>
+            <a-entity id="rightHand" hand-tracking-grab-controls="hand: right; hoverEnabled: true;"></a-entity>
         </a-entity>
         <a-entity gltf-model="https://cdn.glitch.global/02a4d53e-017b-465d-b7c6-c00dca4ea2f9/zrh.glb" position="-0.5 1.0 -0.6" scale="2.5 2.5 2.5" title="CH Surface" mixin="grabbable-component"></a-entity>
         <a-entity gltf-model="#iris" position="0 1 -1" scale="2 2 2" title="Iris Plot" mixin="grabbable-component"></a-entity>
