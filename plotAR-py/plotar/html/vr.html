@@ -74,7 +74,7 @@
           animation-mixer=""
           ></a-entity>
         
-      <a-entity id="screen-group" position="0 1.5 -1" grabbable>
+      <a-entity id="screen-group" position="0 1.5 -1" grabbable visible="true">
         <a-video src="#screen_video" width=".8" height=".6" position="0 0 0" id="screen"></a-video>
       </a-entity>
     </a-scene>
@@ -353,6 +353,9 @@
     async function webrtc_start(pc){
       console.log('webrtc_start');
       const remoteVideo = document.getElementById('screen_video');
+      const videoEl = document.getElementById('screen');
+      const videoRigEl = videoEl.parentEl;
+      const pixelRatio = 1/5000.0
       remoteStream = new MediaStream();
 
       // Pull tracks from remote stream, add to video stream
@@ -365,7 +368,35 @@
         });
       };
 
+      remoteVideo.onresize = function() {
+        // console.log('Remote video size changed to ' +
+        // remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight);
+
+        videoEl.setAttribute('height', remoteVideo.videoHeight * pixelRatio);
+        videoEl.setAttribute('width',  remoteVideo.videoWidth * pixelRatio);
+
+        let y = videoRigEl.getAttribute("position").y - videoEl.getAttribute("height")/2;
+        if(y < 0){
+          let pos = videoRigEl.getAttribute("position");
+          pos.y -= y ;
+          s.parentEl.setAttribute("position", {y: 0.1 + s.getAttribute("height")/2});
+        }
+      };
+
+
       remoteVideo.srcObject = remoteStream;
+      videoRigEl.setAttribute('visible', true);
+
+      setInterval(function() {
+        document.querySelectorAll("video").forEach((video) => {
+          if(video !== null && video.currentTime <= 0){
+            // x.setAttribute('visible', true);
+            video.play().catch(function(error) {
+              // probably because there was no interaction yet...
+            });
+          }
+        })
+      }, 100);
     }
 
     async function handle_webrtc_message(msg, sender_id){
@@ -403,16 +434,6 @@
       }
     }
 
-    setInterval(function() {
-      document.querySelectorAll("video").forEach((video) => {
-        if(video !== null && video.currentTime <= 0){
-          // x.setAttribute('visible', true);
-          video.play().catch(function(error) {
-            // probably because there was no interaction yet...
-          });
-        }
-      })
-    }, 500);
 
     window.onunload = window.onbeforeunload = () => {
       sendMessage({'webrtc': {'watcher_stop': true}})
