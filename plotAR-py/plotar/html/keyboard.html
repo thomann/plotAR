@@ -359,6 +359,7 @@
     var connected = false;
     var wsUrl = findWsUrl();
     var websocket = null;
+    var websocket_should_be_closed = false;
     
     if(wsUrl == null){
       el = document.getElementById("keyboard");
@@ -397,10 +398,12 @@
       if(wsUrl == null)
         return;
       try{
+        websocket_should_be_closed = false;
         websocket = new WebSocket(wsUrl);
+        log("Opening websocket to: "+wsUrl);
 
         websocket.onopen = function() {
-          sendMessage({'controller': true})
+          sendMessage({'controller': true});
           updateFocus();
         }
         websocket.onmessage = function(msg) {
@@ -423,8 +426,18 @@
             handle_webrtc_message(body["webrtc"], body.sender_id);
           }
         }
+        websocket.onerror = function(event){
+          console.log('websocket error', event)
+        }
         websocket.onclose = function(event){
-          log('websocket closed.')
+          console.log('websocket closed', event)
+          if(!websocket_should_be_closed){
+            log('reconnecting websocket')
+            setTimeout(function() {
+              openTheWebsocket(wsUrl);
+            }, 5000);
+          }
+
         }
 
         connected = true;
@@ -611,6 +624,7 @@
     function closeWebSocket(){
       if(websocket != null){
         // sendMessage("byebye")
+        websocket_should_be_closed = true;
         websocket.close();
         websocket = null;
       }
