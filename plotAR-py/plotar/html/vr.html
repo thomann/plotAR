@@ -163,15 +163,18 @@
     var server = findServer();
     var wsUrl = findWsUrl();
     var websocket = null;
+    var websocket_should_be_closed = false;
 
     function openTheWebsocket(wsUrl){
       if(wsUrl == null)
         return;
       try{
+        websocket_should_be_closed = false;
         websocket = new WebSocket(wsUrl);
+        log("Opening websocket to: "+wsUrl);
 
         websocket.onopen = function() {
-          sendMessage({'controller': true})
+          sendMessage({'controller': true});
           updateFocus();
           sendMessage({'webrtc': {'watcher': true}})
         }
@@ -196,8 +199,18 @@
           }
           //websocket.send("thanks");
         }
+        websocket.onerror = function(event){
+          console.log('websocket error', event)
+        }
         websocket.onclose = function(event){
-          log('websocket closed.')
+          console.log('websocket closed', event)
+          if(!websocket_should_be_closed){
+            log('reconnecting websocket')
+            setTimeout(function() {
+              openTheWebsocket(wsUrl);
+            }, 5000);
+          }
+
         }
 
         connected = true;
@@ -322,6 +335,7 @@
     function closeWebSocket(){
       if(websocket != null){
         // sendMessage("byebye")
+        websocket_should_be_closed = true;
         websocket.close();
         websocket = null;
       }
