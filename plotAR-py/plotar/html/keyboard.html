@@ -20,6 +20,19 @@
       overflow: hidden;*/
     }
 
+    .model-stage {
+      flex-grow: 1;
+      flex-shrink: 0;
+      min-width: 250px;
+      /* without min-height the model-viewer will collapse to a horizontal line... */
+      min-height: 250px;
+    }
+
+    .model-stage model-viewer {
+      width: 100%;
+      height: 100%;
+    }
+
     #keyboard table {
       width: 60%;
     }
@@ -81,6 +94,9 @@
 
     #hostLink {
       /* float: right */
+      /* keep the hostlink at constant size */
+      flex-grow: 0;
+      flex-shrink: 0;
     }
 
     #hostLink div {
@@ -131,10 +147,6 @@
       width: 50%; /* Could be more or less, depending on screen size */
     }
 
-    model-viewer {
-      height:100%;
-      /* width:100%; */
-		}
     </style>
   </head>
         <!-- we need to close the websocket, else on Chrome (Android/Linux/macOS)
@@ -240,21 +252,7 @@
     </script>
 
     <div class="container">
-      <div id='hostLink'>
-        <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
-        <div id='hostLink_text'>
-          <button onclick="copyUrl()" id="hostInput_copy">📋</button>
-          <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
-          <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
-        </div>
-        <div id="open-vr-div"><a href="vr.html" target="_blank">Open in VR</a></div>
-        <div id="screenshare-div">
-          <button id="screenshare-button" onclick="screenshare_start()">Share Screen</button>
-          <video id="localVideo" autoplay playsinline muted style="width:40%;"></video>
-        </div>
-      </div>
-
-      <div>
+      <div class="model-stage">
         <model-viewer
           data-name="data"
           src="data.gltf"
@@ -268,6 +266,20 @@
           shadow-softness="0.2" 
           poster="textures/patterns/checker.png"
         ></model-viewer>
+      </div>
+
+      <div id='hostLink'>
+        <div><canvas id="canvasQR" width="100" height="100"> </canvas></div>
+        <div id='hostLink_text'>
+          <button onclick="copyUrl()" id="hostInput_copy">📋</button>
+          <a href="http://localhost:2908/index.html" id='hostInput'>http://localhost:2908/index.html</a>
+          <input id="hostInput_TF" type="text" value="http://localhost:2908/index.html" size="120" tabindex='-1' aria-hidden='true'/>
+        </div>
+        <div id="open-vr-div"><a href="vr.html" target="_blank">Open in VR</a></div>
+        <div id="screenshare-div">
+          <button id="screenshare-button" onclick="screenshare_start()">Share Screen</button>
+          <video id="localVideo" autoplay playsinline muted style="width:40%;"></video>
+        </div>
       </div>
 
       <div id="keyboard">
