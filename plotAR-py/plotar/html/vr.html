@@ -74,7 +74,7 @@
           animation-mixer=""
           ></a-entity>
         
-      <a-entity id="screen-group" position="0 1.5 -1" grabbable visible="true">
+      <a-entity id="screen-group" position="0 1.5 -1" grabbable>
         <a-video src="#screen_video" width=".8" height=".6" position="0 0 0" id="screen"></a-video>
       </a-entity>
     </a-scene>
@@ -341,7 +341,15 @@
       }
     }
 
+    function set_screen_visible(visible){
+      console.log('visibility pre', document.getElementById('screen').object3D.visible);
+      document.getElementById('screen-group').setAttribute('visible', visible);
+      // document.getElementById('screen').setAttribute('visible', visible);
+      console.log('visibility post', document.getElementById('screen').object3D.visible);
+    }
+
     function myOnLoad(event){
+      set_screen_visible(false);
       update_model()
       openTheWebsocket(wsUrl);
 
@@ -368,12 +376,14 @@
       console.log('webrtc_start');
       const remoteVideo = document.getElementById('screen_video');
       const videoEl = document.getElementById('screen');
-      const videoRigEl = videoEl.parentEl;
+      const videoRigEl = document.getElementById('screen-group');
       const pixelRatio = 1/5000.0
       remoteStream = new MediaStream();
 
       // Pull tracks from remote stream, add to video stream
       pc.ontrack = (event) => {
+        console.log("setting screen visible")
+        set_screen_visible(true);
         event.streams[0].getTracks().forEach((track) => {
           console.log('adding track: ', track);
           remoteStream.addTrack(track);
@@ -399,7 +409,6 @@
 
 
       remoteVideo.srcObject = remoteStream;
-      videoRigEl.setAttribute('visible', true);
 
       setInterval(function() {
         document.querySelectorAll("video").forEach((video) => {
@@ -445,6 +454,10 @@
       if('offerCandidate' in msg){
         const candidate = new RTCIceCandidate(msg.offerCandidate);
         peer_connections[sender_id].addIceCandidate(candidate);
+      }
+      if('stop' in msg && msg['stop']){
+        console.log('closing stream');
+        set_screen_visible(false);
       }
     }
 
