@@ -55,13 +55,23 @@ def _mk_val(df, val, n=None):
         return np.array(val)
 
 
-def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=None,
+def plotar(data, col=None, size=None, *, x=None, y=None, z=None, xyz=None, type='p', lines=None, label=None,
            axis_names=None, col_labels=None,
+           surface=None,
            name=None, description=None, speed=None, auto_scale=True,
            digits=5, host=None, return_data=True, push_data=True):
     # TODO assert compatibility checks
     n = data.shape[0]
     df = None
+    _x_y_z_available = [_ is not None for _ in [x,y,z]]
+    if any( _x_y_z_available ):
+        assert xyz is None, "Cannot specify x,y,z and xyz at the same time"
+        assert all(_x_y_z_available), "Need to specify x,y,z if one is given"
+        x = _mk_val(df, x, n)
+        y = _mk_val(df, y, n)
+        z = _mk_val(df, z, n)
+        df = data
+        data = np.array([x,y,z]).T
     if isinstance(data, pd.DataFrame):
         df = data
         if xyz is not None:
@@ -91,7 +101,8 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
     if col is not None and col.dtype == np.dtype('O'):
         x = pd.Series(col, dtype='category')
         col = x.cat.codes.values
-        col_labels = x.cat.categories.values.tolist()
+        if col_labels is None:
+            col_labels = x.cat.categories.values.tolist()
     if col is None:
         payload = data[:,:3]
     else:
@@ -105,7 +116,9 @@ def plotar(data, col=None, size=None, *, xyz=None, type='p', lines=None, label=N
     if label is not None: body['label'] = label.tolist()
     if speed is not None: body['speed'] = speed
     if axis_names is not None: body['axis_names'] = axis_names
-    if col_labels is not None: body['col_labels'] = col_labels
+    if col_labels is not None and col_labels: body['col_labels'] = col_labels
+
+    if surface is not None: body['surface'] = surface.data['surface']
 
     metadata = { 'n': n, 'created': time.ctime() }
     metadata['name'] = name or "Dataset"
@@ -236,7 +249,7 @@ def surfacevr(data, col=None, x=None, y=None, surfacecolor=None,
         body['surface']['x'] = np.array(x).tolist()
     if y is not None:
         body['surface']['y'] = np.array(y).tolist()
-    if surfacecolor is not None: body['surface']['surfacecolor'] = surfacecolor
+    if surfacecolor is not None: body['surface']['surfacecolor'] = surfacecolor.tolist()
     if speed is not None: body['speed'] = speed
     metadata = { 'n': n, 'm': m, 'created': time.ctime() }
     metadata['name'] = name or f"Dataset {n}x{m}"
