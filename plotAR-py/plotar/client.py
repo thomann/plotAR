@@ -287,6 +287,9 @@ def get_host(host=None):
         return PlotHost(host)
     if _host is None:
         # actual detection code
+        if os.getenv("PLOTAR_SERVER"):
+            _host = PlotHost(os.getenv("PLOTAR_SERVER"))
+            return _host
         if is_in_colab():
             from google.colab.output import eval_js
             ext_url = eval_js("google.colab.kernel.proxyPort(2908)")
