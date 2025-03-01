@@ -29,6 +29,8 @@ class PlotAR(object):
                 return f"<pre>{self.data.get('metadata')}</pre>"
         # we set wsUrl empty to start that one "detached" so no keyboard no automatic updates from plots in other cells
         return f"<iframe width='100%' height='250px' src='{self.plot_host.external_url('keyboard.html')}&wsUrl='>"
+    def post(self):
+        self.plot_host.post(self.data)
     def write(self, filename, format='json', overwrite=False):
         p = Path(filename)
         if isinstance(format, str):
