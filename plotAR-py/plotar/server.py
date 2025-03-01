@@ -143,11 +143,11 @@ class OBJHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'text/plain')
         self.write(result)
 
-def defaultData():
+def defaultData(n=100):
     import numpy as np
     from .client import plotar
-    data = np.random.normal(size=(100,3))
-    col = np.random.randint(4, size=100)
+    data = np.random.normal(size=(n,3))
+    col = np.random.randint(4, size=n)
     return plotar(data, col, return_data=True, host=None, name='Gaussian Sample', push_data=False ).data
 
 # The list of currently connected clients
@@ -300,7 +300,7 @@ def _start_server(port=2908, data=None, debug=False, ssl_prefix=None):
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_ctx.load_cert_chain(ssl_prefix.with_suffix('.crt'), ssl_prefix.with_suffix('.key'))
 
-    _app = tornado.web.Application(_mappings, debug=debug, ssl_options=ssl_ctx)
+    _app = tornado.web.Application(_mappings, debug=debug, ssl_options=ssl_ctx, websocket_ping_interval=10)
     _PORT = port
     http_server = tornado.httpserver.HTTPServer(_app, ssl_options=ssl_ctx)
     http_server.listen(port)
